@@ -1,31 +1,35 @@
 # BlackCat Installer
 
-Automatizovaný instalátor, který podle výběru modulů (auth, database, observability, governance…) připraví kompletní prostředí. Je navržen tak, aby fungoval jak manuálně (CLI), tak přes AI scénář: AI si "objedná" stack a installer vyřeší composer/npm dependency, bootstrap databází, docker compose atd.
+Automated installer that turns a module selection (auth, database, observability, governance, …) into a runnable environment.
+It is designed to work both manually (CLI) and as an AI-driven workflow: an agent produces a module list and the installer plans dependency installs, database bootstraps, and docker-compose steps.
 
-## Hlavní úlohy
-- čte `modules.json` katalog (v repo `blackcat-modules`)
-- provádí `composer require` + `npm install` podle modulů
-- generuje `.env` / `.blackcatrc`
-- spouští bootstrap skripty (např. `php bin/auth-http --init`)
-- integruje se s GitHub Actions / AI agentem (OpenAI) – prompt -> modul list -> instalace
+## Responsibilities
+- Reads the module catalog (`modules.json`; later: `blackcat-modules`).
+- Installs dependencies (Composer / npm) for selected modules.
+- Generates env overlays / runtime config snippets.
+- Runs module bootstrap hooks (e.g. `php bin/auth-http --init`).
+- Integrates with CI and AI agents (prompt → module list → plan/apply).
 
-Repo nyní obsahuje skeleton (viz docs/ROADMAP). Další vývoj: CLI `blackcat-installer`, API pro AI integraci, pluginy.
+This repository currently contains a skeleton (see `docs/ROADMAP.md`). Next milestones: real Composer/npm dispatch, docker-compose templates, and trust-kernel gated bootstraps.
 
 ## CLI (Stage 1)
 
 ```bash
-# přehled katalogu modulů
+# List available modules
 php bin/installer list
 
-# instalace vybraných modulů (zapisuje do logu, generuje .blackcat/env.generated)
+# Install selected modules (logs actions and generates `.blackcat/env.generated`)
 php bin/installer install --modules=auth-core,observability
 
-# změna cesty pro generovaný env soubor nebo vypnutí
+# Enable feature views (adds `BC_INCLUDE_FEATURE_VIEWS=1` to the generated env and to bootstrap env)
+php bin/installer install --modules=auth-core --include-feature-views
+
+# Change output path or disable env generation
 php bin/installer install --modules=auth-core --env-out=config/.env.blackcat
 php bin/installer install --modules=observability --no-env
 
-# vypnutí bootstrap hooků
+# Disable bootstrap hooks
 php bin/installer install --modules=auth-core --no-bootstrap
 ```
 
-CLI čte `modules.json` a vypisuje, které composer/npm/docker kroky by bylo potřeba spustit. Současně generuje `.env` soubor kombinací všech modulů a spouští bootstrap příkazy definované v katalogu (např. `php bin/auth-http --init`). V dalších fázích se přidá skutečné volání composer/npm a scaffolding docker-compose.
+The CLI reads `modules.json` and prints which Composer/npm/docker steps would be needed. It also generates an env file by merging module variables and runs bootstrap commands defined in the catalog (e.g. `php bin/auth-http --init`). Future stages will execute Composer/npm for real and add docker-compose scaffolding.

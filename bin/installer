@@ -26,12 +26,21 @@ switch ($command) {
         echo json_encode($installer->available(), JSON_PRETTY_PRINT) . PHP_EOL;
         break;
     case 'install':
-        [$mods, $envOut, $runBootstrap] = parseInstallArgs($args);
+        [$mods, $envOut, $runBootstrap, $includeFeatureViews] = parseInstallArgs($args);
         if ($mods === []) {
             fwrite(STDERR, "Usage: installer install --modules=auth-core,observability\n");
             exit(1);
         }
-        $installer->install($mods, $envOut, $runBootstrap);
+        $extraEnv = $includeFeatureViews ? ['BC_INCLUDE_FEATURE_VIEWS' => '1'] : [];
+        if ($includeFeatureViews) {
+            $_ENV['BC_INCLUDE_FEATURE_VIEWS'] = '1';
+            if (function_exists('putenv')) {
+                putenv('BC_INCLUDE_FEATURE_VIEWS=1');
+            } else {
+                fwrite(STDERR, "Warning: putenv() is disabled; bootstrap commands may not see BC_INCLUDE_FEATURE_VIEWS.\n");
+            }
+        }
+        $installer->install($mods, $envOut, $runBootstrap, $extraEnv);
         break;
     case 'help':
     default:
@@ -50,6 +59,7 @@ function parseInstallArgs(array $args): array
     $modules = [];
     $envOut = '.blackcat/env.generated';
     $runBootstrap = true;
+    $includeFeatureViews = false;
     foreach ($args as $index => $arg) {
         if (str_starts_with($arg, '--modules=')) {
             $modules = explode(',', substr($arg, 10));
@@ -63,8 +73,10 @@ function parseInstallArgs(array $args): array
             $envOut = null;
         } elseif ($arg === '--no-bootstrap') {
             $runBootstrap = false;
+        } elseif ($arg === '--include-feature-views') {
+            $includeFeatureViews = true;
         }
     }
     $modules = array_values(array_filter(array_map('trim', $modules)));
-    return [$modules, $envOut, $runBootstrap];
+    return [$modules, $envOut, $runBootstrap, $includeFeatureViews];
 }

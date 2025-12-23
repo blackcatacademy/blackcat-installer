@@ -25,7 +25,7 @@ final class Installer
     /**
      * @param list<string> $modules
      */
-    public function install(array $modules, ?string $envOut = null, bool $runBootstrap = true): void
+    public function install(array $modules, ?string $envOut = null, bool $runBootstrap = true, array $extraEnv = []): void
     {
         $resolved = $this->catalog->filter($modules);
         $this->logger->info('installer.install', ['modules' => $resolved]);
@@ -40,7 +40,7 @@ final class Installer
 
         if ($envOut !== null) {
             $renderer = $this->envRenderer ?? new EnvRenderer();
-            $renderer->write($envOut, $resolved);
+            $renderer->write($envOut, $resolved, $extraEnv);
             $this->logger->info('installer.env.generated', ['path' => $envOut]);
         }
 

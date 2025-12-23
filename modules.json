@@ -3,7 +3,7 @@
     "id": "auth-core",
     "name": "Auth Core",
     "type": "backend",
-    "composer": ["blackcat/auth"],
+    "composer": ["blackcatacademy/blackcat-auth"],
     "bootstrap": ["php bin/auth-http --init"],
     "env": {
       "AUTH_HTTP_URL": "http://localhost:9000",
