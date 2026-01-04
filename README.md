@@ -12,6 +12,14 @@ It is designed to work both manually (CLI) and as an AI-driven workflow: an agen
 
 This repository currently contains a skeleton (see `docs/ROADMAP.md`). Next milestones: real Composer/npm dispatch, docker-compose templates, and trust-kernel gated bootstraps.
 
+## Stage 3 (Kernel minimal / FTP)
+
+Stage 3 introduces a “kernel minimal bundle” intended for constrained environments (shared hosting / FTP) where you **cannot** run Composer on the server.
+
+- Template: `templates/kernel-minimal/`
+- Build script: `scripts/build-kernel-minimal-bundle.sh`
+- Docs: `docs/STAGE3_KERNEL_MINIMAL_BUNDLE.md`
+
 ## CLI (Stage 1)
 
 ```bash

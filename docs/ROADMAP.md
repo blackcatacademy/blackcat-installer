@@ -14,8 +14,11 @@
   - verify signed integrity manifests (checksums + signatures),
   - verify the Web3 anchor (ReleaseRegistry + per-install InstanceController).
 - Provide a “minimal install” mode:
-  - target server installs only `blackcat-core` (+ deps) and a file-based runtime config,
-  - no CLI requirement on the target (works even in constrained environments).
+  - ✅ kernel-minimal bundle template (`templates/kernel-minimal/`)
+  - ✅ token-gated one-time setup UI (`/_blackcat/setup`)
+  - ✅ build helper script (`scripts/build-kernel-minimal-bundle.sh`)
+  - target server installs only `blackcat-core` (+ deps) and a file-based runtime config
+  - no CLI requirement on the target (works even in constrained environments)
 - Multi-device approval ceremony (N-of-M signers) to:
   - clone/create the per-install controller contract,
   - pin the chosen trust mode (`root+uri` vs `full`) and policy,
