@@ -108,15 +108,14 @@ function blackcat_setup_page(array $paths): void
       }
       .banner {
         width: 100%;
-        height: 0;
-        padding-top: 31.25%; /* 500 / 1600 */
+        height: clamp(140px, 18vw, 220px);
         background:
           linear-gradient(180deg, rgba(11, 15, 23, 0.05), rgba(11, 15, 23, 0.9)),
           url("/_blackcat/assets/hero-banner.png") left center / cover no-repeat;
         border-bottom: 1px solid rgba(31, 42, 68, 0.95);
       }
       .top {
-        padding: 18px;
+        padding: 12px 18px 8px 18px;
         display: flex;
         gap: 18px;
         align-items: flex-start;
@@ -165,9 +164,9 @@ function blackcat_setup_page(array $paths): void
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         margin-left: 10px;
       }
-      .body { padding: 12px 18px 18px 18px; }
+      .body { padding: 10px 18px 16px 18px; }
       .steps {
-        margin: 12px 0 0;
+        margin: 10px 0 0;
         padding: 12px 14px;
         border-radius: 14px;
         border: 1px solid rgba(31, 42, 68, 0.95);
