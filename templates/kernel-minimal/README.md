@@ -30,4 +30,5 @@ Directory layout (what you upload to the server):
 Notes:
 - This template expects `blackcat-core` + `blackcat-config` to be present in `site/vendor/`.
 - The one-time installer UI is served from `/_blackcat/setup` (handled by the front controller) and is disabled after installation.
-
+- On-chain bootstrap is **keyless on the server**: the setup UI uses MetaMask (client-side) to create the `InstanceController` via the global `InstanceFactory` and then locks the runtime-config attestation on-chain.
+- `site/public/_blackcat/ethers.umd.min.js` is vendored for offline-friendly wallet interactions (see `ethers.LICENSE.md`).

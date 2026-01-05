@@ -42,12 +42,19 @@ Flow:
 1) The server creates `.blackcat/install.token`.
 2) You open that token via FTP and paste it into the setup page.
 3) Click **Build manifest** → it writes `.blackcat/integrity.manifest.json` and shows the `root` bytes32.
-4) Create/configure your on-chain InstanceController (manual for now).
-5) Enter the InstanceController address and click **Write config** → it writes `config.runtime.json` and prints:
-   - recommended `policy_hash_v3_strict`
+4) Connect **MetaMask**, configure your authority addresses (root / upgrade / emergency), click **Compute policy hash**, then **Create InstanceController**.
+   - This broadcasts `InstanceFactory.createInstance(...)` from your wallet.
+   - The factory is also an on-chain “installations registry” via `isInstance(...)` + `InstanceCreated` events.
+5) Click **Write config** → it writes `config.runtime.json` and prints:
    - runtime-config attestation `key` + `value`
-6) Commit those values on-chain.
-7) Click **Disable installer** → creates `.blackcat/installed.flag` (setup becomes unavailable).
+6) Click **Set+lock attestation** → broadcasts `InstanceController.setAttestationAndLock(key,value)` from the **root authority** wallet.
+7) Open the site root and verify it becomes **trusted** in strict mode.
+8) Click **Disable installer** → creates `.blackcat/installed.flag` (setup becomes unavailable).
+
+Notes:
+- No private keys are stored server-side. All on-chain transactions are initiated by your wallet.
+- `ReleaseRegistry` is a global trust list for **official** BlackCat release roots; end-users should not need to publish anything there.
+- If you modify the bundle files after building it, your computed manifest `root` will not match any trusted release root, and instance creation will fail (by design).
 
 ## 4) Troubleshooting
 
@@ -59,3 +66,7 @@ Flow:
 - If setup says “HTTPS required”:
   - enable TLS (Let’s Encrypt) and ensure the app is not downgraded to HTTP between proxy and PHP.
 
+- If instance creation fails:
+  - ensure MetaMask is on **Edgen Chain** (`chain_id=4207`) and your wallet has enough EDGEN for gas,
+  - ensure you uploaded an **untampered** official bundle (otherwise `GenesisRootNotTrusted` is expected),
+  - ensure your authority addresses are valid `0x...` EVM addresses.

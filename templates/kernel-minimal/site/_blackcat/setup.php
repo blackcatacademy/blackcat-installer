@@ -100,6 +100,9 @@ function blackcat_setup_page(array $paths): void
       @media (min-width: 980px) { .grid { grid-template-columns: 1fr 1fr; } }
       .k { font-weight: 600; }
       .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; background: #122042; border: 1px solid #1f2a44; margin-left: 8px; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .small { font-size: 12px; }
+      .warn { color: #ffd46b; }
     </style>
   </head>
   <body>
@@ -133,7 +136,64 @@ function blackcat_setup_page(array $paths): void
       </div>
 
       <div class="card">
-        <h2>3) Write runtime config</h2>
+        <h2>3) On-chain: create InstanceController</h2>
+        <p class="muted">No private keys are stored on the server. This uses <strong>MetaMask</strong> to broadcast the transaction from your wallet.</p>
+        <p class="small muted">Network: <span class="mono">Edgen Chain</span> (<span class="mono">chain_id=4207</span>)</p>
+
+        <div class="row">
+          <div>
+            <label class="k">Wallet</label>
+            <div class="small muted">Account: <span id="walletAccount" class="mono">not connected</span></div>
+            <div class="small muted">Chain: <span id="walletChain" class="mono">unknown</span></div>
+          </div>
+          <div style="flex: 0 0 240px">
+            <button id="connectWallet">Connect MetaMask</button>
+            <button id="switchChain" style="margin-left:8px">Switch/Add chain</button>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label class="k">InstanceFactory address</label>
+            <input id="instanceFactory" placeholder="0x..." autocomplete="off" readonly />
+            <div class="small muted">This factory is also the on-chain registry of trusted installations (<span class="mono">isInstance</span>).</div>
+          </div>
+          <div>
+            <label class="k">ReleaseRegistry address</label>
+            <input id="releaseRegistry" placeholder="0x..." autocomplete="off" readonly />
+            <div class="small muted">Must already trust your bundle root (official releases are published by the registry owner).</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label class="k">Root authority (cold wallet recommended)</label>
+            <input id="rootAuthority" placeholder="0x..." autocomplete="off" />
+          </div>
+          <div>
+            <label class="k">Upgrade authority</label>
+            <input id="upgradeAuthority" placeholder="0x..." autocomplete="off" />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label class="k">Emergency authority</label>
+            <input id="emergencyAuthority" placeholder="0x..." autocomplete="off" />
+          </div>
+          <div>
+            <label class="k">Policy hash (v3 strict)</label>
+            <input id="policyHash" placeholder="0x... (computed)" autocomplete="off" readonly />
+          </div>
+        </div>
+
+        <p class="small muted">This step will create a new InstanceController bound to: <span class="mono">manifest.root</span> + <span class="mono">manifest.uri_hash</span> + <span class="mono">policy_hash_v3_strict</span>.</p>
+        <button id="computePolicy">Compute policy hash</button>
+        <button id="createInstance" style="margin-left:8px">Create InstanceController</button>
+        <pre id="chainOut" style="display:none"></pre>
+      </div>
+
+      <div class="card">
+        <h2>4) Write runtime config</h2>
         <p>Writes:</p>
         <pre><code>config.runtime.json</code></pre>
         <div class="row">
@@ -169,24 +229,21 @@ function blackcat_setup_page(array $paths): void
     </div>
 
     <div class="card">
-      <h2>4) On-chain actions (manual)</h2>
-      <p class="muted">This template does not broadcast transactions. Use your preferred wallet/tooling to:</p>
-      <ol>
-        <li>Create or select an <code>InstanceController</code> for this install.</li>
-        <li>Set genesis <code>activeRoot</code> to the manifest root.</li>
-        <li>Set genesis <code>activePolicyHash</code> to the recommended policy hash.</li>
-        <li>Set+lock runtime config attestation (<code>key</code>, <code>value</code> shown after writing config).</li>
-      </ol>
-      <p class="muted">Once done, open the site root and verify it becomes <span class="ok">trusted</span> in strict mode.</p>
+      <h2>5) On-chain: lock runtime-config attestation</h2>
+      <p class="muted">After writing <code>config.runtime.json</code>, lock the runtime config attestation on-chain:</p>
+      <div class="small muted">Required signer: <span class="mono">rootAuthority</span></div>
+      <button id="lockAttestation">Set+lock attestation (MetaMask)</button>
+      <pre id="attOut" style="display:none"></pre>
     </div>
 
     <div class="card">
-      <h2>5) Disable installer</h2>
+      <h2>6) Disable installer</h2>
       <p>When everything is working, permanently disable this setup UI.</p>
       <button id="finish">Create installed.flag (disable setup)</button>
       <pre id="finishOut" style="display:none"></pre>
     </div>
 
+    <script src="/_blackcat/ethers.umd.min.js"></script>
     <script>
       const $ = (id) => document.getElementById(id);
       const api = async (path, opts = {}) => {
@@ -214,7 +271,136 @@ function blackcat_setup_page(array $paths): void
           if (st.suggested && st.suggested.allowed_hosts) {
             $("allowedHosts").value = st.suggested.allowed_hosts.join("\\n");
           }
+          if (st.summary && st.summary.root) {
+            // Best-effort: show root in the manifest output panel for convenience.
+            $("manifestOut").style.display = "block";
+            $("manifestOut").textContent = JSON.stringify(st.summary, null, 2);
+          }
         }
+      };
+
+      const CHAIN_ID_DEC = 4207;
+      const CHAIN_ID_HEX = "0x106f";
+      const DEFAULT_FACTORY = "0x92C80Cff5d75dcD3846EFb5DF35957D5Aed1c7C5";
+      const DEFAULT_REGISTRY = "0x22681Ee2153B7B25bA6772B44c160BB60f4C333E";
+
+      const isHexAddress = (v) => typeof v === "string" && /^0x[a-fA-F0-9]{40}$/.test(v.trim());
+      const isBytes32 = (v) => typeof v === "string" && /^0x[a-fA-F0-9]{64}$/.test(v.trim());
+
+      const wallet = {
+        provider: null,
+        signer: null,
+        account: null,
+        chainId: null,
+      };
+
+      const setWalletUi = () => {
+        $("walletAccount").textContent = wallet.account || "not connected";
+        $("walletChain").textContent = wallet.chainId ? `${wallet.chainId}` : "unknown";
+      };
+
+      const requireEthereum = () => {
+        const eth = window.ethereum;
+        if (!eth || !eth.request) {
+          throw new Error("MetaMask (window.ethereum) not found. Install MetaMask and reload.");
+        }
+        if (!window.ethers) {
+          throw new Error("ethers.js failed to load. Ensure /_blackcat/ethers.umd.min.js is reachable.");
+        }
+        return eth;
+      };
+
+      const connectWallet = async () => {
+        const eth = requireEthereum();
+        await eth.request({ method: "eth_requestAccounts" });
+        wallet.provider = new window.ethers.providers.Web3Provider(eth, "any");
+        wallet.signer = wallet.provider.getSigner();
+        wallet.account = (await wallet.signer.getAddress()) || null;
+        wallet.chainId = (await wallet.provider.getNetwork()).chainId || null;
+        setWalletUi();
+
+        // Default authorities to the connected account (user can override).
+        if (wallet.account && isHexAddress(wallet.account)) {
+          if (!isHexAddress($("rootAuthority").value)) $("rootAuthority").value = wallet.account;
+          if (!isHexAddress($("upgradeAuthority").value)) $("upgradeAuthority").value = wallet.account;
+          if (!isHexAddress($("emergencyAuthority").value)) $("emergencyAuthority").value = wallet.account;
+          saveAuthorities();
+        }
+      };
+
+      const ensureChain = async () => {
+        const eth = requireEthereum();
+        try {
+          await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: CHAIN_ID_HEX }] });
+        } catch (e) {
+          // 4902 = unknown chain
+          const code = e && typeof e === "object" ? e.code : null;
+          if (code !== 4902) throw e;
+          await eth.request({
+            method: "wallet_addEthereumChain",
+            params: [
+              {
+                chainId: CHAIN_ID_HEX,
+                chainName: "Edgen Chain",
+                rpcUrls: ["https://rpc.layeredge.io"],
+                nativeCurrency: { name: "EDGEN", symbol: "EDGEN", decimals: 18 },
+                blockExplorerUrls: ["https://edgenscan.io"],
+              },
+            ],
+          });
+        }
+
+        if (wallet.provider) {
+          wallet.chainId = (await wallet.provider.getNetwork()).chainId || null;
+          setWalletUi();
+        }
+      };
+
+      const readManifestSummary = async () => {
+        const st = await api("/_blackcat/setup/api/status");
+        if (!st || !st.ok) throw new Error(st && st.error ? st.error : "Unable to read /status");
+        if (!st.summary || !st.summary.root || !st.summary.uri_hash) {
+          throw new Error("Missing manifest summary. Run 'Build manifest' first.");
+        }
+        const root = String(st.summary.root || "").trim();
+        const uriHash = String(st.summary.uri_hash || "").trim();
+        if (!isBytes32(root) || !isBytes32(uriHash)) throw new Error("Invalid manifest summary bytes32 values.");
+        return { root, uriHash };
+      };
+
+      const computePolicyHash = async () => {
+        const mode = $("trustMode").value;
+        const maxStale = parseInt($("maxStale").value || "180", 10);
+        const res = await api("/_blackcat/setup/api/policy-v3", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode, max_stale_sec: maxStale }),
+        });
+        if (!res || !res.ok) throw new Error(res && res.error ? res.error : "policy-v3 failed");
+        if (!res.policy_hash_v3_strict || !isBytes32(res.policy_hash_v3_strict)) throw new Error("Invalid policy hash.");
+        $("policyHash").value = res.policy_hash_v3_strict;
+        return res.policy_hash_v3_strict;
+      };
+
+      const saveAuthorities = () => {
+        const data = {
+          root: $("rootAuthority").value.trim(),
+          upgrade: $("upgradeAuthority").value.trim(),
+          emergency: $("emergencyAuthority").value.trim(),
+        };
+        localStorage.setItem("bc_authorities", JSON.stringify(data));
+      };
+      const loadAuthorities = () => {
+        try {
+          const raw = localStorage.getItem("bc_authorities");
+          if (!raw) return;
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === "object") {
+            if (typeof parsed.root === "string") $("rootAuthority").value = parsed.root;
+            if (typeof parsed.upgrade === "string") $("upgradeAuthority").value = parsed.upgrade;
+            if (typeof parsed.emergency === "string") $("emergencyAuthority").value = parsed.emergency;
+          }
+        } catch (_) {}
       };
 
       $("saveToken").addEventListener("click", async () => {
@@ -223,6 +409,10 @@ function blackcat_setup_page(array $paths): void
         localStorage.setItem("bc_install_token", t);
         await refreshStatus();
       });
+
+      $("rootAuthority").addEventListener("change", saveAuthorities);
+      $("upgradeAuthority").addEventListener("change", saveAuthorities);
+      $("emergencyAuthority").addEventListener("change", saveAuthorities);
       $("clearToken").addEventListener("click", async () => {
         localStorage.removeItem("bc_install_token");
         await refreshStatus();
@@ -233,6 +423,111 @@ function blackcat_setup_page(array $paths): void
         $("manifestOut").textContent = "Working...";
         const res = await api("/_blackcat/setup/api/build-manifest", { method: "POST" });
         $("manifestOut").textContent = JSON.stringify(res, null, 2);
+      });
+
+      $("connectWallet").addEventListener("click", async () => {
+        $("chainOut").style.display = "block";
+        $("chainOut").textContent = "Working...";
+        try {
+          await connectWallet();
+          $("chainOut").textContent = JSON.stringify({ ok: true, account: wallet.account, chain_id: wallet.chainId }, null, 2);
+        } catch (e) {
+          $("chainOut").textContent = JSON.stringify({ ok: false, error: String(e && e.message ? e.message : e) }, null, 2);
+        }
+      });
+      $("switchChain").addEventListener("click", async () => {
+        $("chainOut").style.display = "block";
+        $("chainOut").textContent = "Working...";
+        try {
+          await ensureChain();
+          $("chainOut").textContent = JSON.stringify({ ok: true, chain_id: wallet.chainId }, null, 2);
+        } catch (e) {
+          $("chainOut").textContent = JSON.stringify({ ok: false, error: String(e && e.message ? e.message : e) }, null, 2);
+        }
+      });
+
+      $("computePolicy").addEventListener("click", async () => {
+        $("chainOut").style.display = "block";
+        $("chainOut").textContent = "Working...";
+        try {
+          const policy = await computePolicyHash();
+          $("chainOut").textContent = JSON.stringify({ ok: true, policy_hash_v3_strict: policy }, null, 2);
+        } catch (e) {
+          $("chainOut").textContent = JSON.stringify({ ok: false, error: String(e && e.message ? e.message : e) }, null, 2);
+        }
+      });
+
+      $("createInstance").addEventListener("click", async () => {
+        $("chainOut").style.display = "block";
+        $("chainOut").textContent = "Working...";
+        try {
+          if (!wallet.signer) await connectWallet();
+          if (wallet.chainId !== CHAIN_ID_DEC) {
+            await ensureChain();
+            wallet.chainId = (await wallet.provider.getNetwork()).chainId || null;
+            setWalletUi();
+          }
+          if (wallet.chainId !== CHAIN_ID_DEC) throw new Error("Wrong chain. Expected chain_id=4207 (Edgen).");
+
+          const factoryAddress = $("instanceFactory").value.trim();
+          if (!isHexAddress(factoryAddress)) throw new Error("Invalid InstanceFactory address.");
+          const rootAuthority = $("rootAuthority").value.trim();
+          const upgradeAuthority = $("upgradeAuthority").value.trim();
+          const emergencyAuthority = $("emergencyAuthority").value.trim();
+          if (!isHexAddress(rootAuthority)) throw new Error("Invalid root authority address.");
+          if (!isHexAddress(upgradeAuthority)) throw new Error("Invalid upgrade authority address.");
+          if (!isHexAddress(emergencyAuthority)) throw new Error("Invalid emergency authority address.");
+
+          const { root, uriHash } = await readManifestSummary();
+          const policyHash = await computePolicyHash();
+
+          const factoryAbi = [
+            "function createInstance(address rootAuthority,address upgradeAuthority,address emergencyAuthority,bytes32 genesisRoot,bytes32 genesisUriHash,bytes32 genesisPolicyHash) returns (address)",
+            "event InstanceCreated(address indexed instance,address indexed rootAuthority,address indexed upgradeAuthority,address emergencyAuthority,address createdBy)",
+          ];
+
+          const factory = new window.ethers.Contract(factoryAddress, factoryAbi, wallet.signer);
+          const predicted = await factory.callStatic.createInstance(
+            rootAuthority,
+            upgradeAuthority,
+            emergencyAuthority,
+            root,
+            uriHash,
+            policyHash
+          );
+
+          const tx = await factory.createInstance(
+            rootAuthority,
+            upgradeAuthority,
+            emergencyAuthority,
+            root,
+            uriHash,
+            policyHash
+          );
+
+          $("chainOut").textContent = JSON.stringify({ ok: true, stage: "broadcasted", tx_hash: tx.hash, predicted_instance: predicted }, null, 2);
+          const receipt = await tx.wait();
+
+          $("instanceController").value = predicted;
+          localStorage.setItem("bc_instance_controller", predicted);
+
+          $("chainOut").textContent = JSON.stringify(
+            {
+              ok: true,
+              stage: "mined",
+              tx_hash: tx.hash,
+              block: receipt.blockNumber,
+              instance_controller: predicted,
+              manifest_root: root,
+              manifest_uri_hash: uriHash,
+              policy_hash_v3_strict: policyHash,
+            },
+            null,
+            2
+          );
+        } catch (e) {
+          $("chainOut").textContent = JSON.stringify({ ok: false, error: String(e && e.message ? e.message : e) }, null, 2);
+        }
       });
 
       $("writeConfig").addEventListener("click", async () => {
@@ -254,6 +549,49 @@ function blackcat_setup_page(array $paths): void
           body: JSON.stringify(payload),
         });
         $("configOut").textContent = JSON.stringify(res, null, 2);
+        if (res && res.ok && res.runtime_config_attestation) {
+          localStorage.setItem("bc_runtime_attestation", JSON.stringify(res.runtime_config_attestation));
+        }
+      });
+
+      $("lockAttestation").addEventListener("click", async () => {
+        $("attOut").style.display = "block";
+        $("attOut").textContent = "Working...";
+        try {
+          if (!wallet.signer) await connectWallet();
+          if (wallet.chainId !== CHAIN_ID_DEC) {
+            await ensureChain();
+            wallet.chainId = (await wallet.provider.getNetwork()).chainId || null;
+            setWalletUi();
+          }
+          if (wallet.chainId !== CHAIN_ID_DEC) throw new Error("Wrong chain. Expected chain_id=4207 (Edgen).");
+
+          const instance = $("instanceController").value.trim();
+          if (!isHexAddress(instance)) throw new Error("Invalid InstanceController address.");
+
+          const rootAuthority = $("rootAuthority").value.trim();
+          if (isHexAddress(rootAuthority) && wallet.account && rootAuthority.toLowerCase() !== wallet.account.toLowerCase()) {
+            throw new Error("Connect the ROOT authority account in MetaMask to lock the attestation.");
+          }
+
+          const raw = localStorage.getItem("bc_runtime_attestation");
+          if (!raw) throw new Error("No runtime attestation found. Write config first.");
+          const att = JSON.parse(raw);
+          const key = String(att.key || "").trim();
+          const value = String(att.value || "").trim();
+          if (!isBytes32(key) || !isBytes32(value)) throw new Error("Invalid attestation key/value.");
+
+          const controllerAbi = [
+            "function setAttestationAndLock(bytes32 key,bytes32 value)",
+          ];
+          const controller = new window.ethers.Contract(instance, controllerAbi, wallet.signer);
+          const tx = await controller.setAttestationAndLock(key, value);
+          $("attOut").textContent = JSON.stringify({ ok: true, stage: "broadcasted", tx_hash: tx.hash, key, value }, null, 2);
+          const receipt = await tx.wait();
+          $("attOut").textContent = JSON.stringify({ ok: true, stage: "mined", tx_hash: tx.hash, block: receipt.blockNumber, key, value }, null, 2);
+        } catch (e) {
+          $("attOut").textContent = JSON.stringify({ ok: false, error: String(e && e.message ? e.message : e) }, null, 2);
+        }
       });
 
       $("finish").addEventListener("click", async () => {
@@ -264,6 +602,13 @@ function blackcat_setup_page(array $paths): void
       });
 
       refreshStatus();
+
+      // Defaults + local cache restore
+      $("instanceFactory").value = DEFAULT_FACTORY;
+      $("releaseRegistry").value = DEFAULT_REGISTRY;
+      const cachedIc = localStorage.getItem("bc_instance_controller");
+      if (cachedIc && isHexAddress(cachedIc)) $("instanceController").value = cachedIc;
+      loadAuthorities();
     </script>
   </body>
 </html>
@@ -321,6 +666,15 @@ function blackcat_setup_api(array $paths, string $endpoint): void
         return;
     }
 
+    if ($endpoint === 'policy-v3') {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            blackcat_json(['ok' => false, 'error' => 'Method not allowed.'], 405);
+            return;
+        }
+        blackcat_setup_api_policy_v3();
+        return;
+    }
+
     if ($endpoint === 'finish') {
         if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
             blackcat_json(['ok' => false, 'error' => 'Method not allowed.'], 405);
@@ -331,6 +685,51 @@ function blackcat_setup_api(array $paths, string $endpoint): void
     }
 
     blackcat_json(['ok' => false, 'error' => 'Unknown endpoint: ' . $endpoint], 404);
+}
+
+function blackcat_setup_api_policy_v3(): void
+{
+    $raw = file_get_contents('php://input');
+    $decoded = is_string($raw) ? json_decode($raw, true) : null;
+    if (!is_array($decoded)) {
+        blackcat_json(['ok' => false, 'error' => 'Invalid JSON body.'], 400);
+        return;
+    }
+
+    $mode = $decoded['mode'] ?? 'full';
+    if (!is_string($mode)) {
+        blackcat_json(['ok' => false, 'error' => 'mode must be a string.'], 400);
+        return;
+    }
+    $mode = strtolower(trim($mode));
+    if (!in_array($mode, ['full', 'root_uri'], true)) {
+        blackcat_json(['ok' => false, 'error' => 'mode must be "full" or "root_uri".'], 400);
+        return;
+    }
+
+    $maxStale = $decoded['max_stale_sec'] ?? 180;
+    if (!is_int($maxStale)) {
+        if (is_string($maxStale) && ctype_digit(trim($maxStale))) {
+            $maxStale = (int) trim($maxStale);
+        } else {
+            blackcat_json(['ok' => false, 'error' => 'max_stale_sec must be an integer.'], 400);
+            return;
+        }
+    }
+    if ($maxStale <= 0) {
+        blackcat_json(['ok' => false, 'error' => 'max_stale_sec must be >= 1.'], 400);
+        return;
+    }
+
+    $attKey = Bytes32::normalizeHex(KernelAttestations::runtimeConfigAttestationKeyV1());
+    $policy = new TrustPolicyV3($mode, $maxStale, 'strict', $attKey);
+
+    blackcat_json([
+        'ok' => true,
+        'attestation_key_v1' => $attKey,
+        'policy_hash_v3_strict' => $policy->hashBytes32(),
+        'note' => 'Policy hash does not depend on runtime config contents (only mode/max_stale/enforcement + attestation key).',
+    ]);
 }
 
 /**
