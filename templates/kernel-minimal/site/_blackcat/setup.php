@@ -44,6 +44,20 @@ function blackcat_setup_handle(array $paths): void
  */
 function blackcat_setup_page(array $paths): void
 {
+    if (blackcat_setup_is_disabled($paths['state_dir'])) {
+        $hostPort = blackcat_normalize_http_host($_SERVER['HTTP_HOST'] ?? null);
+        $isDev = blackcat_is_dev_host($hostPort['host']);
+        if (!$isDev) {
+            http_response_code(404);
+            header('Content-Type: text/plain; charset=utf-8');
+            echo "Not found.\n";
+            exit;
+        }
+
+        blackcat_setup_render_disabled_page($paths);
+        exit;
+    }
+
     if (!blackcat_is_https_request()) {
         http_response_code(400);
         header('Content-Type: text/html; charset=utf-8');
@@ -230,15 +244,20 @@ HTML;
         exit;
     }
 
-    if (blackcat_setup_is_disabled($paths['state_dir'])) {
-        http_response_code(404);
-        header('Content-Type: text/plain; charset=utf-8');
-        echo "BlackCat setup is disabled (installed.flag present).\n";
+    $stateDir = $paths['state_dir'];
+    blackcat_ensure_state_dir($stateDir);
+    if (!is_dir($stateDir)) {
+        blackcat_setup_render_preflight_page($paths, [
+            'Unable to create state directory (.blackcat). Fix permissions and reload.',
+        ], []);
         exit;
     }
 
-    $stateDir = $paths['state_dir'];
-    blackcat_ensure_state_dir($stateDir);
+    $preflight = blackcat_setup_preflight($paths);
+    if ($preflight['errors'] !== []) {
+        blackcat_setup_render_preflight_page($paths, $preflight['errors'], $preflight['warnings']);
+        exit;
+    }
 
     $tlsGate = blackcat_setup_tls_gate($stateDir);
     $debug = $_GET['debug'] ?? null;
@@ -254,7 +273,13 @@ HTML;
     $tokenPath = rtrim($stateDir, "/\\") . DIRECTORY_SEPARATOR . 'install.token';
     if (!is_file($tokenPath)) {
         $token = bin2hex(random_bytes(32));
-        @file_put_contents($tokenPath, $token . "\n");
+        $written = @file_put_contents($tokenPath, $token . "\n");
+        if ($written === false || !is_file($tokenPath)) {
+            blackcat_setup_render_preflight_page($paths, [
+                'Unable to write .blackcat/install.token (permissions or disk error). Fix and reload.',
+            ], $preflight['warnings']);
+            exit;
+        }
         if (DIRECTORY_SEPARATOR !== '\\') {
             @chmod($tokenPath, 0600);
         }
@@ -1280,6 +1305,17 @@ function blackcat_setup_api(array $paths, string $endpoint): void
         return;
     }
 
+    if (blackcat_setup_is_disabled($paths['state_dir'])) {
+        $hostPort = blackcat_normalize_http_host($_SERVER['HTTP_HOST'] ?? null);
+        $isDev = blackcat_is_dev_host($hostPort['host']);
+        if ($isDev) {
+            blackcat_json(['ok' => false, 'error' => 'Setup is disabled (installed.flag present).'], 403);
+            return;
+        }
+        blackcat_json(['ok' => false, 'error' => 'Not found.'], 404);
+        return;
+    }
+
     $tlsGate = blackcat_setup_tls_gate($paths['state_dir']);
     if ($tlsGate['mode'] === 'prod' && $tlsGate['trusted'] !== true) {
         blackcat_json([
@@ -1797,6 +1833,349 @@ HTML;
     );
 }
 
+/**
+ * @param array{docroot:string,site_dir:string,bundle_root:string,state_dir:string,config_path:string} $paths
+ * @return array{errors:list<string>,warnings:list<string>}
+ */
+function blackcat_setup_preflight(array $paths): array
+{
+    $errors = [];
+    $warnings = [];
+
+    if (!extension_loaded('openssl')) {
+        $errors[] = 'Missing PHP extension: openssl (required for TLS verification + crypto).';
+    }
+
+    $bundleRoot = $paths['bundle_root'];
+    $docroot = $paths['docroot'];
+    $stateDir = $paths['state_dir'];
+    $configPath = $paths['config_path'];
+
+    $docrootReal = @realpath($docroot);
+    $bundleReal = @realpath($bundleRoot);
+    if (is_string($docrootReal) && is_string($bundleReal)) {
+        $docrootReal = rtrim($docrootReal, "/\\") . DIRECTORY_SEPARATOR;
+        $bundleReal = rtrim($bundleReal, "/\\") . DIRECTORY_SEPARATOR;
+        if (str_starts_with($bundleReal, $docrootReal)) {
+            $errors[] = 'Misconfigured web root: bundle_root must not be inside docroot (sensitive files could be web-accessible).';
+        }
+    }
+
+    // Ensure state dir is writable and not world-writable (POSIX).
+    if (!is_dir($stateDir)) {
+        $errors[] = 'State directory is missing (.blackcat).';
+        return ['errors' => $errors, 'warnings' => $warnings];
+    }
+
+    if (!is_writable($stateDir)) {
+        $errors[] = 'State directory is not writable (.blackcat).';
+    }
+
+    if (DIRECTORY_SEPARATOR !== '\\') {
+        $perms = @fileperms($stateDir);
+        if (is_int($perms)) {
+            $mode = $perms & 0777;
+            if (($mode & 0002) !== 0) {
+                $errors[] = 'State directory is world-writable (.blackcat). Fix permissions (recommended: 0700).';
+            } elseif (($mode & 0020) !== 0) {
+                $warnings[] = 'State directory is group-writable (.blackcat). Consider tightening permissions (recommended: 0700).';
+            }
+        }
+    }
+
+    // Ensure bundle root is writable for config.runtime.json.
+    $configDir = dirname($configPath);
+    if (!is_dir($configDir) || !is_writable($configDir)) {
+        $errors[] = 'Bundle root is not writable (needed to write config.runtime.json).';
+    }
+
+    if (is_file($configPath) && !is_writable($configPath)) {
+        $errors[] = 'config.runtime.json exists but is not writable.';
+    }
+
+    return ['errors' => $errors, 'warnings' => $warnings];
+}
+
+/**
+ * @param array{docroot:string,site_dir:string,bundle_root:string,state_dir:string,config_path:string} $paths
+ * @param list<string> $errors
+ * @param list<string> $warnings
+ */
+function blackcat_setup_render_preflight_page(array $paths, array $errors, array $warnings): void
+{
+    http_response_code(503);
+    header('Content-Type: text/html; charset=utf-8');
+    header('Cache-Control: no-store');
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: DENY');
+    header('Referrer-Policy: no-referrer');
+    header('Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()');
+    header('Cross-Origin-Opener-Policy: same-origin');
+    header('Cross-Origin-Resource-Policy: same-origin');
+    header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
+
+    $errItems = '';
+    foreach ($errors as $e) {
+        $errItems .= '<li><strong class="bad">ERROR</strong> ' . htmlspecialchars($e, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</li>';
+    }
+    $warnItems = '';
+    foreach ($warnings as $w) {
+        $warnItems .= '<li><strong class="warn">WARN</strong> ' . htmlspecialchars($w, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</li>';
+    }
+
+    echo <<<HTML
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BlackCat Setup — Preflight Failed</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <style>
+      :root { color-scheme: dark; }
+      *, *::before, *::after { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100svh;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding: clamp(16px, 2.5vh, 56px) 16px 16px;
+        font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        position: relative;
+        isolation: isolate;
+        background:
+          radial-gradient(900px 420px at 20% 0%, rgba(86, 116, 255, 0.18), transparent 55%),
+          radial-gradient(900px 420px at 80% 0%, rgba(255, 123, 114, 0.12), transparent 60%),
+          #0b0f17;
+        color: #e7eefc;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: url("/_blackcat/assets/bg-grid.png") repeat;
+        background-size: 512px 512px;
+        opacity: 0.36;
+        mix-blend-mode: screen;
+        filter: brightness(2.2) contrast(1.35) saturate(1.15);
+        pointer-events: none;
+        z-index: 0;
+      }
+      .card {
+        max-width: 980px;
+        width: 100%;
+        border-radius: 18px;
+        border: 1px solid rgba(42, 59, 99, 0.78);
+        background:
+          radial-gradient(900px 420px at 18% 0%, rgba(255, 255, 255, 0.07), transparent 62%),
+          radial-gradient(900px 420px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
+          linear-gradient(180deg, rgba(15, 21, 36, 0.74), rgba(15, 21, 36, 0.40));
+        backdrop-filter: blur(18px) saturate(1.25);
+        -webkit-backdrop-filter: blur(18px) saturate(1.25);
+        box-shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
+        overflow: hidden;
+        position: relative;
+        z-index: 1;
+        padding: 16px 18px;
+      }
+      h1 { margin: 0 0 8px; font-size: 24px; }
+      .muted { color: #9fb0d0; }
+      .bad { color: #ff7b72; }
+      .warn { color: #ffd46b; }
+      ul { margin: 10px 0 0 18px; padding: 0; }
+      li { margin: 6px 0; }
+      code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .box {
+        margin-top: 12px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid rgba(31, 42, 68, 0.95);
+        background: rgba(11, 15, 23, 0.55);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>BlackCat Setup <span class="bad">preflight failed</span></h1>
+      <p class="muted">Fix the server environment before continuing. This protects the installer from writing secrets/config into unsafe locations.</p>
+      <div class="box">
+        <div><strong>Checklist:</strong></div>
+        <ul>
+          {$errItems}
+          {$warnItems}
+        </ul>
+      </div>
+      <div class="box">
+        <div><strong>Common fixes:</strong></div>
+        <ul class="muted">
+          <li>Enable PHP OpenSSL extension (<code>openssl</code>).</li>
+          <li>Ensure <code>.blackcat/</code> is writable and not world-writable.</li>
+          <li>Ensure the bundle root is writable for <code>config.runtime.json</code>.</li>
+          <li>Reload <code>/_blackcat/setup</code> after fixing permissions.</li>
+        </ul>
+      </div>
+    </main>
+  </body>
+</html>
+HTML;
+}
+
+/**
+ * @param array{docroot:string,site_dir:string,bundle_root:string,state_dir:string,config_path:string} $paths
+ */
+function blackcat_setup_render_disabled_page(array $paths): void
+{
+    http_response_code(404);
+    header('Content-Type: text/html; charset=utf-8');
+    header('Cache-Control: no-store');
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: DENY');
+    header('Referrer-Policy: no-referrer');
+    header('Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()');
+    header('Cross-Origin-Opener-Policy: same-origin');
+    header('Cross-Origin-Resource-Policy: same-origin');
+    header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
+
+    echo <<<HTML
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BlackCat Setup — Disabled</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        margin: 0;
+        min-height: 100svh;
+        display: grid;
+        place-items: center;
+        padding: 18px;
+        font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        background: #0b0f17;
+        color: #e7eefc;
+      }
+      .card {
+        max-width: 860px;
+        width: 100%;
+        border-radius: 18px;
+        border: 1px solid rgba(42, 59, 99, 0.9);
+        background: rgba(15, 21, 36, 0.82);
+        box-shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
+        padding: 16px 18px;
+      }
+      h1 { margin: 0 0 8px; font-size: 24px; }
+      .muted { color: #9fb0d0; }
+      code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .warn { color: #ffd46b; }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>Installer disabled</h1>
+      <p class="muted">This setup UI is turned off because <code>.blackcat/installed.flag</code> exists.</p>
+      <p class="warn"><strong>Danger:</strong> re-enabling the installer increases attack surface. Only do this in a safe maintenance window.</p>
+      <p class="muted">To re-enable (dev only): delete <code>.blackcat/installed.flag</code> and reload <code>/_blackcat/setup</code>.</p>
+    </main>
+  </body>
+</html>
+HTML;
+}
+
+function blackcat_setup_render_front_controller_required_page(): void
+{
+    http_response_code(400);
+    header('Content-Type: text/html; charset=utf-8');
+    header('Cache-Control: no-store');
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: DENY');
+    header('Referrer-Policy: no-referrer');
+    header('Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()');
+    header('Cross-Origin-Opener-Policy: same-origin');
+    header('Cross-Origin-Resource-Policy: same-origin');
+    header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
+
+    echo <<<HTML
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BlackCat Setup — Front Controller Required</title>
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        margin: 0;
+        min-height: 100svh;
+        display: grid;
+        place-items: center;
+        padding: 18px;
+        font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        background: #0b0f17;
+        color: #e7eefc;
+      }
+      .card {
+        max-width: 920px;
+        width: 100%;
+        border-radius: 18px;
+        border: 1px solid rgba(42, 59, 99, 0.9);
+        background: rgba(15, 21, 36, 0.82);
+        box-shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
+        overflow: hidden;
+      }
+      .banner {
+        height: 140px;
+        background:
+          linear-gradient(180deg, rgba(11, 15, 23, 0.10), rgba(11, 15, 23, 0.92)),
+          url("/_blackcat/assets/hero-banner.png") left center / cover no-repeat;
+        border-bottom: 1px solid rgba(31, 42, 68, 0.95);
+      }
+      .body { padding: 14px 16px 16px; }
+      h1 { margin: 0 0 8px; font-size: 22px; }
+      .muted { color: #9fb0d0; }
+      .warn { color: #ffd46b; }
+      code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      ul { margin: 10px 0 0 18px; padding: 0; }
+      li { margin: 6px 0; }
+      .box {
+        margin-top: 12px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid rgba(31, 42, 68, 0.95);
+        background: rgba(11, 15, 23, 0.55);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <div class="banner" aria-hidden="true"></div>
+      <div class="body">
+        <h1>Front controller required</h1>
+        <p class="muted">This file is not a public entrypoint. Your web server appears to be exposing internal files directly.</p>
+        <div class="box">
+          <div><strong>Fix:</strong></div>
+          <ul>
+            <li>Set the web root (docroot) to <code>site/public/</code>.</li>
+            <li>Route all requests through <code>site/public/index.php</code> (front controller).</li>
+            <li>Apache: enable <code>mod_rewrite</code> (or allow <code>.htaccess</code>). Nginx: configure <code>try_files</code>.</li>
+          </ul>
+        </div>
+        <p class="warn"><strong>Security note:</strong> if you see this on production, fix immediately (misconfigured docroot can expose secrets).</p>
+      </div>
+    </main>
+  </body>
+</html>
+HTML;
+}
+
 function blackcat_setup_api_policy_v3(): void
 {
     $raw = file_get_contents('php://input');
@@ -2297,4 +2676,15 @@ function blackcat_json(array $data, int $status = 200): void
         return;
     }
     echo $json . "\n";
+}
+
+// If this file is executed directly (misconfigured docroot), fail closed with a clear message.
+if (PHP_SAPI !== 'cli') {
+    $script = $_SERVER['SCRIPT_FILENAME'] ?? null;
+    $scriptReal = is_string($script) ? @realpath($script) : null;
+    $selfReal = @realpath(__FILE__);
+    if (is_string($scriptReal) && is_string($selfReal) && $scriptReal === $selfReal) {
+        blackcat_setup_render_front_controller_required_page();
+        exit;
+    }
 }
