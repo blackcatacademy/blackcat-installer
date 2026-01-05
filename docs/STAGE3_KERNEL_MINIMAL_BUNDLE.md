@@ -73,3 +73,23 @@ Notes:
   - ensure MetaMask is on **Edgen Chain** (`chain_id=4207`) and your wallet has enough EDGEN for gas,
   - ensure you uploaded an **untampered** official bundle (otherwise `GenesisRootNotTrusted` is expected),
   - ensure your authority addresses are valid `0x...` EVM addresses.
+
+## Local demo (Docker / localhost)
+
+If you want to preview the setup UI locally (and iterate on visuals), a self-contained HTTPS demo stack is included:
+
+```bash
+docker compose -f blackcat-installer/docker-compose.stage3-demo.yml up --build
+```
+
+Then open:
+
+`https://localhost:8449/_blackcat/setup`
+
+Notes:
+- The certificate is self-signed (your browser will warn).
+- To read the install token for local testing:
+
+```bash
+docker compose -f blackcat-installer/docker-compose.stage3-demo.yml exec stage3-demo cat /srv/bundle/.blackcat/install.token
+```

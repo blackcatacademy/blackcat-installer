@@ -19,6 +19,7 @@ Stage 3 introduces a “kernel minimal bundle” intended for constrained enviro
 - Template: `templates/kernel-minimal/`
 - Build script: `scripts/build-kernel-minimal-bundle.sh`
 - Docs: `docs/STAGE3_KERNEL_MINIMAL_BUNDLE.md`
+- Local demo (HTTPS): `docker compose -f docker-compose.stage3-demo.yml up --build` → `https://localhost:8449/_blackcat/setup`
 
 ## CLI (Stage 1)
 

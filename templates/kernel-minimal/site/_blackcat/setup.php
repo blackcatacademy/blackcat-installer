@@ -82,32 +82,116 @@ function blackcat_setup_page(array $paths): void
     <title>BlackCat Setup</title>
     <style>
       :root { color-scheme: dark; }
-      body { margin: 0; padding: 24px; font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #0b0f17; color: #e7eefc; }
+
+      body {
+        margin: 0;
+        padding: 24px;
+        font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        background:
+          radial-gradient(900px 420px at 20% 0%, rgba(86, 116, 255, 0.18), transparent 55%),
+          radial-gradient(900px 420px at 80% 0%, rgba(118, 227, 157, 0.12), transparent 60%),
+          #0b0f17;
+        color: #e7eefc;
+      }
+
       a { color: #8ab4ff; }
       code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-      pre { background: #0f1524; padding: 12px; border-radius: 10px; overflow: auto; }
-      .card { background: #0f1524; border: 1px solid #1f2a44; border-radius: 14px; padding: 16px; margin: 12px 0; }
+      pre { background: rgba(15, 21, 36, 0.8); border: 1px solid #1f2a44; padding: 12px; border-radius: 12px; overflow: auto; }
+
+      .wrap { max-width: 1180px; margin: 0 auto; }
+
+      .hero {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 18px 18px;
+        border-radius: 16px;
+        border: 1px solid rgba(42, 59, 99, 0.9);
+        background: linear-gradient(180deg, rgba(15, 21, 36, 0.78), rgba(15, 21, 36, 0.55));
+        box-shadow: 0 20px 70px rgba(0, 0, 0, 0.35);
+        margin: 4px 0 16px;
+      }
+
+      .heroTitle { margin: 0; font-size: 26px; letter-spacing: 0.2px; }
+      .heroSub { margin: 6px 0 0; }
+      .heroBadges { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 2px; }
+
+      .card {
+        background: rgba(15, 21, 36, 0.72);
+        border: 1px solid rgba(31, 42, 68, 0.95);
+        border-radius: 16px;
+        padding: 16px;
+        margin: 12px 0;
+        box-shadow: 0 10px 32px rgba(0, 0, 0, 0.25);
+      }
+
       .row { display: flex; gap: 12px; flex-wrap: wrap; }
       .row > * { flex: 1 1 320px; }
+
       .ok { color: #76e39d; }
       .bad { color: #ff7b72; }
       .muted { color: #9fb0d0; }
-      button { background: #1b2a4d; color: #e7eefc; border: 1px solid #2a3b63; border-radius: 10px; padding: 10px 12px; cursor: pointer; }
-      button:hover { background: #22345f; }
-      input, textarea, select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #2a3b63; background: #0b0f17; color: #e7eefc; }
+      .warn { color: #ffd46b; }
+
+      button {
+        background: linear-gradient(180deg, #22345f, #162342);
+        color: #e7eefc;
+        border: 1px solid #2a3b63;
+        border-radius: 12px;
+        padding: 10px 12px;
+        cursor: pointer;
+        transition: transform .04s ease, background .15s ease, border-color .15s ease, opacity .15s ease;
+      }
+      button:hover { background: linear-gradient(180deg, #29406f, #1a2a4f); border-color: #355084; }
+      button:active { transform: translateY(1px); }
+      button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+      input, textarea, select {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid #2a3b63;
+        background: rgba(11, 15, 23, 0.72);
+        color: #e7eefc;
+        outline: none;
+      }
+      input:focus, textarea:focus, select:focus { border-color: #5674ff; box-shadow: 0 0 0 3px rgba(86, 116, 255, 0.18); }
       textarea { min-height: 96px; }
+
       .grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
       @media (min-width: 980px) { .grid { grid-template-columns: 1fr 1fr; } }
-      .k { font-weight: 600; }
-      .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; background: #122042; border: 1px solid #1f2a44; margin-left: 8px; }
+
+      .k { font-weight: 650; }
+
+      .pill {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 999px;
+        background: rgba(18, 32, 66, 0.8);
+        border: 1px solid rgba(31, 42, 68, 0.95);
+      }
+      .pill.ok { background: rgba(118, 227, 157, 0.12); border-color: rgba(118, 227, 157, 0.28); color: #76e39d; }
+      .pill.bad { background: rgba(255, 123, 114, 0.12); border-color: rgba(255, 123, 114, 0.28); color: #ff7b72; }
+
       .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
       .small { font-size: 12px; }
-      .warn { color: #ffd46b; }
     </style>
   </head>
   <body>
-    <h1>BlackCat Setup <span class="pill">Stage 3</span></h1>
-    <p class="muted">This wizard prepares a strict, fail-closed TrustKernel deployment without requiring server-side Composer.</p>
+    <div class="wrap">
+      <header class="hero">
+        <div>
+          <h1 class="heroTitle">BlackCat Setup <span class="pill mono">Stage 3</span></h1>
+          <p class="heroSub muted">Strict, fail-closed TrustKernel setup (FTP-friendly, no server-side Composer, no server-side private keys).</p>
+        </div>
+        <div class="heroBadges">
+          <span class="pill mono">HTTPS required</span>
+          <span class="pill mono">ReleaseRegistry</span>
+          <span class="pill mono">MetaMask</span>
+          <span class="pill mono">Edgen 4207</span>
+        </div>
+      </header>
 
     <div class="card">
       <h2>1) Unlock installer</h2>
@@ -256,8 +340,8 @@ function blackcat_setup_page(array $paths): void
       <pre id="finishOut" style="display:none"></pre>
     </div>
 
-    <script src="/_blackcat/ethers.umd.min.js"></script>
-    <script>
+      <script src="/_blackcat/ethers.umd.min.js"></script>
+      <script>
       const $ = (id) => document.getElementById(id);
       const api = async (path, opts = {}) => {
         const token = localStorage.getItem("bc_install_token") || "";
@@ -741,7 +825,8 @@ function blackcat_setup_page(array $paths): void
       if (cachedIc && isHexAddress(cachedIc)) $("instanceController").value = cachedIc;
       loadAuthorities();
       setReleaseTrustUi(null);
-    </script>
+      </script>
+    </div>
   </body>
 </html>
 HTML;
