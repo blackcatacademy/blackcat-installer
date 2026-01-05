@@ -48,6 +48,10 @@ $assetMap = [
     '/site.webmanifest' => ['file' => 'site.webmanifest', 'type' => 'application/manifest+json; charset=utf-8'],
     '/android-chrome-192x192.png' => ['file' => 'android-chrome-192x192.png', 'type' => 'image/png'],
     '/android-chrome-512x512.png' => ['file' => 'android-chrome-512x512.png', 'type' => 'image/png'],
+    // Setup UI images (optional, but recommended).
+    '/_blackcat/assets/hero-banner.png' => ['file' => 'hero-banner.png', 'type' => 'image/png'],
+    '/_blackcat/assets/https-required-cat.png' => ['file' => 'https-required-cat.png', 'type' => 'image/png'],
+    '/_blackcat/assets/trusted-vs-untrusted.png' => ['file' => 'trusted-vs-untrusted.png', 'type' => 'image/png'],
 ];
 
 if (isset($assetMap[$path])) {

@@ -224,6 +224,19 @@ HTML;
     }
 
     header('Content-Type: text/html; charset=utf-8');
+    $assetDir = rtrim($paths['site_dir'], "/\\") . DIRECTORY_SEPARATOR . '_blackcat' . DIRECTORY_SEPARATOR . 'asset';
+    $trustIllustrationPath = $assetDir . DIRECTORY_SEPARATOR . 'trusted-vs-untrusted.png';
+    $trustIllustrationHtml = '';
+    if (is_file($trustIllustrationPath)) {
+        $trustIllustrationHtml = '<div class="illustration">'
+            . '<img src="/_blackcat/assets/trusted-vs-untrusted.png" alt="Trusted vs untrusted (release trust + integrity)" loading="lazy" />'
+            . '<div class="cap">'
+            . '<strong>Trusted vs Untrusted:</strong> a trusted release root lets production stay <span class="ok">trusted</span>. '
+            . 'Unexpected changes flip the kernel to <span class="bad">untrusted</span> and enforce fail-closed in strict mode.'
+            . '</div>'
+            . '</div>';
+    }
+
     $page = <<<'HTML'
 <!doctype html>
 <html lang="en">
@@ -263,7 +276,9 @@ HTML;
         padding: 18px 18px;
         border-radius: 16px;
         border: 1px solid rgba(42, 59, 99, 0.9);
-        background: linear-gradient(180deg, rgba(15, 21, 36, 0.78), rgba(15, 21, 36, 0.55));
+        background:
+          linear-gradient(180deg, rgba(15, 21, 36, 0.86), rgba(15, 21, 36, 0.62)),
+          url("/_blackcat/assets/hero-banner.png") center / cover no-repeat;
         box-shadow: 0 20px 70px rgba(0, 0, 0, 0.35);
         margin: 4px 0 16px;
       }
@@ -278,6 +293,21 @@ HTML;
       .heroDetails[open] summary::before { content: "▾"; }
       .heroDetails ul { margin: 8px 0 0 18px; padding: 0; }
       .heroDetails li { margin: 3px 0; }
+
+      .illustration {
+        margin-top: 12px;
+        border-radius: 14px;
+        overflow: hidden;
+        border: 1px solid rgba(31, 42, 68, 0.95);
+        background: rgba(11, 15, 23, 0.35);
+      }
+      .illustration img { display: block; width: 100%; height: auto; }
+      .illustration .cap {
+        padding: 10px 12px;
+        font-size: 12px;
+        color: #9fb0d0;
+        border-top: 1px solid rgba(31, 42, 68, 0.95);
+      }
 
       .card {
         background: rgba(15, 21, 36, 0.72);
@@ -418,6 +448,7 @@ HTML;
             </div>
           </div>
         </div>
+        __BLACKCAT_TRUST_ILLUSTRATION__
         <pre id="manifestOut" style="display:none"></pre>
         <pre id="releaseOut" style="display:none"></pre>
       </div>
@@ -1148,7 +1179,11 @@ HTML;
 </html>
 HTML;
 
-    echo str_replace('__BLACKCAT_TLS_BAR__', $tlsBarHtml, $page);
+    echo str_replace(
+        ['__BLACKCAT_TLS_BAR__', '__BLACKCAT_TRUST_ILLUSTRATION__'],
+        [$tlsBarHtml, $trustIllustrationHtml],
+        $page,
+    );
 }
 
 /**
