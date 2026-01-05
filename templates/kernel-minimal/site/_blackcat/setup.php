@@ -126,7 +126,8 @@ function blackcat_setup_page(array $paths): void
         width: 128px;
         height: 128px;
         margin-top: -72px;
-        border-radius: 38% 62% 56% 44% / 46% 40% 60% 54%;
+        border-radius: 999px;
+        position: relative;
         background:
           url("/_blackcat/assets/https-required-cat.png") center / cover no-repeat,
           url("/_blackcat/assets/https-required-cat-fallback.svg") center / 78px 78px no-repeat,
@@ -135,9 +136,22 @@ function blackcat_setup_page(array $paths): void
         place-items: center;
         overflow: hidden;
         box-shadow:
-          0 0 0 10px rgba(255, 255, 255, 0.10),
+          0 0 0 10px rgba(255, 255, 255, 0.16),
+          0 2px 0 rgba(255, 255, 255, 0.08) inset,
           0 18px 55px rgba(0, 0, 0, 0.55);
         transform: rotate(-6deg);
+      }
+      .imgWrap::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background:
+          radial-gradient(120px 90px at 28% 22%, rgba(255, 255, 255, 0.38), transparent 60%),
+          radial-gradient(160px 120px at 72% 86%, rgba(0, 0, 0, 0.38), transparent 68%);
+        opacity: 0.55;
+        mix-blend-mode: overlay;
+        pointer-events: none;
       }
       @media (max-width: 520px) {
         .imgWrap { width: 112px; height: 112px; margin-top: -62px; }
