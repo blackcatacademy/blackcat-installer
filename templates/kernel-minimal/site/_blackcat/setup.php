@@ -88,7 +88,7 @@ function blackcat_setup_page(array $paths): void
         position: fixed;
         inset: 0;
         background: url("/_blackcat/assets/bg-grid.png") repeat;
-        opacity: 0.12;
+        opacity: 0.22;
         pointer-events: none;
         z-index: 0;
       }
@@ -256,7 +256,7 @@ HTML;
         position: fixed;
         inset: 0;
         background: url("/_blackcat/assets/bg-grid.png") repeat;
-        opacity: 0.10;
+        opacity: 0.18;
         pointer-events: none;
         z-index: 0;
       }
@@ -1565,7 +1565,7 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
         position: fixed;
         inset: 0;
         background: url("/_blackcat/assets/bg-grid.png") repeat;
-        opacity: 0.10;
+        opacity: 0.20;
         pointer-events: none;
         z-index: 0;
       }
