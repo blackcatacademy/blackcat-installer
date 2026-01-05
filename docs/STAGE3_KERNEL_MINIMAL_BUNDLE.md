@@ -69,6 +69,11 @@ Notes:
 - If setup says “HTTPS required”:
   - enable TLS (Let’s Encrypt) and ensure the app is not downgraded to HTTP between proxy and PHP.
 
+- If setup says “trusted TLS required”:
+  - production setup is fail-closed until the HTTPS certificate validates against a trusted CA,
+  - fix TLS (recommended: Let’s Encrypt) and reload,
+  - for localhost demo a self-signed cert is allowed and the UI shows a persistent **DEV WARNING** banner.
+
 - If instance creation fails:
   - ensure MetaMask is on **Edgen Chain** (`chain_id=4207`) and your wallet has enough EDGEN for gas,
   - ensure you uploaded an **untampered** official bundle (otherwise `GenesisRootNotTrusted` is expected),
@@ -97,6 +102,7 @@ docker compose \
 
 Notes:
 - The certificate is self-signed (your browser will warn).
+- This is expected for local demo; the setup UI will show a persistent **DEV WARNING** banner.
 - To read the install token for local testing:
 
 ```bash
