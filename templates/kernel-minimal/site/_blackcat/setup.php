@@ -131,8 +131,21 @@ function blackcat_setup_page(array $paths): void
         <h2>2) Build integrity manifest</h2>
         <p>This scans <code>site/</code> (immutable code root) and writes:</p>
         <pre><code>.blackcat/integrity.manifest.json</code></pre>
-        <button id="buildManifest">Build manifest</button>
+        <div class="row">
+          <div style="flex: 0 0 220px">
+            <button id="buildManifest">Build manifest</button>
+            <button id="verifyRelease" style="margin-left:8px">Verify release root</button>
+          </div>
+          <div>
+            <div class="small muted">Release trust: <span id="releaseTrust" class="pill mono">unknown</span></div>
+            <div class="small muted">
+              Registry:
+              <a id="releaseRegistryLink" href="https://edgenscan.io" target="_blank" rel="noreferrer">open explorer</a>
+            </div>
+          </div>
+        </div>
         <pre id="manifestOut" style="display:none"></pre>
+        <pre id="releaseOut" style="display:none"></pre>
       </div>
 
       <div class="card">
@@ -283,6 +296,7 @@ function blackcat_setup_page(array $paths): void
       const CHAIN_ID_HEX = "0x106f";
       const DEFAULT_FACTORY = "0x92C80Cff5d75dcD3846EFb5DF35957D5Aed1c7C5";
       const DEFAULT_REGISTRY = "0x22681Ee2153B7B25bA6772B44c160BB60f4C333E";
+      const EXPLORER_BASE = "https://edgenscan.io";
 
       const isHexAddress = (v) => typeof v === "string" && /^0x[a-fA-F0-9]{40}$/.test(v.trim());
       const isBytes32 = (v) => typeof v === "string" && /^0x[a-fA-F0-9]{64}$/.test(v.trim());
@@ -368,6 +382,66 @@ function blackcat_setup_page(array $paths): void
         return { root, uriHash };
       };
 
+      const setReleaseRegistryLink = () => {
+        const addr = $("releaseRegistry").value.trim();
+        const href = isHexAddress(addr) ? `${EXPLORER_BASE}/address/${addr}` : EXPLORER_BASE;
+        $("releaseRegistryLink").setAttribute("href", href);
+      };
+
+      const setReleaseTrustUi = (trusted, error = null) => {
+        const el = $("releaseTrust");
+        if (error) {
+          el.textContent = "error";
+          el.classList.remove("ok");
+          el.classList.add("bad");
+          el.setAttribute("title", String(error));
+          $("createInstance").disabled = true;
+          return;
+        }
+        if (trusted === true) {
+          el.textContent = "trusted";
+          el.classList.remove("bad");
+          el.classList.add("ok");
+          el.removeAttribute("title");
+          $("createInstance").disabled = false;
+          return;
+        }
+        if (trusted === false) {
+          el.textContent = "untrusted";
+          el.classList.remove("ok");
+          el.classList.add("bad");
+          el.setAttribute("title", "ReleaseRegistry does not trust this root (tampered/unpublished).");
+          $("createInstance").disabled = true;
+          return;
+        }
+        el.textContent = "unknown";
+        el.classList.remove("ok");
+        el.classList.remove("bad");
+        el.removeAttribute("title");
+        $("createInstance").disabled = true;
+      };
+
+      const verifyReleaseRoot = async () => {
+        const { root } = await readManifestSummary();
+        const registry = $("releaseRegistry").value.trim();
+        if (!isHexAddress(registry)) throw new Error("Invalid ReleaseRegistry address.");
+
+        if (!wallet.provider) {
+          throw new Error("Connect MetaMask first to verify on-chain release trust.");
+        }
+        if (wallet.chainId !== CHAIN_ID_DEC) {
+          throw new Error("Switch to Edgen Chain (chain_id=4207) first.");
+        }
+
+        const registryAbi = [
+          "function isTrustedRoot(bytes32 root) view returns (bool)",
+        ];
+        const rr = new window.ethers.Contract(registry, registryAbi, wallet.provider);
+        const ok = await rr.isTrustedRoot(root);
+        setReleaseTrustUi(Boolean(ok));
+        return Boolean(ok);
+      };
+
       const computePolicyHash = async () => {
         const mode = $("trustMode").value;
         const maxStale = parseInt($("maxStale").value || "180", 10);
@@ -421,8 +495,31 @@ function blackcat_setup_page(array $paths): void
       $("buildManifest").addEventListener("click", async () => {
         $("manifestOut").style.display = "block";
         $("manifestOut").textContent = "Working...";
+        $("releaseOut").style.display = "none";
         const res = await api("/_blackcat/setup/api/build-manifest", { method: "POST" });
         $("manifestOut").textContent = JSON.stringify(res, null, 2);
+        setReleaseTrustUi(null);
+        try {
+          if (wallet.provider && wallet.chainId === CHAIN_ID_DEC) {
+            const ok = await verifyReleaseRoot();
+            $("releaseOut").style.display = "block";
+            $("releaseOut").textContent = JSON.stringify({ ok: true, trusted: ok }, null, 2);
+          }
+        } catch (_) {
+          // ignore here; user can click "Verify release root" after connecting wallet.
+        }
+      });
+
+      $("verifyRelease").addEventListener("click", async () => {
+        $("releaseOut").style.display = "block";
+        $("releaseOut").textContent = "Working...";
+        try {
+          const ok = await verifyReleaseRoot();
+          $("releaseOut").textContent = JSON.stringify({ ok: true, trusted: ok }, null, 2);
+        } catch (e) {
+          setReleaseTrustUi(null);
+          $("releaseOut").textContent = JSON.stringify({ ok: false, error: String(e && e.message ? e.message : e) }, null, 2);
+        }
       });
 
       $("connectWallet").addEventListener("click", async () => {
@@ -430,6 +527,14 @@ function blackcat_setup_page(array $paths): void
         $("chainOut").textContent = "Working...";
         try {
           await connectWallet();
+          setReleaseRegistryLink();
+          if (wallet.chainId === CHAIN_ID_DEC) {
+            try {
+              const ok = await verifyReleaseRoot();
+              $("releaseOut").style.display = "block";
+              $("releaseOut").textContent = JSON.stringify({ ok: true, trusted: ok }, null, 2);
+            } catch (_) {}
+          }
           $("chainOut").textContent = JSON.stringify({ ok: true, account: wallet.account, chain_id: wallet.chainId }, null, 2);
         } catch (e) {
           $("chainOut").textContent = JSON.stringify({ ok: false, error: String(e && e.message ? e.message : e) }, null, 2);
@@ -440,6 +545,14 @@ function blackcat_setup_page(array $paths): void
         $("chainOut").textContent = "Working...";
         try {
           await ensureChain();
+          setReleaseRegistryLink();
+          if (wallet.chainId === CHAIN_ID_DEC) {
+            try {
+              const ok = await verifyReleaseRoot();
+              $("releaseOut").style.display = "block";
+              $("releaseOut").textContent = JSON.stringify({ ok: true, trusted: ok }, null, 2);
+            } catch (_) {}
+          }
           $("chainOut").textContent = JSON.stringify({ ok: true, chain_id: wallet.chainId }, null, 2);
         } catch (e) {
           $("chainOut").textContent = JSON.stringify({ ok: false, error: String(e && e.message ? e.message : e) }, null, 2);
@@ -479,6 +592,10 @@ function blackcat_setup_page(array $paths): void
           if (!isHexAddress(emergencyAuthority)) throw new Error("Invalid emergency authority address.");
 
           const { root, uriHash } = await readManifestSummary();
+          const releaseOk = await verifyReleaseRoot();
+          if (!releaseOk) {
+            throw new Error("Release root is NOT trusted by ReleaseRegistry. Upload an official bundle or wait for the registry to be updated.");
+          }
           const policyHash = await computePolicyHash();
 
           const factoryAbi = [
@@ -505,7 +622,18 @@ function blackcat_setup_page(array $paths): void
             policyHash
           );
 
-          $("chainOut").textContent = JSON.stringify({ ok: true, stage: "broadcasted", tx_hash: tx.hash, predicted_instance: predicted }, null, 2);
+          $("chainOut").textContent = JSON.stringify(
+            {
+              ok: true,
+              stage: "broadcasted",
+              tx_hash: tx.hash,
+              tx_link: `${EXPLORER_BASE}/tx/${tx.hash}`,
+              predicted_instance: predicted,
+              instance_link: `${EXPLORER_BASE}/address/${predicted}`,
+            },
+            null,
+            2
+          );
           const receipt = await tx.wait();
 
           $("instanceController").value = predicted;
@@ -516,8 +644,10 @@ function blackcat_setup_page(array $paths): void
               ok: true,
               stage: "mined",
               tx_hash: tx.hash,
+              tx_link: `${EXPLORER_BASE}/tx/${tx.hash}`,
               block: receipt.blockNumber,
               instance_controller: predicted,
+              instance_link: `${EXPLORER_BASE}/address/${predicted}`,
               manifest_root: root,
               manifest_uri_hash: uriHash,
               policy_hash_v3_strict: policyHash,
@@ -606,9 +736,11 @@ function blackcat_setup_page(array $paths): void
       // Defaults + local cache restore
       $("instanceFactory").value = DEFAULT_FACTORY;
       $("releaseRegistry").value = DEFAULT_REGISTRY;
+      setReleaseRegistryLink();
       const cachedIc = localStorage.getItem("bc_instance_controller");
       if (cachedIc && isHexAddress(cachedIc)) $("instanceController").value = cachedIc;
       loadAuthorities();
+      setReleaseTrustUi(null);
     </script>
   </body>
 </html>
