@@ -47,10 +47,136 @@ function blackcat_setup_page(array $paths): void
     if (!blackcat_is_https_request()) {
         http_response_code(400);
         header('Content-Type: text/html; charset=utf-8');
-        echo '<!doctype html><meta charset="utf-8"><title>BlackCat Setup</title>';
-        echo '<h1>BlackCat Setup</h1>';
-        echo '<p><strong>HTTPS is required</strong> for installation. Enable TLS on your domain and reload this page.</p>';
-        echo '<p>If you are behind a reverse proxy, ensure it forwards HTTPS correctly.</p>';
+        header('Cache-Control: no-store');
+        header('X-Content-Type-Options: nosniff');
+        header('X-Frame-Options: DENY');
+        header('Referrer-Policy: no-referrer');
+        header('Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()');
+        header('Cross-Origin-Opener-Policy: same-origin');
+        header('Cross-Origin-Resource-Policy: same-origin');
+        header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
+
+        echo <<<'HTML'
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BlackCat Setup — HTTPS Required</title>
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        background:
+          radial-gradient(900px 420px at 20% 0%, rgba(86, 116, 255, 0.18), transparent 55%),
+          radial-gradient(900px 420px at 80% 0%, rgba(255, 123, 114, 0.12), transparent 60%),
+          #0b0f17;
+        color: #e7eefc;
+      }
+      .card {
+        max-width: 920px;
+        width: 100%;
+        border-radius: 18px;
+        border: 1px solid rgba(42, 59, 99, 0.9);
+        background: rgba(15, 21, 36, 0.78);
+        box-shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
+        overflow: hidden;
+      }
+      .top {
+        padding: 18px 18px 0 18px;
+        display: flex;
+        gap: 18px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .imgWrap {
+        width: 120px;
+        height: 120px;
+        border-radius: 16px;
+        border: 1px solid rgba(31, 42, 68, 0.95);
+        background:
+          url("/_blackcat/assets/https-required-cat.png") center / cover no-repeat,
+          rgba(11, 15, 23, 0.55);
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+      }
+      .imgFallback {
+        width: 100%;
+        height: 100%;
+        display: grid;
+        place-items: center;
+        opacity: 0.9;
+      }
+      .imgFallback svg { width: 78px; height: 78px; }
+      h1 { margin: 0; font-size: 26px; letter-spacing: 0.2px; }
+      .muted { color: #9fb0d0; }
+      .pill {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 999px;
+        background: rgba(255, 123, 114, 0.12);
+        border: 1px solid rgba(255, 123, 114, 0.28);
+        color: #ff7b72;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        margin-left: 10px;
+      }
+      .body { padding: 12px 18px 18px 18px; }
+      .steps {
+        margin: 12px 0 0;
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid rgba(31, 42, 68, 0.95);
+        background: rgba(11, 15, 23, 0.55);
+      }
+      code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .warn { color: #ffd46b; }
+      .footer { margin-top: 10px; font-size: 12px; color: #9fb0d0; }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <div class="top">
+        <div class="imgWrap" aria-hidden="true">
+          <div class="imgFallback">
+            <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+              <path d="M18 22l-6-8v18" stroke="#ff7b72" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M46 22l6-8v18" stroke="#ff7b72" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M20 44c3 4 9 6 12 6s9-2 12-6" stroke="#ff7b72" stroke-width="3" stroke-linecap="round"/>
+              <path d="M20 26c0 10 4 18 12 18s12-8 12-18c0-7-6-12-12-12s-12 5-12 12z" stroke="#ff7b72" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M25 30h0" stroke="#ff7b72" stroke-width="6" stroke-linecap="round"/>
+              <path d="M39 30h0" stroke="#ff7b72" stroke-width="6" stroke-linecap="round"/>
+              <path d="M14 50l36-36" stroke="#ff7b72" stroke-width="4" stroke-linecap="round"/>
+              <circle cx="32" cy="32" r="26" stroke="#ff7b72" stroke-width="3" opacity="0.55"/>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <h1>BlackCat Setup <span class="pill">HTTPS required</span></h1>
+          <p class="muted">No worries — this is intentional. Installation is blocked over HTTP to prevent downgrade + MITM attacks.</p>
+        </div>
+      </div>
+
+      <div class="body">
+        <div class="steps">
+          <div><strong>Fix:</strong></div>
+          <ol>
+            <li>Enable TLS (e.g., Let’s Encrypt) on your domain.</li>
+            <li>If you use a reverse proxy, forward HTTPS correctly (X-Forwarded-Proto / Forwarded: proto=https) from a trusted local peer (127.0.0.1 / ::1).</li>
+            <li>Reload this page over <code>https://</code>.</li>
+          </ol>
+          <div class="footer warn">Tip: the setup UI is token-gated and can be permanently disabled after install.</div>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>
+HTML;
         exit;
     }
 
@@ -1300,6 +1426,13 @@ function blackcat_is_https_request(): bool
         return true;
     }
 
+    // Only honor forwarded HTTPS indicators when the immediate peer is a local, trusted proxy.
+    // This prevents clients from spoofing X-Forwarded-Proto / Forwarded on plain HTTP requests.
+    $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? null;
+    if (!blackcat_is_loopback_ip($remoteAddr)) {
+        return false;
+    }
+
     $xfp = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? null;
     if (is_string($xfp)) {
         $first = trim(explode(',', $xfp, 2)[0] ?? '');
@@ -1324,6 +1457,27 @@ function blackcat_is_https_request(): bool
                 }
             }
         }
+    }
+
+    return false;
+}
+
+function blackcat_is_loopback_ip(mixed $ip): bool
+{
+    if (!is_string($ip)) {
+        return false;
+    }
+    $ip = trim($ip);
+    if ($ip === '') {
+        return false;
+    }
+
+    if (@filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+        return str_starts_with($ip, '127.');
+    }
+
+    if (@filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
+        return strtolower($ip) === '::1';
     }
 
     return false;
