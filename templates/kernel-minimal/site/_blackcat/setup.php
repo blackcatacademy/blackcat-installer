@@ -127,6 +127,7 @@ function blackcat_setup_page(array $paths): void
         height: 128px;
         margin-top: -72px;
         border-radius: 0;
+        position: relative;
         background:
           url("/_blackcat/assets/https-required-cat.png") center / contain no-repeat,
           url("/_blackcat/assets/https-required-cat-fallback.svg") center / 92px 92px no-repeat;
@@ -135,8 +136,19 @@ function blackcat_setup_page(array $paths): void
         overflow: visible;
         filter:
           drop-shadow(0 18px 55px rgba(0, 0, 0, 0.55))
-          drop-shadow(0 0 22px rgba(255, 123, 114, 0.22));
-        transform: rotate(-6deg) translateY(-2px);
+          drop-shadow(0 0 26px rgba(255, 123, 114, 0.28))
+          drop-shadow(0 0 46px rgba(86, 116, 255, 0.10));
+        transform: translateY(-2px);
+      }
+      .imgWrap::before {
+        content: "";
+        position: absolute;
+        inset: -18px;
+        background: radial-gradient(circle at 50% 45%, rgba(255, 123, 114, 0.26) 0%, rgba(255, 123, 114, 0.0) 62%);
+        filter: blur(7px);
+        opacity: 0.85;
+        pointer-events: none;
+        z-index: -1;
       }
       @media (max-width: 520px) {
         .imgWrap { width: 112px; height: 112px; margin-top: -62px; }
