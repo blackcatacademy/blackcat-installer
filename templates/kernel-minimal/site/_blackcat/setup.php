@@ -91,18 +91,31 @@ function blackcat_setup_page(array $paths): void
         position: fixed;
         inset: 0;
         background: url("/_blackcat/assets/bg-grid.png") repeat;
-        opacity: 0.28;
+        background-size: 512px 512px;
+        opacity: 0.36;
         mix-blend-mode: screen;
-        filter: brightness(1.8) contrast(1.25);
+        filter: brightness(2.2) contrast(1.35) saturate(1.15);
         pointer-events: none;
         z-index: 0;
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        body::before { animation: bcGridDrift 52s linear infinite; }
+        @keyframes bcGridDrift {
+          from { background-position: 0 0; }
+          to { background-position: 240px 120px; }
+        }
       }
       .card {
         max-width: 920px;
         width: 100%;
         border-radius: 18px;
-        border: 1px solid rgba(42, 59, 99, 0.9);
-        background: rgba(15, 21, 36, 0.78);
+        border: 1px solid rgba(42, 59, 99, 0.78);
+        background:
+          radial-gradient(900px 420px at 18% 0%, rgba(255, 255, 255, 0.07), transparent 62%),
+          radial-gradient(900px 420px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
+          linear-gradient(180deg, rgba(15, 21, 36, 0.74), rgba(15, 21, 36, 0.40));
+        backdrop-filter: blur(18px) saturate(1.25);
+        -webkit-backdrop-filter: blur(18px) saturate(1.25);
         box-shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
         overflow: hidden;
         position: relative;
@@ -1656,7 +1669,12 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
         width: 100%;
         border-radius: 18px;
         border: 1px solid rgba(42, 59, 99, 0.9);
-        background: rgba(15, 21, 36, 0.78);
+        background:
+          radial-gradient(900px 420px at 18% 0%, rgba(255, 255, 255, 0.07), transparent 62%),
+          radial-gradient(900px 420px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
+          linear-gradient(180deg, rgba(15, 21, 36, 0.72), rgba(15, 21, 36, 0.38));
+        backdrop-filter: blur(18px) saturate(1.25);
+        -webkit-backdrop-filter: blur(18px) saturate(1.25);
         box-shadow:
           0 30px 100px rgba(0, 0, 0, 0.45),
           0 0 0 1px rgba(86, 116, 255, 0.10) inset;
