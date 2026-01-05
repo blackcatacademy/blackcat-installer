@@ -1575,19 +1575,18 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
     <link rel="manifest" href="/site.webmanifest" />
     <style>
       :root { color-scheme: dark; }
+      *, *::before, *::after { box-sizing: border-box; }
       body {
         margin: 0;
-        min-height: 100vh;
-        display: grid;
-        place-items: center;
-        padding: 24px;
+        min-height: 100svh;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding: clamp(16px, 5vh, 56px) 16px 16px;
         font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
         position: relative;
         isolation: isolate;
         background:
-          linear-gradient(180deg, rgba(11, 15, 23, 0.88), rgba(11, 15, 23, 0.88)),
-          url("/_blackcat/assets/tls-not-trusted-banner.png") center / cover no-repeat,
-          url("/_blackcat/assets/hero-banner.png") center / cover no-repeat,
           radial-gradient(900px 420px at 20% 0%, rgba(86, 116, 255, 0.18), transparent 55%),
           radial-gradient(900px 420px at 80% 0%, rgba(255, 123, 114, 0.12), transparent 60%),
           #0b0f17;
@@ -1615,29 +1614,48 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
         position: relative;
         z-index: 1;
       }
+      .banner {
+        width: 100%;
+        height: clamp(140px, 18vw, 220px);
+        background:
+          linear-gradient(180deg, rgba(11, 15, 23, 0.05), rgba(11, 15, 23, 0.92)),
+          url("/_blackcat/assets/tls-not-trusted-banner.png") left center / cover no-repeat,
+          url("/_blackcat/assets/hero-banner.png") left center / cover no-repeat;
+        border-bottom: 1px solid rgba(31, 42, 68, 0.95);
+      }
       .top {
-        padding: 18px;
+        padding: 12px 18px 8px 18px;
         display: flex;
         gap: 16px;
-        align-items: center;
+        align-items: flex-start;
         flex-wrap: wrap;
-        background:
-          linear-gradient(180deg, rgba(15, 21, 36, 0.35), rgba(15, 21, 36, 0.92)),
-          url("/_blackcat/assets/tls-not-trusted-banner.png") center / cover no-repeat,
-          url("/_blackcat/assets/hero-banner.png") center / cover no-repeat;
       }
       .iconWrap {
-        width: 120px;
-        height: 120px;
-        border-radius: 16px;
-        border: 1px solid rgba(31, 42, 68, 0.95);
+        width: 128px;
+        height: 128px;
+        margin-top: -72px;
+        border-radius: 0;
+        position: relative;
         background:
-          url("/_blackcat/assets/tls-not-trusted-cat.png") center / cover no-repeat,
-          url("/_blackcat/assets/tls-not-trusted-fallback.svg") center / 74px 74px no-repeat,
-          rgba(11, 15, 23, 0.55);
+          url("/_blackcat/assets/tls-not-trusted-cat.png") center / contain no-repeat,
+          url("/_blackcat/assets/tls-not-trusted-fallback.svg") center / 92px 92px no-repeat;
         display: grid;
         place-items: center;
-        overflow: hidden;
+        overflow: visible;
+        filter:
+          drop-shadow(0 18px 55px rgba(0, 0, 0, 0.55))
+          drop-shadow(0 0 26px rgba(255, 212, 107, 0.22))
+          drop-shadow(0 0 46px rgba(255, 123, 114, 0.10));
+      }
+      .iconWrap::before {
+        content: "";
+        position: absolute;
+        inset: -18px;
+        background: radial-gradient(circle at 50% 45%, rgba(255, 212, 107, 0.22) 0%, rgba(255, 212, 107, 0.0) 62%);
+        filter: blur(7px);
+        opacity: 0.9;
+        pointer-events: none;
+        z-index: -1;
       }
       .pill {
         display: inline-block;
@@ -1651,7 +1669,7 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
       }
       h1 { margin: 0; font-size: 26px; letter-spacing: 0.2px; }
       .muted { color: #9fb0d0; }
-      .body { padding: 0 18px 18px 18px; }
+      .body { padding: 10px 18px 16px 18px; }
       .box {
         margin-top: 12px;
         padding: 12px 14px;
@@ -1666,23 +1684,24 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
   </head>
   <body>
     <main class="card">
+      <div class="banner" aria-hidden="true"></div>
       <div class="top">
-	        <div class="iconWrap" aria-hidden="true"></div>
-	        <div>
-	          <h1>BlackCat Setup <span class="pill">trusted TLS required</span></h1>
-	          <p class="muted"><strong>Secure URL, insecure trust.</strong> You are on <code>https://</code>, but the certificate chain is not publicly trusted. In production, BlackCat is <strong>fail-closed</strong> here to prevent MITM during setup.</p>
-	        </div>
-	      </div>
-	      <div class="body">
-	        <div class="box">
-	          <div><strong>Fix:</strong></div>
+        <div class="iconWrap" aria-hidden="true"></div>
+        <div>
+          <h1>BlackCat Setup <span class="pill">trusted TLS required</span></h1>
+          <p class="muted"><strong>Secure URL, insecure trust.</strong> You are on <code>https://</code>, but the certificate chain is not publicly trusted. In production, BlackCat is <strong>fail-closed</strong> here to prevent MITM during setup.</p>
+        </div>
+      </div>
+      <div class="body">
+        <div class="box">
+          <div><strong>Fix:</strong></div>
           <ol>
             <li>Install a CA-trusted certificate (recommended: Let’s Encrypt).</li>
             <li>Verify the browser shows a normal secure lock (no warnings).</li>
             <li>Reload this setup page over <code>https://</code>.</li>
-	          </ol>
-	          <div class="muted warn">Dev tip: on <code>localhost</code> the installer is allowed, but shows a persistent warning banner until you deploy a trusted cert.</div>
-	        </div>
+          </ol>
+          <div class="muted warn">Dev tip: on <code>localhost</code> the installer is allowed, but shows a persistent warning banner until you deploy a trusted cert.</div>
+        </div>
         <div class="box">
           <div><strong>Details (server-side TLS verification):</strong></div>
           <div class="muted small">BlackCat tried to verify a CA-trusted TLS handshake to <code>__TLS_HOST__</code>:<code>__TLS_PORT__</code> and refused to continue.</div>
