@@ -106,28 +106,41 @@ function blackcat_setup_page(array $paths): void
         position: relative;
         z-index: 1;
       }
+      .banner {
+        width: 100%;
+        height: 0;
+        padding-top: 31.25%; /* 500 / 1600 */
+        background:
+          linear-gradient(180deg, rgba(11, 15, 23, 0.05), rgba(11, 15, 23, 0.9)),
+          url("/_blackcat/assets/hero-banner.png") left center / cover no-repeat;
+        border-bottom: 1px solid rgba(31, 42, 68, 0.95);
+      }
       .top {
-        padding: 18px 18px 0 18px;
+        padding: 18px;
         display: flex;
         gap: 18px;
-        align-items: center;
+        align-items: flex-start;
         flex-wrap: wrap;
-        background:
-          linear-gradient(180deg, rgba(15, 21, 36, 0.35), rgba(15, 21, 36, 0.92)),
-          url("/_blackcat/assets/hero-banner.png") center / cover no-repeat;
       }
       .imgWrap {
-        width: 120px;
-        height: 120px;
-        border-radius: 16px;
-        border: 1px solid rgba(31, 42, 68, 0.95);
+        width: 128px;
+        height: 128px;
+        margin-top: -72px;
+        border-radius: 38% 62% 56% 44% / 46% 40% 60% 54%;
         background:
           url("/_blackcat/assets/https-required-cat.png") center / cover no-repeat,
           url("/_blackcat/assets/https-required-cat-fallback.svg") center / 78px 78px no-repeat,
-          rgba(11, 15, 23, 0.55);
+          rgba(11, 15, 23, 0.35);
         display: grid;
         place-items: center;
         overflow: hidden;
+        box-shadow:
+          0 0 0 10px rgba(255, 255, 255, 0.10),
+          0 18px 55px rgba(0, 0, 0, 0.55);
+        transform: rotate(-6deg);
+      }
+      @media (max-width: 520px) {
+        .imgWrap { width: 112px; height: 112px; margin-top: -62px; }
       }
       h1 { margin: 0; font-size: 26px; letter-spacing: 0.2px; }
       .muted { color: #9fb0d0; }
@@ -154,15 +167,16 @@ function blackcat_setup_page(array $paths): void
       .footer { margin-top: 10px; font-size: 12px; color: #9fb0d0; }
     </style>
   </head>
-  <body>
-    <main class="card">
-      <div class="top">
-        <div class="imgWrap" aria-hidden="true"></div>
-        <div>
-          <h1>BlackCat Setup <span class="pill">HTTPS required</span></h1>
-          <p class="muted">No worries — this is intentional. Installation is blocked over HTTP to prevent downgrade + MITM attacks.</p>
-        </div>
-      </div>
+	  <body>
+	    <main class="card">
+	      <div class="banner" aria-hidden="true"></div>
+	      <div class="top">
+	        <div class="imgWrap" aria-hidden="true"></div>
+	        <div>
+	          <h1>BlackCat Setup <span class="pill">HTTPS required</span></h1>
+	          <p class="muted">No worries — this is intentional. Installation is blocked over HTTP to prevent downgrade + MITM attacks.</p>
+	        </div>
+	      </div>
 
       <div class="body">
         <div class="steps">
