@@ -86,6 +86,15 @@ Then open:
 
 `https://localhost:8449/_blackcat/setup`
 
+For live UI editing (no rebuild needed):
+
+```bash
+docker compose \
+  -f blackcat-installer/docker-compose.stage3-demo.yml \
+  -f blackcat-installer/docker-compose.stage3-demo.dev.yml \
+  up --build
+```
+
 Notes:
 - The certificate is self-signed (your browser will warn).
 - To read the install token for local testing:
