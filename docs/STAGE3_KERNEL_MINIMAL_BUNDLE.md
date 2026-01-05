@@ -42,17 +42,22 @@ Flow:
 1) The server creates `.blackcat/install.token`.
 2) You open that token via FTP and paste it into the setup page.
 3) Click **Build manifest** → it writes `.blackcat/integrity.manifest.json` and shows the `root` bytes32.
-4) Click **Verify release root** (or connect MetaMask first) → the installer calls `ReleaseRegistry.isTrustedRoot(root)` and:
+4) (Optional) Click **Verify release root** (requires a browser wallet) → the installer calls `ReleaseRegistry.isTrustedRoot(root)` and:
    - shows **trusted/untrusted**,
    - blocks instance creation if untrusted (fail-closed).
-5) Connect **MetaMask**, configure your authority addresses (root / upgrade / emergency), click **Compute policy hash**, then **Create InstanceController**.
-   - This broadcasts `InstanceFactory.createInstance(...)` from your wallet.
+5) Create the on-chain instance (two options):
+   - **Browser wallet** (MetaMask/Rabby): connect wallet, set authority addresses (root / upgrade / emergency), click **Compute policy hash**, then **Broadcast create tx**.
+   - **Manual / offline**: click **Generate tx intent (manual)** and send it from another device / hardware wallet / CLI.
+   - This broadcasts `InstanceFactory.createInstance(...)` (and reverts if the root is not trusted).
    - The factory is also an on-chain “installations registry” via `isInstance(...)` + `InstanceCreated` events.
 6) Click **Write config** → it writes `config.runtime.json` and prints:
    - runtime-config attestation `key` + `value`
-7) Click **Set+lock attestation** → broadcasts `InstanceController.setAttestationAndLock(key,value)` from the **root authority** wallet.
+7) Lock the runtime-config attestation (two options):
+   - **Browser wallet**: click **Broadcast lock tx**.
+   - **Manual / offline**: click **Generate tx intent (manual)** and sign elsewhere.
+   - This broadcasts `InstanceController.setAttestationAndLock(key,value)` from the **root authority** wallet.
 8) Open the site root and verify it becomes **trusted** in strict mode.
-9) Click **Disable installer** → creates `.blackcat/installed.flag` (setup becomes unavailable).
+9) Click **Disable installer** → creates `.blackcat/installed.flag` (setup becomes unavailable) and removes the install token.
 
 Notes:
 - No private keys are stored server-side. All on-chain transactions are initiated by your wallet.
