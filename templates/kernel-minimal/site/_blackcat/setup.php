@@ -97,6 +97,9 @@ function blackcat_setup_page(array $paths): void
         gap: 18px;
         align-items: center;
         flex-wrap: wrap;
+        background:
+          linear-gradient(180deg, rgba(15, 21, 36, 0.35), rgba(15, 21, 36, 0.92)),
+          url("/_blackcat/assets/hero-banner.png") center / cover no-repeat;
       }
       .imgWrap {
         width: 120px;
@@ -105,19 +108,12 @@ function blackcat_setup_page(array $paths): void
         border: 1px solid rgba(31, 42, 68, 0.95);
         background:
           url("/_blackcat/assets/https-required-cat.png") center / cover no-repeat,
+          url("/_blackcat/assets/https-required-cat-fallback.svg") center / 78px 78px no-repeat,
           rgba(11, 15, 23, 0.55);
         display: grid;
         place-items: center;
         overflow: hidden;
       }
-      .imgFallback {
-        width: 100%;
-        height: 100%;
-        display: grid;
-        place-items: center;
-        opacity: 0.9;
-      }
-      .imgFallback svg { width: 78px; height: 78px; }
       h1 { margin: 0; font-size: 26px; letter-spacing: 0.2px; }
       .muted { color: #9fb0d0; }
       .pill {
@@ -146,26 +142,7 @@ function blackcat_setup_page(array $paths): void
   <body>
     <main class="card">
       <div class="top">
-        <div class="imgWrap" aria-hidden="true">
-          <div class="imgFallback">
-            <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
-              <circle cx="32" cy="32" r="26" stroke="#ff7b72" stroke-width="3" opacity="0.55"/>
-              <path d="M24 18l-8-8 2 14" stroke="#ff7b72" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M40 18l8-8-2 14" stroke="#ff7b72" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M18 28c0 13 6 22 14 22s14-9 14-22c0-8-6-14-14-14s-14 6-14 14z" stroke="#ff7b72" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M24 31h0" stroke="#ff7b72" stroke-width="6" stroke-linecap="round"/>
-              <path d="M40 31h0" stroke="#ff7b72" stroke-width="6" stroke-linecap="round"/>
-              <path d="M32 36l-3 3h6l-3-3z" fill="#ff7b72"/>
-              <path d="M32 39c-2 2-4 3-6 3" stroke="#ff7b72" stroke-width="3" stroke-linecap="round"/>
-              <path d="M32 39c2 2 4 3 6 3" stroke="#ff7b72" stroke-width="3" stroke-linecap="round"/>
-              <path d="M20 38l-10-2" stroke="#ff7b72" stroke-width="3" stroke-linecap="round"/>
-              <path d="M20 42l-10 2" stroke="#ff7b72" stroke-width="3" stroke-linecap="round"/>
-              <path d="M44 38l10-2" stroke="#ff7b72" stroke-width="3" stroke-linecap="round"/>
-              <path d="M44 42l10 2" stroke="#ff7b72" stroke-width="3" stroke-linecap="round"/>
-              <path d="M18 46l28-28" stroke="#ff7b72" stroke-width="4" stroke-linecap="round"/>
-            </svg>
-          </div>
-        </div>
+        <div class="imgWrap" aria-hidden="true"></div>
         <div>
           <h1>BlackCat Setup <span class="pill">HTTPS required</span></h1>
           <p class="muted">No worries — this is intentional. Installation is blocked over HTTP to prevent downgrade + MITM attacks.</p>
@@ -1527,7 +1504,11 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
     header('Cross-Origin-Resource-Policy: same-origin');
     header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
 
-    echo <<<'HTML'
+    $host = htmlspecialchars($tlsGate['host'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $port = (int) $tlsGate['port'];
+    $err = $tlsGate['error'] !== null ? htmlspecialchars($tlsGate['error'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : 'unknown';
+
+    $page = <<<'HTML'
 <!doctype html>
 <html lang="en">
   <head>
@@ -1548,6 +1529,8 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
         padding: 24px;
         font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
         background:
+          linear-gradient(180deg, rgba(11, 15, 23, 0.88), rgba(11, 15, 23, 0.88)),
+          url("/_blackcat/assets/hero-banner.png") center / cover no-repeat,
           radial-gradient(900px 420px at 20% 0%, rgba(86, 116, 255, 0.18), transparent 55%),
           radial-gradient(900px 420px at 80% 0%, rgba(255, 123, 114, 0.12), transparent 60%),
           #0b0f17;
@@ -1562,7 +1545,27 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
         box-shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
         overflow: hidden;
       }
-      .top { padding: 18px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+      .top {
+        padding: 18px;
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        flex-wrap: wrap;
+        background:
+          linear-gradient(180deg, rgba(15, 21, 36, 0.35), rgba(15, 21, 36, 0.92)),
+          url("/_blackcat/assets/hero-banner.png") center / cover no-repeat;
+      }
+      .iconWrap {
+        width: 120px;
+        height: 120px;
+        border-radius: 16px;
+        border: 1px solid rgba(31, 42, 68, 0.95);
+        background: rgba(11, 15, 23, 0.55);
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+      }
+      .iconWrap svg { width: 74px; height: 74px; }
       .pill {
         display: inline-block;
         padding: 2px 10px;
@@ -1584,15 +1587,25 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
         background: rgba(11, 15, 23, 0.55);
       }
       code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .small { font-size: 12px; }
       .warn { color: #ffd46b; }
     </style>
   </head>
   <body>
     <main class="card">
       <div class="top">
+        <div class="iconWrap" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+            <path d="M20 28c0 14 6 22 12 22s12-8 12-22v-7c0-6-6-11-12-11s-12 5-12 11v7z" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M26 28v-7c0-3 3-6 6-6s6 3 6 6v7" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+            <path d="M32 36v6" stroke="#ffd46b" stroke-width="3" stroke-linecap="round"/>
+            <path d="M32 48h0" stroke="#ffd46b" stroke-width="6" stroke-linecap="round"/>
+            <path d="M16 52l32-32" stroke="#ff7b72" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+        </div>
         <div>
           <h1>BlackCat Setup <span class="pill">trusted TLS required</span></h1>
-          <p class="muted">Production installation is blocked until your HTTPS certificate is issued by a trusted CA (prevents MITM during setup).</p>
+          <p class="muted"><strong>This is not the HTTP block.</strong> You are on <code>https://</code>, but the certificate is not publicly trusted. Production installation is fail-closed to prevent MITM during setup.</p>
         </div>
       </div>
       <div class="body">
@@ -1605,11 +1618,21 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
           </ol>
           <div class="muted warn">Local demo tip: use <code>localhost</code> (dev mode shows a persistent warning banner instead of blocking).</div>
         </div>
+        <div class="box">
+          <div><strong>Details (server-side TLS verification):</strong></div>
+          <div class="muted small">BlackCat tried to verify a CA-trusted TLS handshake to <code>__TLS_HOST__</code>:<code>__TLS_PORT__</code> and refused to continue.</div>
+          <div class="muted small">Error: <code>__TLS_ERR__</code></div>
+        </div>
       </div>
     </main>
   </body>
 </html>
 HTML;
+    echo str_replace(
+        ['__TLS_HOST__', '__TLS_PORT__', '__TLS_ERR__'],
+        [$host, (string) $port, $err],
+        $page,
+    );
 }
 
 function blackcat_setup_api_policy_v3(): void

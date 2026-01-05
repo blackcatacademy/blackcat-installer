@@ -51,6 +51,7 @@ $assetMap = [
     // Setup UI images (optional, but recommended).
     '/_blackcat/assets/hero-banner.png' => ['file' => 'hero-banner.png', 'type' => 'image/png'],
     '/_blackcat/assets/https-required-cat.png' => ['file' => 'https-required-cat.png', 'type' => 'image/png'],
+    '/_blackcat/assets/https-required-cat-fallback.svg' => ['file' => 'https-required-cat-fallback.svg', 'type' => 'image/svg+xml; charset=utf-8'],
     '/_blackcat/assets/trusted-vs-untrusted.png' => ['file' => 'trusted-vs-untrusted.png', 'type' => 'image/png'],
 ];
 
