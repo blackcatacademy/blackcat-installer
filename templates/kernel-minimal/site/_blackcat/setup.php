@@ -1668,9 +1668,11 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
         width: 100%;
         height: clamp(160px, 20vw, 260px);
         background:
-          linear-gradient(180deg, rgba(11, 15, 23, 0.05), rgba(11, 15, 23, 0.92)),
+          radial-gradient(900px 240px at 18% 30%, rgba(255, 212, 107, 0.16), transparent 62%),
+          linear-gradient(180deg, rgba(11, 15, 23, 0.00), rgba(11, 15, 23, 0.74)),
           url("/_blackcat/assets/tls-not-trusted-banner.png") left center / cover no-repeat,
           url("/_blackcat/assets/hero-banner.png") left center / cover no-repeat;
+        filter: brightness(1.08) saturate(1.12);
         border-bottom: 1px solid rgba(31, 42, 68, 0.95);
       }
       .top {
