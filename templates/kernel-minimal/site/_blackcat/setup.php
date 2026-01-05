@@ -1637,11 +1637,19 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
         position: fixed;
         inset: 0;
         background: url("/_blackcat/assets/bg-grid.png") repeat;
-        opacity: 0.24;
+        background-size: 512px 512px;
+        opacity: 0.40;
         mix-blend-mode: screen;
-        filter: brightness(1.75) contrast(1.25);
+        filter: brightness(2.2) contrast(1.35) saturate(1.2);
         pointer-events: none;
         z-index: 0;
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        body::before { animation: bcGridDrift 48s linear infinite; }
+        @keyframes bcGridDrift {
+          from { background-position: 0 0; }
+          to { background-position: 260px 140px; }
+        }
       }
       .card {
         max-width: 980px;
@@ -1649,7 +1657,9 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
         border-radius: 18px;
         border: 1px solid rgba(42, 59, 99, 0.9);
         background: rgba(15, 21, 36, 0.78);
-        box-shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
+        box-shadow:
+          0 30px 100px rgba(0, 0, 0, 0.45),
+          0 0 0 1px rgba(86, 116, 255, 0.10) inset;
         overflow: hidden;
         position: relative;
         z-index: 1;
@@ -1707,7 +1717,12 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         margin-left: 10px;
       }
-      h1 { margin: 0; font-size: 26px; letter-spacing: 0.2px; }
+      h1 {
+        margin: 0;
+        font-size: 26px;
+        letter-spacing: 0.2px;
+        text-shadow: 0 10px 36px rgba(0, 0, 0, 0.55);
+      }
       .muted { color: #9fb0d0; }
       .body { padding: 10px 18px 16px 18px; }
       p { margin: 8px 0 0; }
