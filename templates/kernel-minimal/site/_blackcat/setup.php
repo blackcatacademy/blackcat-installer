@@ -76,7 +76,7 @@ function blackcat_setup_page(array $paths): void
         display: flex;
         justify-content: center;
         align-items: flex-start;
-        padding: 12px 16px 16px;
+        padding: clamp(16px, 5vh, 56px) 16px 16px;
         font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
         position: relative;
         isolation: isolate;
