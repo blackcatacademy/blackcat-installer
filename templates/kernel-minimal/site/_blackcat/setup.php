@@ -1530,6 +1530,7 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
         font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
         background:
           linear-gradient(180deg, rgba(11, 15, 23, 0.88), rgba(11, 15, 23, 0.88)),
+          url("/_blackcat/assets/tls-not-trusted-banner.png") center / cover no-repeat,
           url("/_blackcat/assets/hero-banner.png") center / cover no-repeat,
           radial-gradient(900px 420px at 20% 0%, rgba(86, 116, 255, 0.18), transparent 55%),
           radial-gradient(900px 420px at 80% 0%, rgba(255, 123, 114, 0.12), transparent 60%),
@@ -1553,6 +1554,7 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
         flex-wrap: wrap;
         background:
           linear-gradient(180deg, rgba(15, 21, 36, 0.35), rgba(15, 21, 36, 0.92)),
+          url("/_blackcat/assets/tls-not-trusted-banner.png") center / cover no-repeat,
           url("/_blackcat/assets/hero-banner.png") center / cover no-repeat;
       }
       .iconWrap {
@@ -1560,12 +1562,14 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
         height: 120px;
         border-radius: 16px;
         border: 1px solid rgba(31, 42, 68, 0.95);
-        background: rgba(11, 15, 23, 0.55);
+        background:
+          url("/_blackcat/assets/tls-not-trusted-cat.png") center / cover no-repeat,
+          url("/_blackcat/assets/tls-not-trusted-fallback.svg") center / 74px 74px no-repeat,
+          rgba(11, 15, 23, 0.55);
         display: grid;
         place-items: center;
         overflow: hidden;
       }
-      .iconWrap svg { width: 74px; height: 74px; }
       .pill {
         display: inline-block;
         padding: 2px 10px;
@@ -1594,15 +1598,7 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
   <body>
     <main class="card">
       <div class="top">
-        <div class="iconWrap" aria-hidden="true">
-          <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
-            <path d="M20 28c0 14 6 22 12 22s12-8 12-22v-7c0-6-6-11-12-11s-12 5-12 11v7z" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M26 28v-7c0-3 3-6 6-6s6 3 6 6v7" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
-            <path d="M32 36v6" stroke="#ffd46b" stroke-width="3" stroke-linecap="round"/>
-            <path d="M32 48h0" stroke="#ffd46b" stroke-width="6" stroke-linecap="round"/>
-            <path d="M16 52l32-32" stroke="#ff7b72" stroke-width="4" stroke-linecap="round"/>
-          </svg>
-        </div>
+        <div class="iconWrap" aria-hidden="true"></div>
         <div>
           <h1>BlackCat Setup <span class="pill">trusted TLS required</span></h1>
           <p class="muted"><strong>This is not the HTTP block.</strong> You are on <code>https://</code>, but the certificate is not publicly trusted. Production installation is fail-closed to prevent MITM during setup.</p>

@@ -53,6 +53,9 @@ $assetMap = [
     '/_blackcat/assets/https-required-cat.png' => ['file' => 'https-required-cat.png', 'type' => 'image/png'],
     '/_blackcat/assets/https-required-cat-fallback.svg' => ['file' => 'https-required-cat-fallback.svg', 'type' => 'image/svg+xml; charset=utf-8'],
     '/_blackcat/assets/trusted-vs-untrusted.png' => ['file' => 'trusted-vs-untrusted.png', 'type' => 'image/png'],
+    '/_blackcat/assets/tls-not-trusted-cat.png' => ['file' => 'tls-not-trusted-cat.png', 'type' => 'image/png'],
+    '/_blackcat/assets/tls-not-trusted-banner.png' => ['file' => 'tls-not-trusted-banner.png', 'type' => 'image/png'],
+    '/_blackcat/assets/tls-not-trusted-fallback.svg' => ['file' => 'tls-not-trusted-fallback.svg', 'type' => 'image/svg+xml; charset=utf-8'],
 ];
 
 if (isset($assetMap[$path])) {

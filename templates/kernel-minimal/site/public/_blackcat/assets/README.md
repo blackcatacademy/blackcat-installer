@@ -7,7 +7,9 @@ This folder (`site/public/_blackcat/assets/`) is kept for convenience / legacy a
 
 Suggested files (PNG, no text recommended):
 - `https-required-cat.png` — shown when setup is opened over HTTP (BlackCat refuses; HTTPS required).
+- `tls-not-trusted-cat.png` — shown when setup is opened over HTTPS, but the certificate is not publicly trusted (production is fail-closed).
 - `hero-banner.png` — optional hero header background or banner.
+- `tls-not-trusted-banner.png` — optional background for the “Trusted TLS Required” block (helps differentiate from the HTTP block).
 - `trusted-vs-untrusted.png` — optional split illustration for release trust / integrity.
 - `favicon.png` (64×64 or 128×128) — high-contrast icon for tiny sizes (tab / bookmarks).
 
