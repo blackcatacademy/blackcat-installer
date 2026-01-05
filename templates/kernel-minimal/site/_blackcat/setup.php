@@ -189,6 +189,13 @@ HTML;
 
     $stateDir = $paths['state_dir'];
     blackcat_ensure_state_dir($stateDir);
+
+    $tlsGate = blackcat_setup_tls_gate($stateDir);
+    if ($tlsGate['mode'] === 'prod' && $tlsGate['trusted'] !== true) {
+        blackcat_setup_render_tls_not_trusted_page($tlsGate);
+        exit;
+    }
+
     $tokenPath = rtrim($stateDir, "/\\") . DIRECTORY_SEPARATOR . 'install.token';
     if (!is_file($tokenPath)) {
         $token = bin2hex(random_bytes(32));
@@ -198,8 +205,16 @@ HTML;
         }
     }
 
+    $tlsBarHtml = '';
+    if ($tlsGate['mode'] === 'dev' && $tlsGate['trusted'] !== true) {
+        $tlsBarHtml = '<div class="tlsBar" role="status">'
+            . '<strong>DEV WARNING:</strong> TLS certificate is not publicly trusted. '
+            . 'Do <strong>not</strong> use this mode in production. Install a CA-trusted certificate (e.g., Let’s Encrypt) and reload.'
+            . '</div>';
+    }
+
     header('Content-Type: text/html; charset=utf-8');
-    echo <<<'HTML'
+    $page = <<<'HTML'
 <!doctype html>
 <html lang="en">
   <head>
@@ -302,6 +317,21 @@ HTML;
 
       .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
       .small { font-size: 12px; }
+
+      .tlsBar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 9999;
+        padding: 10px 14px;
+        background: rgba(255, 123, 114, 0.14);
+        border-top: 1px solid rgba(255, 123, 114, 0.35);
+        color: #ffb4ae;
+        text-align: center;
+        backdrop-filter: blur(10px);
+      }
+      .tlsBar strong { color: #ff7b72; }
     </style>
   </head>
   <body>
@@ -953,9 +983,13 @@ HTML;
       setReleaseTrustUi(null);
       </script>
     </div>
+
+    __BLACKCAT_TLS_BAR__
   </body>
 </html>
 HTML;
+
+    echo str_replace('__BLACKCAT_TLS_BAR__', $tlsBarHtml, $page);
 }
 
 /**
@@ -965,6 +999,15 @@ function blackcat_setup_api(array $paths, string $endpoint): void
 {
     if (!blackcat_is_https_request()) {
         blackcat_json(['ok' => false, 'error' => 'HTTPS is required for setup.'], 400);
+        return;
+    }
+
+    $tlsGate = blackcat_setup_tls_gate($paths['state_dir']);
+    if ($tlsGate['mode'] === 'prod' && $tlsGate['trusted'] !== true) {
+        blackcat_json([
+            'ok' => false,
+            'error' => 'Trusted TLS is required for production setup (CA verification failed).',
+        ], 400);
         return;
     }
 
@@ -1028,6 +1071,347 @@ function blackcat_setup_api(array $paths, string $endpoint): void
     }
 
     blackcat_json(['ok' => false, 'error' => 'Unknown endpoint: ' . $endpoint], 404);
+}
+
+/**
+ * Production safety gate: require CA-trusted TLS for the setup flow.
+ *
+ * Why:
+ * - The setup UI controls on-chain authorities + runtime config.
+ * - A MITM during setup can swap addresses/policies and steal control permanently.
+ * - Browsers don't expose "certificate trusted" reliably to JS; this is verified from the server side.
+ *
+ * @return array{mode:'dev'|'prod',host:string,port:int,trusted:bool,error:?string}
+ */
+function blackcat_setup_tls_gate(string $stateDir): array
+{
+    blackcat_ensure_state_dir($stateDir);
+
+    $hostPort = blackcat_normalize_http_host($_SERVER['HTTP_HOST'] ?? null);
+    $host = $hostPort['host'];
+    $port = $hostPort['port'];
+    $mode = blackcat_is_dev_host($host) ? 'dev' : 'prod';
+
+    $cachePath = rtrim($stateDir, "/\\") . DIRECTORY_SEPARATOR . 'tls.trust.cache.json';
+    $cache = null;
+    if (is_file($cachePath)) {
+        $raw = file_get_contents($cachePath);
+        if (is_string($raw)) {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                $cache = $decoded;
+            }
+        }
+    }
+
+    $cacheOk = false;
+    if (is_array($cache)) {
+        $ts = $cache['checked_at'] ?? null;
+        $ch = $cache['host'] ?? null;
+        $cp = $cache['port'] ?? null;
+        if (is_int($ts) && is_string($ch) && is_int($cp)) {
+            if ($ch === $host && $cp === $port && (time() - $ts) < 60) {
+                $cacheOk = true;
+            }
+        }
+    }
+
+    if ($cacheOk) {
+        return [
+            'mode' => $mode,
+            'host' => $host,
+            'port' => $port,
+            'trusted' => (bool) ($cache['trusted'] ?? false),
+            'error' => is_string($cache['error'] ?? null) ? (string) $cache['error'] : null,
+        ];
+    }
+
+    [$trusted, $err] = blackcat_tls_is_publicly_trusted($host, $port);
+
+    $payload = [
+        'checked_at' => time(),
+        'host' => $host,
+        'port' => $port,
+        'trusted' => $trusted,
+        'error' => $err,
+    ];
+    @file_put_contents($cachePath, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+    if (DIRECTORY_SEPARATOR !== '\\') {
+        @chmod($cachePath, 0600);
+    }
+
+    return [
+        'mode' => $mode,
+        'host' => $host,
+        'port' => $port,
+        'trusted' => $trusted,
+        'error' => $err,
+    ];
+}
+
+/**
+ * @return array{host:string,port:int}
+ */
+function blackcat_normalize_http_host(mixed $raw): array
+{
+    $fallback = ['host' => '', 'port' => 443];
+
+    if (!is_string($raw)) {
+        return $fallback;
+    }
+
+    $raw = trim($raw);
+    if ($raw === '' || str_contains($raw, "\0") || str_contains($raw, '/') || str_contains($raw, '\\')) {
+        return $fallback;
+    }
+
+    // IPv6 in brackets: [::1]:443
+    if (str_starts_with($raw, '[')) {
+        $end = strpos($raw, ']');
+        if ($end === false) {
+            return $fallback;
+        }
+        $host = substr($raw, 1, $end - 1);
+        $rest = substr($raw, $end + 1);
+        $port = 443;
+        if (str_starts_with($rest, ':')) {
+            $portRaw = substr($rest, 1);
+            if ($portRaw !== '' && ctype_digit($portRaw)) {
+                $p = (int) $portRaw;
+                if ($p >= 1 && $p <= 65535) {
+                    $port = $p;
+                }
+            }
+        }
+        return ['host' => strtolower(trim($host)), 'port' => $port];
+    }
+
+    $host = $raw;
+    $port = 443;
+    if (preg_match('/^(.+):(\\d{1,5})$/', $raw, $m) === 1) {
+        $host = $m[1];
+        $p = (int) $m[2];
+        if ($p >= 1 && $p <= 65535) {
+            $port = $p;
+        }
+    }
+
+    return ['host' => strtolower(trim($host)), 'port' => $port];
+}
+
+function blackcat_is_dev_host(string $host): bool
+{
+    $host = strtolower(trim($host));
+    if ($host === '' || str_contains($host, "\0")) {
+        return false;
+    }
+
+    if ($host === 'localhost' || str_ends_with($host, '.localhost')) {
+        return true;
+    }
+
+    if (@filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+        return str_starts_with($host, '127.');
+    }
+
+    if (@filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
+        return $host === '::1';
+    }
+
+    return false;
+}
+
+/**
+ * @return array{0:bool,1:?string} (trusted, error_code)
+ */
+function blackcat_tls_is_publicly_trusted(string $host, int $port): array
+{
+    $host = strtolower(trim($host));
+    if ($host === '' || str_contains($host, "\0")) {
+        return [false, 'invalid_host'];
+    }
+
+    // SSRF hardening: reject private/reserved IP literals (except localhost dev).
+    if (@filter_var($host, FILTER_VALIDATE_IP) !== false) {
+        $flags = FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE;
+        if (@filter_var($host, FILTER_VALIDATE_IP, $flags) === false) {
+            return [false, 'host_is_private_ip'];
+        }
+    } else {
+        // Conservative hostname validation to avoid Host-header tricks.
+        if (preg_match('/^[a-z0-9.-]+$/', $host) !== 1 || strlen($host) > 253) {
+            return [false, 'invalid_hostname'];
+        }
+
+        $ips = [];
+        $a = @gethostbynamel($host);
+        if (is_array($a)) {
+            foreach ($a as $ip) {
+                if (is_string($ip)) {
+                    $ips[] = $ip;
+                }
+            }
+        }
+        if (function_exists('dns_get_record')) {
+            $aaaa = @dns_get_record($host, DNS_AAAA);
+            if (is_array($aaaa)) {
+                foreach ($aaaa as $row) {
+                    $ip = $row['ipv6'] ?? null;
+                    if (is_string($ip)) {
+                        $ips[] = $ip;
+                    }
+                }
+            }
+        }
+
+        if ($ips === []) {
+            return [false, 'dns_no_records'];
+        }
+
+        $flags = FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE;
+        foreach ($ips as $ip) {
+            if (@filter_var($ip, FILTER_VALIDATE_IP, $flags) === false) {
+                return [false, 'dns_resolves_to_private_ip'];
+            }
+        }
+    }
+
+    if (!extension_loaded('openssl')) {
+        return [false, 'openssl_missing'];
+    }
+
+    $connectHost = $host;
+    if (@filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
+        $connectHost = '[' . $host . ']';
+    }
+
+    $ctx = stream_context_create([
+        'ssl' => [
+            'verify_peer' => true,
+            'verify_peer_name' => true,
+            'allow_self_signed' => false,
+            'SNI_enabled' => true,
+            'peer_name' => $host,
+            'disable_compression' => true,
+        ],
+    ]);
+
+    $errno = 0;
+    $errstr = '';
+    $timeout = 2.0;
+    $fp = @stream_socket_client(
+        'ssl://' . $connectHost . ':' . $port,
+        $errno,
+        $errstr,
+        $timeout,
+        STREAM_CLIENT_CONNECT,
+        $ctx
+    );
+
+    if (!is_resource($fp)) {
+        return [false, 'tls_connect_failed'];
+    }
+
+    @stream_set_timeout($fp, 2);
+    @fclose($fp);
+    return [true, null];
+}
+
+/**
+ * @param array{mode:'dev'|'prod',host:string,port:int,trusted:bool,error:?string} $tlsGate
+ */
+function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
+{
+    http_response_code(400);
+    header('Content-Type: text/html; charset=utf-8');
+    header('Cache-Control: no-store');
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: DENY');
+    header('Referrer-Policy: no-referrer');
+    header('Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()');
+    header('Cross-Origin-Opener-Policy: same-origin');
+    header('Cross-Origin-Resource-Policy: same-origin');
+    header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
+
+    echo <<<'HTML'
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BlackCat Setup — Trusted TLS Required</title>
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        background:
+          radial-gradient(900px 420px at 20% 0%, rgba(86, 116, 255, 0.18), transparent 55%),
+          radial-gradient(900px 420px at 80% 0%, rgba(255, 123, 114, 0.12), transparent 60%),
+          #0b0f17;
+        color: #e7eefc;
+      }
+      .card {
+        max-width: 980px;
+        width: 100%;
+        border-radius: 18px;
+        border: 1px solid rgba(42, 59, 99, 0.9);
+        background: rgba(15, 21, 36, 0.78);
+        box-shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
+        overflow: hidden;
+      }
+      .top { padding: 18px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+      .pill {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 999px;
+        background: rgba(255, 123, 114, 0.12);
+        border: 1px solid rgba(255, 123, 114, 0.28);
+        color: #ff7b72;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        margin-left: 10px;
+      }
+      h1 { margin: 0; font-size: 26px; letter-spacing: 0.2px; }
+      .muted { color: #9fb0d0; }
+      .body { padding: 0 18px 18px 18px; }
+      .box {
+        margin-top: 12px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid rgba(31, 42, 68, 0.95);
+        background: rgba(11, 15, 23, 0.55);
+      }
+      code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .warn { color: #ffd46b; }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <div class="top">
+        <div>
+          <h1>BlackCat Setup <span class="pill">trusted TLS required</span></h1>
+          <p class="muted">Production installation is blocked until your HTTPS certificate is issued by a trusted CA (prevents MITM during setup).</p>
+        </div>
+      </div>
+      <div class="body">
+        <div class="box">
+          <div><strong>Fix:</strong></div>
+          <ol>
+            <li>Install a CA-trusted certificate (recommended: Let’s Encrypt).</li>
+            <li>Verify the browser shows a normal secure lock (no warnings).</li>
+            <li>Reload this setup page over <code>https://</code>.</li>
+          </ol>
+          <div class="muted warn">Local demo tip: use <code>localhost</code> (dev mode shows a persistent warning banner instead of blocking).</div>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>
+HTML;
 }
 
 function blackcat_setup_api_policy_v3(): void
