@@ -63,6 +63,7 @@ function blackcat_setup_page(array $paths): void
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>BlackCat Setup — HTTPS Required</title>
+    <link rel="icon" href="/_blackcat/assets/favicon.png" type="image/png" />
     <style>
       :root { color-scheme: dark; }
       body {
@@ -145,14 +146,20 @@ function blackcat_setup_page(array $paths): void
         <div class="imgWrap" aria-hidden="true">
           <div class="imgFallback">
             <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
-              <path d="M18 22l-6-8v18" stroke="#ff7b72" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M46 22l6-8v18" stroke="#ff7b72" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M20 44c3 4 9 6 12 6s9-2 12-6" stroke="#ff7b72" stroke-width="3" stroke-linecap="round"/>
-              <path d="M20 26c0 10 4 18 12 18s12-8 12-18c0-7-6-12-12-12s-12 5-12 12z" stroke="#ff7b72" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M25 30h0" stroke="#ff7b72" stroke-width="6" stroke-linecap="round"/>
-              <path d="M39 30h0" stroke="#ff7b72" stroke-width="6" stroke-linecap="round"/>
-              <path d="M14 50l36-36" stroke="#ff7b72" stroke-width="4" stroke-linecap="round"/>
               <circle cx="32" cy="32" r="26" stroke="#ff7b72" stroke-width="3" opacity="0.55"/>
+              <path d="M24 18l-8-8 2 14" stroke="#ff7b72" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M40 18l8-8-2 14" stroke="#ff7b72" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M18 28c0 13 6 22 14 22s14-9 14-22c0-8-6-14-14-14s-14 6-14 14z" stroke="#ff7b72" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M24 31h0" stroke="#ff7b72" stroke-width="6" stroke-linecap="round"/>
+              <path d="M40 31h0" stroke="#ff7b72" stroke-width="6" stroke-linecap="round"/>
+              <path d="M32 36l-3 3h6l-3-3z" fill="#ff7b72"/>
+              <path d="M32 39c-2 2-4 3-6 3" stroke="#ff7b72" stroke-width="3" stroke-linecap="round"/>
+              <path d="M32 39c2 2 4 3 6 3" stroke="#ff7b72" stroke-width="3" stroke-linecap="round"/>
+              <path d="M20 38l-10-2" stroke="#ff7b72" stroke-width="3" stroke-linecap="round"/>
+              <path d="M20 42l-10 2" stroke="#ff7b72" stroke-width="3" stroke-linecap="round"/>
+              <path d="M44 38l10-2" stroke="#ff7b72" stroke-width="3" stroke-linecap="round"/>
+              <path d="M44 42l10 2" stroke="#ff7b72" stroke-width="3" stroke-linecap="round"/>
+              <path d="M18 46l28-28" stroke="#ff7b72" stroke-width="4" stroke-linecap="round"/>
             </svg>
           </div>
         </div>
@@ -221,6 +228,7 @@ HTML;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>BlackCat Setup</title>
+    <link rel="icon" href="/_blackcat/assets/favicon.png" type="image/png" />
     <style>
       :root { color-scheme: dark; }
 
@@ -257,6 +265,13 @@ HTML;
       .heroTitle { margin: 0; font-size: 26px; letter-spacing: 0.2px; }
       .heroSub { margin: 6px 0 0; }
       .heroBadges { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 2px; }
+      .heroDetails { margin-top: 10px; }
+      .heroDetails summary { cursor: pointer; user-select: none; }
+      .heroDetails summary::-webkit-details-marker { display: none; }
+      .heroDetails summary::before { content: "▸"; display: inline-block; margin-right: 8px; color: #9fb0d0; }
+      .heroDetails[open] summary::before { content: "▾"; }
+      .heroDetails ul { margin: 8px 0 0 18px; padding: 0; }
+      .heroDetails li { margin: 3px 0; }
 
       .card {
         background: rgba(15, 21, 36, 0.72);
@@ -335,19 +350,32 @@ HTML;
     </style>
   </head>
   <body>
-    <div class="wrap">
-      <header class="hero">
-        <div>
-          <h1 class="heroTitle">BlackCat Setup <span class="pill mono">Stage 3</span></h1>
-          <p class="heroSub muted">Strict, fail-closed TrustKernel setup (FTP-friendly, no server-side Composer, no server-side private keys).</p>
-        </div>
-        <div class="heroBadges">
-          <span class="pill mono">HTTPS required</span>
-          <span class="pill mono">ReleaseRegistry</span>
-          <span class="pill mono">MetaMask</span>
-          <span class="pill mono">Edgen 4207</span>
-        </div>
-      </header>
+	    <div class="wrap">
+	      <header class="hero">
+	        <div>
+	          <h1 class="heroTitle">BlackCat Setup <span class="pill mono">Kernel Minimal</span></h1>
+	          <p class="heroSub muted">FTP-friendly installer for hosting environments where you can’t run Composer on the server. It bootstraps TrustKernel (Web3-backed integrity) and writes strict runtime config.</p>
+	          <details class="heroDetails">
+	            <summary class="muted">What is “Stage 3”?</summary>
+	            <div class="small muted">
+	              Stage 3 is the <strong>kernel-minimal</strong> bootstrap: upload a prebuilt bundle, verify integrity, register it on-chain, then permanently disable the installer.
+	            </div>
+	            <ul class="small muted">
+	              <li><span class="mono">No</span> server-side private keys.</li>
+	              <li><span class="mono">No</span> Composer required on the server.</li>
+	              <li>Production is <strong>fail-closed</strong> on untrusted TLS + integrity mismatches.</li>
+	            </ul>
+	          </details>
+	        </div>
+	        <div class="heroBadges">
+	          <span class="pill mono">HTTPS required</span>
+	          <span class="pill mono">Stage 3</span>
+	          <span class="pill mono">No server keys</span>
+	          <span class="pill mono">ReleaseRegistry</span>
+	          <span class="pill mono">Wallet-signed</span>
+	          <span class="pill mono">Edgen 4207</span>
+	        </div>
+	      </header>
 
     <div class="card">
       <h2>1) Unlock installer</h2>
@@ -388,22 +416,23 @@ HTML;
         <pre id="releaseOut" style="display:none"></pre>
       </div>
 
-      <div class="card">
-        <h2>3) On-chain: create InstanceController</h2>
-        <p class="muted">No private keys are stored on the server. This uses <strong>MetaMask</strong> to broadcast the transaction from your wallet.</p>
-        <p class="small muted">Network: <span class="mono">Edgen Chain</span> (<span class="mono">chain_id=4207</span>)</p>
+	      <div class="card">
+	        <h2>3) On-chain: create InstanceController</h2>
+	        <p class="muted">No private keys are stored on the server. Broadcast from <strong>any</strong> EVM wallet (hardware wallet recommended): browser wallet (MetaMask/Rabby), explorer “Write contract”, or CLI (cast).</p>
+	        <p class="small muted">Network: <span class="mono">Edgen Chain</span> (<span class="mono">chain_id=4207</span>)</p>
+	        <p class="small muted"><strong>Option A:</strong> use a browser wallet (below). <strong>Option B:</strong> click <span class="mono">Generate tx intent (manual)</span> and send from another device / hardware wallet.</p>
 
         <div class="row">
           <div>
             <label class="k">Wallet</label>
             <div class="small muted">Account: <span id="walletAccount" class="mono">not connected</span></div>
             <div class="small muted">Chain: <span id="walletChain" class="mono">unknown</span></div>
-          </div>
-          <div style="flex: 0 0 240px">
-            <button id="connectWallet">Connect MetaMask</button>
-            <button id="switchChain" style="margin-left:8px">Switch/Add chain</button>
-          </div>
-        </div>
+	          </div>
+	          <div style="flex: 0 0 240px">
+	            <button id="connectWallet">Connect browser wallet</button>
+	            <button id="switchChain" style="margin-left:8px">Switch/Add chain</button>
+	          </div>
+	        </div>
 
         <div class="row">
           <div>
@@ -439,11 +468,12 @@ HTML;
           </div>
         </div>
 
-        <p class="small muted">This step will create a new InstanceController bound to: <span class="mono">manifest.root</span> + <span class="mono">manifest.uri_hash</span> + <span class="mono">policy_hash_v3_strict</span>.</p>
-        <button id="computePolicy">Compute policy hash</button>
-        <button id="createInstance" style="margin-left:8px">Create InstanceController</button>
-        <pre id="chainOut" style="display:none"></pre>
-      </div>
+	        <p class="small muted">This step will create a new InstanceController bound to: <span class="mono">manifest.root</span> + <span class="mono">manifest.uri_hash</span> + <span class="mono">policy_hash_v3_strict</span>.</p>
+	        <button id="computePolicy">Compute policy hash</button>
+	        <button id="createInstance" style="margin-left:8px">Broadcast create tx (browser wallet)</button>
+	        <button id="createInstanceManual" style="margin-left:8px">Generate tx intent (manual)</button>
+	        <pre id="chainOut" style="display:none"></pre>
+	      </div>
 
       <div class="card">
         <h2>4) Write runtime config</h2>
@@ -481,20 +511,22 @@ HTML;
       </div>
     </div>
 
-    <div class="card">
-      <h2>5) On-chain: lock runtime-config attestation</h2>
-      <p class="muted">After writing <code>config.runtime.json</code>, lock the runtime config attestation on-chain:</p>
-      <div class="small muted">Required signer: <span class="mono">rootAuthority</span></div>
-      <button id="lockAttestation">Set+lock attestation (MetaMask)</button>
-      <pre id="attOut" style="display:none"></pre>
-    </div>
+	    <div class="card">
+	      <h2>5) On-chain: lock runtime-config attestation</h2>
+	      <p class="muted">After writing <code>config.runtime.json</code>, lock the runtime config attestation on-chain:</p>
+	      <div class="small muted">Required signer: <span class="mono">rootAuthority</span></div>
+	      <div class="small muted"><strong>Option A:</strong> broadcast via browser wallet. <strong>Option B:</strong> generate tx intent and sign elsewhere.</div>
+	      <button id="lockAttestation">Broadcast lock tx (browser wallet)</button>
+	      <button id="lockAttestationManual" style="margin-left:8px">Generate tx intent (manual)</button>
+	      <pre id="attOut" style="display:none"></pre>
+	    </div>
 
-    <div class="card">
-      <h2>6) Disable installer</h2>
-      <p>When everything is working, permanently disable this setup UI.</p>
-      <button id="finish">Create installed.flag (disable setup)</button>
-      <pre id="finishOut" style="display:none"></pre>
-    </div>
+	    <div class="card">
+	      <h2>6) Disable installer</h2>
+	      <p>When everything is working, permanently disable this setup UI (recommended for production).</p>
+	      <button id="finish">Create installed.flag (disable setup)</button>
+	      <pre id="finishOut" style="display:none"></pre>
+	    </div>
 
       <script src="/_blackcat/ethers.umd.min.js"></script>
       <script>
@@ -553,16 +585,16 @@ HTML;
         $("walletChain").textContent = wallet.chainId ? `${wallet.chainId}` : "unknown";
       };
 
-      const requireEthereum = () => {
-        const eth = window.ethereum;
-        if (!eth || !eth.request) {
-          throw new Error("MetaMask (window.ethereum) not found. Install MetaMask and reload.");
-        }
-        if (!window.ethers) {
-          throw new Error("ethers.js failed to load. Ensure /_blackcat/ethers.umd.min.js is reachable.");
-        }
-        return eth;
-      };
+	      const requireEthereum = () => {
+	        const eth = window.ethereum;
+	        if (!eth || !eth.request) {
+	          throw new Error("Browser wallet not found (window.ethereum). Install MetaMask/Rabby (or use the manual tx intent buttons).");
+	        }
+	        if (!window.ethers) {
+	          throw new Error("ethers.js failed to load. Ensure /_blackcat/ethers.umd.min.js is reachable.");
+	        }
+	        return eth;
+	      };
 
       const connectWallet = async () => {
         const eth = requireEthereum();
@@ -661,17 +693,17 @@ HTML;
         $("createInstance").disabled = true;
       };
 
-      const verifyReleaseRoot = async () => {
-        const { root } = await readManifestSummary();
-        const registry = $("releaseRegistry").value.trim();
-        if (!isHexAddress(registry)) throw new Error("Invalid ReleaseRegistry address.");
+	      const verifyReleaseRoot = async () => {
+	        const { root } = await readManifestSummary();
+	        const registry = $("releaseRegistry").value.trim();
+	        if (!isHexAddress(registry)) throw new Error("Invalid ReleaseRegistry address.");
 
-        if (!wallet.provider) {
-          throw new Error("Connect MetaMask first to verify on-chain release trust.");
-        }
-        if (wallet.chainId !== CHAIN_ID_DEC) {
-          throw new Error("Switch to Edgen Chain (chain_id=4207) first.");
-        }
+	        if (!wallet.provider) {
+	          throw new Error("Connect a browser wallet first to verify on-chain release trust (or verify in the block explorer).");
+	        }
+	        if (wallet.chainId !== CHAIN_ID_DEC) {
+	          throw new Error("Switch to Edgen Chain (chain_id=4207) first.");
+	        }
 
         const registryAbi = [
           "function isTrustedRoot(bytes32 root) view returns (bool)",
@@ -810,11 +842,11 @@ HTML;
         }
       });
 
-      $("createInstance").addEventListener("click", async () => {
-        $("chainOut").style.display = "block";
-        $("chainOut").textContent = "Working...";
-        try {
-          if (!wallet.signer) await connectWallet();
+	      $("createInstance").addEventListener("click", async () => {
+	        $("chainOut").style.display = "block";
+	        $("chainOut").textContent = "Working...";
+	        try {
+	          if (!wallet.signer) await connectWallet();
           if (wallet.chainId !== CHAIN_ID_DEC) {
             await ensureChain();
             wallet.chainId = (await wallet.provider.getNetwork()).chainId || null;
@@ -897,12 +929,82 @@ HTML;
           );
         } catch (e) {
           $("chainOut").textContent = JSON.stringify({ ok: false, error: String(e && e.message ? e.message : e) }, null, 2);
-        }
-      });
+	        }
+	      });
 
-      $("writeConfig").addEventListener("click", async () => {
-        $("configOut").style.display = "block";
-        $("configOut").textContent = "Working...";
+	      $("createInstanceManual").addEventListener("click", async () => {
+	        $("chainOut").style.display = "block";
+	        $("chainOut").textContent = "Working...";
+	        try {
+	          if (!window.ethers) throw new Error("ethers.js failed to load. Ensure /_blackcat/ethers.umd.min.js is reachable.");
+
+	          const factoryAddress = $("instanceFactory").value.trim();
+	          if (!isHexAddress(factoryAddress)) throw new Error("Invalid InstanceFactory address.");
+	          const rootAuthority = $("rootAuthority").value.trim();
+	          const upgradeAuthority = $("upgradeAuthority").value.trim();
+	          const emergencyAuthority = $("emergencyAuthority").value.trim();
+	          if (!isHexAddress(rootAuthority)) throw new Error("Invalid root authority address.");
+	          if (!isHexAddress(upgradeAuthority)) throw new Error("Invalid upgrade authority address.");
+	          if (!isHexAddress(emergencyAuthority)) throw new Error("Invalid emergency authority address.");
+
+	          const { root, uriHash } = await readManifestSummary();
+	          const policyHash = await computePolicyHash();
+
+	          const abi = [
+	            "function createInstance(address rootAuthority,address upgradeAuthority,address emergencyAuthority,bytes32 genesisRoot,bytes32 genesisUriHash,bytes32 genesisPolicyHash) returns (address)",
+	          ];
+	          const iface = new window.ethers.utils.Interface(abi);
+	          const data = iface.encodeFunctionData("createInstance", [
+	            rootAuthority,
+	            upgradeAuthority,
+	            emergencyAuthority,
+	            root,
+	            uriHash,
+	            policyHash,
+	          ]);
+
+	          const cast = [
+	            "cast send --rpc-url https://rpc.layeredge.io \\",
+	            `  ${factoryAddress} \\`,
+	            "  \"createInstance(address,address,address,bytes32,bytes32,bytes32)\" \\",
+	            `  ${rootAuthority} ${upgradeAuthority} ${emergencyAuthority} ${root} ${uriHash} ${policyHash}`,
+	          ].join("\n");
+
+	          $("chainOut").textContent = JSON.stringify(
+	            {
+	              ok: true,
+	              mode: "manual_tx_intent",
+	              chain_id: CHAIN_ID_DEC,
+	              to: factoryAddress,
+	              value: "0x0",
+	              data,
+	              args: {
+	                root_authority: rootAuthority,
+	                upgrade_authority: upgradeAuthority,
+	                emergency_authority: emergencyAuthority,
+	                manifest_root: root,
+	                manifest_uri_hash: uriHash,
+	                policy_hash_v3_strict: policyHash,
+	              },
+	              notes: [
+	                "Send this transaction from a separate device / hardware wallet if desired.",
+	                "If the bundle root is not trusted by ReleaseRegistry, the tx is expected to REVERT (fail-closed).",
+	                "After it is mined, copy the InstanceCreated event 'instance' address and paste it into step 4.",
+	              ],
+	              explorer_factory: `${EXPLORER_BASE}/address/${factoryAddress}`,
+	              cli_example_cast: cast,
+	            },
+	            null,
+	            2
+	          );
+	        } catch (e) {
+	          $("chainOut").textContent = JSON.stringify({ ok: false, error: String(e && e.message ? e.message : e) }, null, 2);
+	        }
+	      });
+
+	      $("writeConfig").addEventListener("click", async () => {
+	        $("configOut").style.display = "block";
+	        $("configOut").textContent = "Working...";
         const endpoints = $("rpcEndpoints").value.split(/\\r?\\n/).map(s => s.trim()).filter(Boolean);
         const hosts = $("allowedHosts").value.split(/\\r?\\n/).map(s => s.trim()).filter(Boolean);
         const payload = {
@@ -924,11 +1026,11 @@ HTML;
         }
       });
 
-      $("lockAttestation").addEventListener("click", async () => {
-        $("attOut").style.display = "block";
-        $("attOut").textContent = "Working...";
-        try {
-          if (!wallet.signer) await connectWallet();
+	      $("lockAttestation").addEventListener("click", async () => {
+	        $("attOut").style.display = "block";
+	        $("attOut").textContent = "Working...";
+	        try {
+	          if (!wallet.signer) await connectWallet();
           if (wallet.chainId !== CHAIN_ID_DEC) {
             await ensureChain();
             wallet.chainId = (await wallet.provider.getNetwork()).chainId || null;
@@ -936,13 +1038,13 @@ HTML;
           }
           if (wallet.chainId !== CHAIN_ID_DEC) throw new Error("Wrong chain. Expected chain_id=4207 (Edgen).");
 
-          const instance = $("instanceController").value.trim();
-          if (!isHexAddress(instance)) throw new Error("Invalid InstanceController address.");
-
-          const rootAuthority = $("rootAuthority").value.trim();
-          if (isHexAddress(rootAuthority) && wallet.account && rootAuthority.toLowerCase() !== wallet.account.toLowerCase()) {
-            throw new Error("Connect the ROOT authority account in MetaMask to lock the attestation.");
-          }
+	          const instance = $("instanceController").value.trim();
+	          if (!isHexAddress(instance)) throw new Error("Invalid InstanceController address.");
+	
+	          const rootAuthority = $("rootAuthority").value.trim();
+	          if (isHexAddress(rootAuthority) && wallet.account && rootAuthority.toLowerCase() !== wallet.account.toLowerCase()) {
+	            throw new Error("Connect the ROOT authority account in your browser wallet to lock the attestation.");
+	          }
 
           const raw = localStorage.getItem("bc_runtime_attestation");
           if (!raw) throw new Error("No runtime attestation found. Write config first.");
@@ -961,8 +1063,59 @@ HTML;
           $("attOut").textContent = JSON.stringify({ ok: true, stage: "mined", tx_hash: tx.hash, block: receipt.blockNumber, key, value }, null, 2);
         } catch (e) {
           $("attOut").textContent = JSON.stringify({ ok: false, error: String(e && e.message ? e.message : e) }, null, 2);
-        }
-      });
+	        }
+	      });
+
+	      $("lockAttestationManual").addEventListener("click", async () => {
+	        $("attOut").style.display = "block";
+	        $("attOut").textContent = "Working...";
+	        try {
+	          if (!window.ethers) throw new Error("ethers.js failed to load. Ensure /_blackcat/ethers.umd.min.js is reachable.");
+
+	          const instance = $("instanceController").value.trim();
+	          if (!isHexAddress(instance)) throw new Error("Invalid InstanceController address.");
+
+	          const raw = localStorage.getItem("bc_runtime_attestation");
+	          if (!raw) throw new Error("No runtime attestation found. Write config first.");
+	          const att = JSON.parse(raw);
+	          const key = String(att.key || "").trim();
+	          const value = String(att.value || "").trim();
+	          if (!isBytes32(key) || !isBytes32(value)) throw new Error("Invalid attestation key/value.");
+
+	          const abi = ["function setAttestationAndLock(bytes32 key,bytes32 value)"];
+	          const iface = new window.ethers.utils.Interface(abi);
+	          const data = iface.encodeFunctionData("setAttestationAndLock", [key, value]);
+
+	          const cast = [
+	            "cast send --rpc-url https://rpc.layeredge.io \\",
+	            `  ${instance} \\`,
+	            "  \"setAttestationAndLock(bytes32,bytes32)\" \\",
+	            `  ${key} ${value}`,
+	          ].join("\n");
+
+	          $("attOut").textContent = JSON.stringify(
+	            {
+	              ok: true,
+	              mode: "manual_tx_intent",
+	              chain_id: CHAIN_ID_DEC,
+	              to: instance,
+	              value: "0x0",
+	              data,
+	              args: { key, value },
+	              notes: [
+	                "This must be signed by the ROOT authority (cold wallet recommended).",
+	                "After it is mined, the attestation key is locked on-chain.",
+	              ],
+	              explorer_instance: `${EXPLORER_BASE}/address/${instance}`,
+	              cli_example_cast: cast,
+	            },
+	            null,
+	            2
+	          );
+	        } catch (e) {
+	          $("attOut").textContent = JSON.stringify({ ok: false, error: String(e && e.message ? e.message : e) }, null, 2);
+	        }
+	      });
 
       $("finish").addEventListener("click", async () => {
         $("finishOut").style.display = "block";
@@ -1340,6 +1493,7 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>BlackCat Setup — Trusted TLS Required</title>
+    <link rel="icon" href="/_blackcat/assets/favicon.png" type="image/png" />
     <style>
       :root { color-scheme: dark; }
       body {
@@ -1743,7 +1897,18 @@ function blackcat_setup_api_finish(array $paths): void
         @chmod($flag, 0600);
     }
 
-    blackcat_json(['ok' => true, 'installed_flag' => $flag]);
+    $tokenPath = rtrim($stateDir, "/\\") . DIRECTORY_SEPARATOR . 'install.token';
+    $tokenRemoved = false;
+    if (is_file($tokenPath)) {
+        $tokenRemoved = (@unlink($tokenPath) !== false);
+    }
+
+    blackcat_json([
+        'ok' => true,
+        'installed_flag' => $flag,
+        'install_token_removed' => $tokenRemoved,
+        'note' => 'Installer disabled. For re-install, remove installed.flag and re-open /_blackcat/setup to generate a new install token.',
+    ]);
 }
 
 function blackcat_setup_is_disabled(string $stateDir): bool
