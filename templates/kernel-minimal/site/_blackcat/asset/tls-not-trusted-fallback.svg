@@ -21,19 +21,12 @@
 
   <!-- Nose + mouth -->
   <path d="M32 36l-3 3h6l-3-3z" fill="#ffd46b" opacity="0.95" />
-  <path d="M32 39c-2 2-4 3-6 3" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" opacity="0.85" />
-  <path d="M32 39c2 2 4 3 6 3" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" opacity="0.85" />
 
   <!-- Whiskers -->
   <path d="M20 38l-10-2" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" opacity="0.55" />
   <path d="M20 42l-10 2" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" opacity="0.55" />
   <path d="M44 38l10-2" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" opacity="0.55" />
   <path d="M44 42l10 2" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" opacity="0.55" />
-
-  <!-- Small lock badge -->
-  <path d="M26 52h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2H26a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2z" stroke="#ffd46b" stroke-width="3" stroke-linejoin="round" />
-  <path d="M29 41v-2a3 3 0 0 1 6 0v2" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" />
-  <path d="M32 45v3" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" opacity="0.9" />
 
   <!-- Strike-through -->
   <path d="M18 46l28-28" stroke="#ff7b72" stroke-width="4" stroke-linecap="round" />
