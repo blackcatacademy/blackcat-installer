@@ -1767,7 +1767,7 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
         <div class="iconWrap" aria-hidden="true"></div>
         <div>
           <h1>BlackCat Setup <span class="pill">trusted TLS required</span></h1>
-          <p class="muted"><strong>HTTPS is not enough.</strong> Your certificate is not publicly trusted. In production, BlackCat is <strong>fail-closed</strong> here to prevent MITM during setup.</p>
+          <p class="muted"><strong>HTTPS is not enough.</strong> The certificate is not publicly trusted. In production, BlackCat is <strong>fail-closed</strong> here to prevent MITM during setup.</p>
         </div>
       </div>
       <div class="body">
@@ -1778,11 +1778,11 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
             <li>Confirm the browser lock has no warnings.</li>
             <li>Reload this page.</li>
           </ol>
-          <div class="muted warn">Dev tip: on <code>localhost</code> the installer is allowed, but shows a persistent warning banner until you deploy a trusted cert.</div>
+          <div class="muted warn">Dev: <code>localhost</code> is allowed, but shows a persistent warning banner until you deploy a trusted cert.</div>
         </div>
         <div class="box">
           <div><strong>Details (server-side TLS check):</strong></div>
-          <div class="muted small">BlackCat verified a CA-trusted TLS handshake to <code>__TLS_HOST__</code>:<code>__TLS_PORT__</code> and refused to continue.</div>
+          <div class="muted small">CA-trusted TLS verification failed for <code>__TLS_HOST__</code>:<code>__TLS_PORT__</code>.</div>
           <div class="muted small">Error: <code>__TLS_ERR__</code></div>
         </div>
       </div>
