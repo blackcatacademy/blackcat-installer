@@ -69,12 +69,14 @@ function blackcat_setup_page(array $paths): void
     <link rel="manifest" href="/site.webmanifest" />
     <style>
       :root { color-scheme: dark; }
+      *, *::before, *::after { box-sizing: border-box; }
       body {
         margin: 0;
-        min-height: 100vh;
-        display: grid;
-        place-items: center;
-        padding: 24px;
+        min-height: 100svh;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 12px 16px 16px;
         font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
         position: relative;
         isolation: isolate;
