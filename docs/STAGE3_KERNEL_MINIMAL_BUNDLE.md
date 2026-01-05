@@ -61,6 +61,7 @@ Flow:
 
 Notes:
 - No private keys are stored server-side. All on-chain transactions are initiated by your wallet.
+- After a successful install you may additionally delete `site/_blackcat/setup.php` from the bundle (optional hardening). The front controller will then return `404` for `/_blackcat/setup`.
 - `ReleaseRegistry` is a global trust list for **official** BlackCat release roots; end-users should not need to publish anything there.
 - If you modify the bundle files after building it, your computed manifest `root` will not match any trusted release root, and instance creation will fail (by design).
 

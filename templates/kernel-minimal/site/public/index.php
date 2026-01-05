@@ -33,14 +33,22 @@ $bundleRoot = is_string($bundleRoot) && $bundleRoot !== '' ? $bundleRoot : dirna
 
 $stateDir = rtrim($bundleRoot, "/\\") . DIRECTORY_SEPARATOR . '.blackcat';
 $configPath = rtrim($bundleRoot, "/\\") . DIRECTORY_SEPARATOR . 'config.runtime.json';
+$setupPath = __DIR__ . '/../_blackcat/setup.php';
 
 $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
 $path = parse_url(is_string($requestUri) ? $requestUri : '/', PHP_URL_PATH);
 $path = is_string($path) && $path !== '' ? $path : '/';
 
 if ($path === '/_blackcat/setup' || str_starts_with($path, '/_blackcat/setup/')) {
+    if (!is_file($setupPath)) {
+        http_response_code(404);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo "Not found.\n";
+        exit;
+    }
+
     /** @noinspection PhpIncludeInspection */
-    require __DIR__ . '/../_blackcat/setup.php';
+    require $setupPath;
     blackcat_setup_handle([
         'docroot' => $docroot,
         'site_dir' => $siteDir,
@@ -53,9 +61,17 @@ if ($path === '/_blackcat/setup' || str_starts_with($path, '/_blackcat/setup/'))
 
 // Friendly first-run: if runtime config is missing, redirect to setup.
 if (!is_file($configPath)) {
-    header('Location: /_blackcat/setup', true, 302);
+    if (is_file($setupPath)) {
+        header('Location: /_blackcat/setup', true, 302);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo "BlackCat is not installed yet. Redirecting to /_blackcat/setup ...\n";
+        exit;
+    }
+
+    http_response_code(503);
     header('Content-Type: text/plain; charset=utf-8');
-    echo "BlackCat is not installed yet. Redirecting to /_blackcat/setup ...\n";
+    echo "BlackCat is not installed (config.runtime.json is missing).\n";
+    echo "Hint: upload config.runtime.json or restore the Stage-3 setup module.\n";
     exit;
 }
 
