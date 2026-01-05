@@ -11,6 +11,7 @@ Suggested files (PNG, no text recommended):
 - `hero-banner.png` — optional hero header background or banner.
 - `tls-not-trusted-banner.png` — optional background for the “Trusted TLS Required” block (helps differentiate from the HTTP block).
 - `trusted-vs-untrusted.png` — optional split illustration for release trust / integrity.
+- `bg-grid.png` — subtle repeating background grid (adds depth; used on error + setup pages).
 - `favicon.png` (64×64 or 128×128) — high-contrast icon for tiny sizes (tab / bookmarks).
 
 Guidelines:

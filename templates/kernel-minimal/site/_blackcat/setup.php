@@ -76,11 +76,21 @@ function blackcat_setup_page(array $paths): void
         place-items: center;
         padding: 24px;
         font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        position: relative;
         background:
           radial-gradient(900px 420px at 20% 0%, rgba(86, 116, 255, 0.18), transparent 55%),
           radial-gradient(900px 420px at 80% 0%, rgba(255, 123, 114, 0.12), transparent 60%),
           #0b0f17;
         color: #e7eefc;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: url("/_blackcat/assets/bg-grid.png") repeat;
+        opacity: 0.12;
+        pointer-events: none;
+        z-index: 0;
       }
       .card {
         max-width: 920px;
@@ -90,6 +100,8 @@ function blackcat_setup_page(array $paths): void
         background: rgba(15, 21, 36, 0.78);
         box-shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
         overflow: hidden;
+        position: relative;
+        z-index: 1;
       }
       .top {
         padding: 18px 18px 0 18px;
@@ -232,18 +244,28 @@ HTML;
         margin: 0;
         padding: 24px;
         font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        position: relative;
         background:
           radial-gradient(900px 420px at 20% 0%, rgba(86, 116, 255, 0.18), transparent 55%),
           radial-gradient(900px 420px at 80% 0%, rgba(118, 227, 157, 0.12), transparent 60%),
           #0b0f17;
         color: #e7eefc;
       }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: url("/_blackcat/assets/bg-grid.png") repeat;
+        opacity: 0.10;
+        pointer-events: none;
+        z-index: 0;
+      }
 
       a { color: #8ab4ff; }
       code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
       pre { background: rgba(15, 21, 36, 0.8); border: 1px solid #1f2a44; padding: 12px; border-radius: 12px; overflow: auto; }
 
-      .wrap { max-width: 1180px; margin: 0 auto; }
+      .wrap { max-width: 1180px; margin: 0 auto; position: relative; z-index: 1; }
 
       .hero {
         display: flex;
@@ -1528,6 +1550,7 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
         place-items: center;
         padding: 24px;
         font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        position: relative;
         background:
           linear-gradient(180deg, rgba(11, 15, 23, 0.88), rgba(11, 15, 23, 0.88)),
           url("/_blackcat/assets/tls-not-trusted-banner.png") center / cover no-repeat,
@@ -1537,6 +1560,15 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
           #0b0f17;
         color: #e7eefc;
       }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: url("/_blackcat/assets/bg-grid.png") repeat;
+        opacity: 0.10;
+        pointer-events: none;
+        z-index: 0;
+      }
       .card {
         max-width: 980px;
         width: 100%;
@@ -1545,6 +1577,8 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
         background: rgba(15, 21, 36, 0.78);
         box-shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
         overflow: hidden;
+        position: relative;
+        z-index: 1;
       }
       .top {
         padding: 18px;
