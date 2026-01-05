@@ -77,6 +77,7 @@ function blackcat_setup_page(array $paths): void
         padding: 24px;
         font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
         position: relative;
+        isolation: isolate;
         background:
           radial-gradient(900px 420px at 20% 0%, rgba(86, 116, 255, 0.18), transparent 55%),
           radial-gradient(900px 420px at 80% 0%, rgba(255, 123, 114, 0.12), transparent 60%),
@@ -88,8 +89,9 @@ function blackcat_setup_page(array $paths): void
         position: fixed;
         inset: 0;
         background: url("/_blackcat/assets/bg-grid.png") repeat;
-        opacity: 0.14;
-        filter: invert(1) brightness(1.15) contrast(1.05);
+        opacity: 0.28;
+        mix-blend-mode: screen;
+        filter: brightness(1.8) contrast(1.25);
         pointer-events: none;
         z-index: 0;
       }
@@ -246,6 +248,7 @@ HTML;
         padding: 24px;
         font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
         position: relative;
+        isolation: isolate;
         background:
           radial-gradient(900px 420px at 20% 0%, rgba(86, 116, 255, 0.18), transparent 55%),
           radial-gradient(900px 420px at 80% 0%, rgba(118, 227, 157, 0.12), transparent 60%),
@@ -257,8 +260,9 @@ HTML;
         position: fixed;
         inset: 0;
         background: url("/_blackcat/assets/bg-grid.png") repeat;
-        opacity: 0.12;
-        filter: invert(1) brightness(1.15) contrast(1.05);
+        opacity: 0.22;
+        mix-blend-mode: screen;
+        filter: brightness(1.7) contrast(1.2);
         pointer-events: none;
         z-index: 0;
       }
@@ -1553,6 +1557,7 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
         padding: 24px;
         font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
         position: relative;
+        isolation: isolate;
         background:
           linear-gradient(180deg, rgba(11, 15, 23, 0.88), rgba(11, 15, 23, 0.88)),
           url("/_blackcat/assets/tls-not-trusted-banner.png") center / cover no-repeat,
@@ -1567,8 +1572,9 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
         position: fixed;
         inset: 0;
         background: url("/_blackcat/assets/bg-grid.png") repeat;
-        opacity: 0.13;
-        filter: invert(1) brightness(1.15) contrast(1.05);
+        opacity: 0.24;
+        mix-blend-mode: screen;
+        filter: brightness(1.75) contrast(1.25);
         pointer-events: none;
         z-index: 0;
       }
