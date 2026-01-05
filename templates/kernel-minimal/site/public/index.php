@@ -39,6 +39,45 @@ $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
 $path = parse_url(is_string($requestUri) ? $requestUri : '/', PHP_URL_PATH);
 $path = is_string($path) && $path !== '' ? $path : '/';
 
+$assetDir = __DIR__ . '/../_blackcat/asset';
+$assetMap = [
+    '/apple-touch-icon.png' => ['file' => 'apple-touch-icon.png', 'type' => 'image/png'],
+    '/favicon-32x32.png' => ['file' => 'favicon-32x32.png', 'type' => 'image/png'],
+    '/favicon-16x16.png' => ['file' => 'favicon-16x16.png', 'type' => 'image/png'],
+    '/favicon.ico' => ['file' => 'favicon.ico', 'type' => 'image/x-icon'],
+    '/site.webmanifest' => ['file' => 'site.webmanifest', 'type' => 'application/manifest+json; charset=utf-8'],
+    '/android-chrome-192x192.png' => ['file' => 'android-chrome-192x192.png', 'type' => 'image/png'],
+    '/android-chrome-512x512.png' => ['file' => 'android-chrome-512x512.png', 'type' => 'image/png'],
+];
+
+if (isset($assetMap[$path])) {
+    $meta = $assetMap[$path];
+    $filePath = $assetDir . DIRECTORY_SEPARATOR . $meta['file'];
+    if (!is_file($filePath)) {
+        http_response_code(404);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo "Not found.\n";
+        exit;
+    }
+
+    header('Content-Type: ' . $meta['type']);
+    header('Cache-Control: public, max-age=86400');
+    header('X-Content-Type-Options: nosniff');
+
+    $size = @filesize($filePath);
+    if (is_int($size)) {
+        header('Content-Length: ' . $size);
+    }
+
+    $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+    if ($method === 'HEAD') {
+        exit;
+    }
+
+    @readfile($filePath);
+    exit;
+}
+
 if ($path === '/_blackcat/setup' || str_starts_with($path, '/_blackcat/setup/')) {
     if (!is_file($setupPath)) {
         http_response_code(404);
