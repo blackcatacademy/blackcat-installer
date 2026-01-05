@@ -1,7 +1,40 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <path d="M20 28c0 14 6 22 12 22s12-8 12-22v-7c0-6-6-11-12-11s-12 5-12 11v7z" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M26 28v-7c0-3 3-6 6-6s6 3 6 6v7" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
-  <path d="M32 36v6" stroke="#ffd46b" stroke-width="3" stroke-linecap="round"/>
-  <path d="M32 48h0" stroke="#ffd46b" stroke-width="6" stroke-linecap="round"/>
-  <path d="M16 52l32-32" stroke="#ff7b72" stroke-width="4" stroke-linecap="round"/>
+  <!-- Cat + lock + strike-through (TLS not publicly trusted) -->
+  <circle cx="32" cy="32" r="26" stroke="#ffd46b" stroke-width="3" opacity="0.30" />
+
+  <!-- Cat ears -->
+  <path d="M24 18l-8-8 2 14" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.9" />
+  <path d="M40 18l8-8-2 14" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.9" />
+
+  <!-- Cat head -->
+  <path
+    d="M18 28c0 13 6 22 14 22s14-9 14-22c0-8-6-14-14-14s-14 6-14 14z"
+    stroke="#ffd46b"
+    stroke-width="3"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- Eyes -->
+  <path d="M24 31h0" stroke="#ffd46b" stroke-width="6" stroke-linecap="round" opacity="0.95" />
+  <path d="M40 31h0" stroke="#ffd46b" stroke-width="6" stroke-linecap="round" opacity="0.95" />
+
+  <!-- Nose + mouth -->
+  <path d="M32 36l-3 3h6l-3-3z" fill="#ffd46b" opacity="0.95" />
+  <path d="M32 39c-2 2-4 3-6 3" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" opacity="0.85" />
+  <path d="M32 39c2 2 4 3 6 3" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" opacity="0.85" />
+
+  <!-- Whiskers -->
+  <path d="M20 38l-10-2" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" opacity="0.55" />
+  <path d="M20 42l-10 2" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" opacity="0.55" />
+  <path d="M44 38l10-2" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" opacity="0.55" />
+  <path d="M44 42l10 2" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" opacity="0.55" />
+
+  <!-- Small lock badge -->
+  <path d="M26 52h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2H26a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2z" stroke="#ffd46b" stroke-width="3" stroke-linejoin="round" />
+  <path d="M29 41v-2a3 3 0 0 1 6 0v2" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" />
+  <path d="M32 45v3" stroke="#ffd46b" stroke-width="3" stroke-linecap="round" opacity="0.9" />
+
+  <!-- Strike-through -->
+  <path d="M18 46l28-28" stroke="#ff7b72" stroke-width="4" stroke-linecap="round" />
 </svg>
