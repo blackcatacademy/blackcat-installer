@@ -181,26 +181,26 @@ function blackcat_setup_page(array $paths): void
 	  <body>
 	    <main class="card">
 	      <div class="banner" aria-hidden="true"></div>
-	      <div class="top">
-	        <div class="imgWrap" aria-hidden="true"></div>
-	        <div>
-	          <h1>BlackCat Setup <span class="pill">HTTPS required</span></h1>
-	          <p class="muted">No worries — this is intentional. Installation is blocked over HTTP to prevent downgrade + MITM attacks.</p>
+		      <div class="top">
+		        <div class="imgWrap" aria-hidden="true"></div>
+		        <div>
+		          <h1>BlackCat Setup <span class="pill">HTTPS only</span></h1>
+		          <p class="muted"><strong>Plain HTTP is not allowed.</strong> Setup is a high-trust operation (install token + wallet approvals). BlackCat blocks it over HTTP to prevent downgrade and MITM attacks.</p>
+		        </div>
+		      </div>
+
+	      <div class="body">
+	        <div class="steps">
+	          <div><strong>Do this:</strong></div>
+	          <ol>
+	            <li>Enable HTTPS (recommended: Let’s Encrypt).</li>
+	            <li>If you use a reverse proxy, forward the original scheme (<code>Forwarded: proto=https</code> or <code>X-Forwarded-Proto: https</code>) — only trusted local peers are honored.</li>
+	            <li>Reload via <code>https://</code> and open <code>/_blackcat/setup</code> again.</li>
+	          </ol>
+	          <div class="footer warn">Tip: after install, BlackCat disables setup by default. You can also delete the setup module for zero web attack surface.</div>
 	        </div>
 	      </div>
-
-      <div class="body">
-        <div class="steps">
-          <div><strong>Fix:</strong></div>
-          <ol>
-            <li>Enable TLS (e.g., Let’s Encrypt) on your domain.</li>
-            <li>If you use a reverse proxy, forward HTTPS correctly (X-Forwarded-Proto / Forwarded: proto=https) from a trusted local peer (127.0.0.1 / ::1).</li>
-            <li>Reload this page over <code>https://</code>.</li>
-          </ol>
-          <div class="footer warn">Tip: the setup UI is token-gated and can be permanently disabled after install.</div>
-        </div>
-      </div>
-    </main>
+	    </main>
   </body>
 </html>
 HTML;
@@ -1666,22 +1666,22 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
   <body>
     <main class="card">
       <div class="top">
-        <div class="iconWrap" aria-hidden="true"></div>
-        <div>
-          <h1>BlackCat Setup <span class="pill">trusted TLS required</span></h1>
-          <p class="muted"><strong>This is not the HTTP block.</strong> You are on <code>https://</code>, but the certificate is not publicly trusted. Production installation is fail-closed to prevent MITM during setup.</p>
-        </div>
-      </div>
-      <div class="body">
-        <div class="box">
-          <div><strong>Fix:</strong></div>
+	        <div class="iconWrap" aria-hidden="true"></div>
+	        <div>
+	          <h1>BlackCat Setup <span class="pill">trusted TLS required</span></h1>
+	          <p class="muted"><strong>Secure URL, insecure trust.</strong> You are on <code>https://</code>, but the certificate chain is not publicly trusted. In production, BlackCat is <strong>fail-closed</strong> here to prevent MITM during setup.</p>
+	        </div>
+	      </div>
+	      <div class="body">
+	        <div class="box">
+	          <div><strong>Fix:</strong></div>
           <ol>
             <li>Install a CA-trusted certificate (recommended: Let’s Encrypt).</li>
             <li>Verify the browser shows a normal secure lock (no warnings).</li>
             <li>Reload this setup page over <code>https://</code>.</li>
-          </ol>
-          <div class="muted warn">Local demo tip: use <code>localhost</code> (dev mode shows a persistent warning banner instead of blocking).</div>
-        </div>
+	          </ol>
+	          <div class="muted warn">Dev tip: on <code>localhost</code> the installer is allowed, but shows a persistent warning banner until you deploy a trusted cert.</div>
+	        </div>
         <div class="box">
           <div><strong>Details (server-side TLS verification):</strong></div>
           <div class="muted small">BlackCat tried to verify a CA-trusted TLS handshake to <code>__TLS_HOST__</code>:<code>__TLS_PORT__</code> and refused to continue.</div>
