@@ -1656,7 +1656,7 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
       }
       .banner {
         width: 100%;
-        height: clamp(140px, 18vw, 220px);
+        height: clamp(160px, 20vw, 260px);
         background:
           linear-gradient(180deg, rgba(11, 15, 23, 0.05), rgba(11, 15, 23, 0.92)),
           url("/_blackcat/assets/tls-not-trusted-banner.png") left center / cover no-repeat,
@@ -1710,8 +1710,11 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
       h1 { margin: 0; font-size: 26px; letter-spacing: 0.2px; }
       .muted { color: #9fb0d0; }
       .body { padding: 10px 18px 16px 18px; }
+      p { margin: 8px 0 0; }
+      ol { margin: 8px 0 0 18px; padding: 0; }
+      li { margin: 4px 0; }
       .box {
-        margin-top: 12px;
+        margin-top: 10px;
         padding: 12px 14px;
         border-radius: 14px;
         border: 1px solid rgba(31, 42, 68, 0.95);
@@ -1729,22 +1732,22 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
         <div class="iconWrap" aria-hidden="true"></div>
         <div>
           <h1>BlackCat Setup <span class="pill">trusted TLS required</span></h1>
-          <p class="muted"><strong>Secure URL, insecure trust.</strong> You are on <code>https://</code>, but the certificate chain is not publicly trusted. In production, BlackCat is <strong>fail-closed</strong> here to prevent MITM during setup.</p>
+          <p class="muted"><strong>HTTPS is not enough.</strong> Your certificate is not publicly trusted. In production, BlackCat is <strong>fail-closed</strong> here to prevent MITM during setup.</p>
         </div>
       </div>
       <div class="body">
         <div class="box">
           <div><strong>Fix:</strong></div>
           <ol>
-            <li>Install a CA-trusted certificate (recommended: Let’s Encrypt).</li>
-            <li>Verify the browser shows a normal secure lock (no warnings).</li>
-            <li>Reload this setup page over <code>https://</code>.</li>
+            <li>Install a CA-trusted certificate (Let’s Encrypt).</li>
+            <li>Confirm the browser lock has no warnings.</li>
+            <li>Reload this page.</li>
           </ol>
           <div class="muted warn">Dev tip: on <code>localhost</code> the installer is allowed, but shows a persistent warning banner until you deploy a trusted cert.</div>
         </div>
         <div class="box">
-          <div><strong>Details (server-side TLS verification):</strong></div>
-          <div class="muted small">BlackCat tried to verify a CA-trusted TLS handshake to <code>__TLS_HOST__</code>:<code>__TLS_PORT__</code> and refused to continue.</div>
+          <div><strong>Details (server-side TLS check):</strong></div>
+          <div class="muted small">BlackCat verified a CA-trusted TLS handshake to <code>__TLS_HOST__</code>:<code>__TLS_PORT__</code> and refused to continue.</div>
           <div class="muted small">Error: <code>__TLS_ERR__</code></div>
         </div>
       </div>
