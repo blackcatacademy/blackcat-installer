@@ -1744,12 +1744,12 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
         text-shadow: 0 10px 36px rgba(0, 0, 0, 0.55);
       }
       .muted { color: #9fb0d0; }
-      .body { padding: 10px 18px 16px 18px; }
-      p { margin: 8px 0 0; }
-      ol { margin: 8px 0 0 18px; padding: 0; }
-      li { margin: 4px 0; }
+      .body { padding: 8px 18px 14px 18px; }
+      p { margin: 6px 0 0; }
+      ol { margin: 6px 0 0 16px; padding: 0; }
+      li { margin: 2px 0; }
       .box {
-        margin-top: 10px;
+        margin-top: 8px;
         padding: 12px 14px;
         border-radius: 14px;
         border: 1px solid rgba(31, 42, 68, 0.95);
