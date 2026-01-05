@@ -208,6 +208,15 @@ HTML;
         exit;
     }
 
+    $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+    if (!is_string($method) || !in_array(strtoupper(trim($method)), ['GET', 'HEAD'], true)) {
+        http_response_code(405);
+        header('Allow: GET, HEAD');
+        header('Content-Type: text/plain; charset=utf-8');
+        echo "Method not allowed.\n";
+        exit;
+    }
+
     if (blackcat_setup_is_disabled($paths['state_dir'])) {
         http_response_code(404);
         header('Content-Type: text/plain; charset=utf-8');
@@ -219,6 +228,11 @@ HTML;
     blackcat_ensure_state_dir($stateDir);
 
     $tlsGate = blackcat_setup_tls_gate($stateDir);
+    $debug = $_GET['debug'] ?? null;
+    if ($tlsGate['mode'] === 'dev' && $tlsGate['trusted'] !== true && is_string($debug) && $debug === 'tls_not_trusted') {
+        blackcat_setup_render_tls_not_trusted_page($tlsGate);
+        exit;
+    }
     if ($tlsGate['mode'] === 'prod' && $tlsGate['trusted'] !== true) {
         blackcat_setup_render_tls_not_trusted_page($tlsGate);
         exit;
@@ -237,11 +251,35 @@ HTML;
     if ($tlsGate['mode'] === 'dev' && $tlsGate['trusted'] !== true) {
         $tlsBarHtml = '<div class="tlsBar" role="status">'
             . '<strong>DEV WARNING:</strong> TLS certificate is not publicly trusted. '
-            . 'Do <strong>not</strong> use this mode in production. Install a CA-trusted certificate (e.g., Let’s Encrypt) and reload.'
+            . 'Do <strong>not</strong> use this mode in production. Install a CA-trusted certificate (e.g., Let’s Encrypt) and reload. '
+            . '<a class="tlsBarLink" href="/_blackcat/setup?debug=tls_not_trusted" target="_blank" rel="noreferrer">Debug: view the prod block page</a>'
             . '</div>';
     }
 
+    $nonce = rtrim(strtr(base64_encode(random_bytes(18)), '+/', '-_'), '=');
     header('Content-Type: text/html; charset=utf-8');
+    header('Cache-Control: no-store');
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: DENY');
+    header('Referrer-Policy: no-referrer');
+    header('Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()');
+    header('Cross-Origin-Opener-Policy: same-origin');
+    header('Cross-Origin-Resource-Policy: same-origin');
+    header('X-Robots-Tag: noindex, nofollow, noarchive');
+    if ($tlsGate['mode'] === 'prod' && $tlsGate['trusted'] === true) {
+        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+    }
+    header(
+        "Content-Security-Policy: default-src 'none'; "
+        . "script-src 'nonce-{$nonce}'; "
+        . "script-src-attr 'none'; "
+        . "connect-src 'self'; "
+        . "img-src 'self' data:; "
+        . "style-src 'unsafe-inline'; "
+        . "base-uri 'none'; "
+        . "form-action 'none'; "
+        . "frame-ancestors 'none'"
+    );
     $assetDir = rtrim($paths['site_dir'], "/\\") . DIRECTORY_SEPARATOR . '_blackcat' . DIRECTORY_SEPARATOR . 'asset';
     $trustIllustrationPath = $assetDir . DIRECTORY_SEPARATOR . 'trusted-vs-untrusted.png';
     $trustIllustrationHtml = '';
@@ -414,6 +452,8 @@ HTML;
         backdrop-filter: blur(10px);
       }
       .tlsBar strong { color: #ff7b72; }
+      .tlsBar a { color: #ffd46b; font-weight: 650; text-decoration: underline; }
+      .tlsBar a:hover { color: #fff; }
     </style>
   </head>
   <body>
@@ -596,8 +636,8 @@ HTML;
 	      <pre id="finishOut" style="display:none"></pre>
 	    </div>
 
-      <script src="/_blackcat/ethers.umd.min.js"></script>
-      <script>
+      <script src="/_blackcat/ethers.umd.min.js" nonce="__BLACKCAT_CSP_NONCE__"></script>
+      <script nonce="__BLACKCAT_CSP_NONCE__">
       const $ = (id) => document.getElementById(id);
       const api = async (path, opts = {}) => {
         const token = localStorage.getItem("bc_install_token") || "";
@@ -1211,8 +1251,8 @@ HTML;
 HTML;
 
     echo str_replace(
-        ['__BLACKCAT_TLS_BAR__', '__BLACKCAT_TRUST_ILLUSTRATION__'],
-        [$tlsBarHtml, $trustIllustrationHtml],
+        ['__BLACKCAT_TLS_BAR__', '__BLACKCAT_TRUST_ILLUSTRATION__', '__BLACKCAT_CSP_NONCE__'],
+        [$tlsBarHtml, $trustIllustrationHtml, $nonce],
         $page,
     );
 }
