@@ -141,20 +141,31 @@ function blackcat_setup_page(array $paths): void
 			      .card {
 			        max-width: 920px;
 			        width: 100%;
-		        border-radius: 18px;
-		        border: 1px solid rgba(42, 59, 99, 0.74);
-		        background:
-		          radial-gradient(900px 420px at 18% 0%, rgba(255, 255, 255, 0.07), transparent 62%),
-		          radial-gradient(900px 420px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
-		          linear-gradient(180deg, rgba(15, 21, 36, 0.74), rgba(15, 21, 36, 0.40));
-		        backdrop-filter: blur(18px) saturate(1.25);
-		        -webkit-backdrop-filter: blur(18px) saturate(1.25);
+			        border-radius: 18px;
+			        border: 1px solid rgba(42, 59, 99, 0.74);
+			        background:
+			          radial-gradient(900px 420px at 18% 0%, rgba(255, 255, 255, 0.07), transparent 62%),
+			          radial-gradient(900px 420px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
+			          linear-gradient(180deg, rgba(15, 21, 36, 0.74), rgba(15, 21, 36, 0.40));
+			        backdrop-filter: blur(18px) saturate(1.25);
+			        -webkit-backdrop-filter: blur(18px) saturate(1.25);
 			        box-shadow:
 			          0 30px 100px rgba(0, 0, 0, 0.45),
 			          0 0 0 1px rgba(255, 123, 114, 0.08);
 			        overflow: hidden;
 			        position: relative;
 			        z-index: 2;
+			      }
+			      .card::before {
+			        content: "";
+			        position: absolute;
+			        inset: 0;
+			        background:
+			          radial-gradient(900px 360px at 15% 0%, rgba(255, 123, 114, 0.12), transparent 62%),
+			          radial-gradient(900px 360px at 85% 0%, rgba(86, 116, 255, 0.10), transparent 64%),
+			          linear-gradient(120deg, rgba(255, 255, 255, 0.06), transparent 22%, transparent 74%, rgba(255, 255, 255, 0.04));
+			        opacity: 0.85;
+			        pointer-events: none;
 			      }
 			      .card::after {
 			        content: "";
@@ -176,23 +187,34 @@ function blackcat_setup_page(array $paths): void
 			            0 0 0 1px rgba(255, 123, 114, 0.10);
 			        }
 			      }
-		      .header {
-		        padding: 16px 18px 14px;
-		        display: grid;
-		        grid-template-columns: 132px 1fr;
-		        gap: 16px;
-		        align-items: center;
-		        border-bottom: 1px solid rgba(31, 42, 68, 0.95);
-		        position: relative;
-		        background:
-		          radial-gradient(900px 240px at 18% 0%, rgba(255, 123, 114, 0.12), transparent 62%),
-		          radial-gradient(900px 240px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
-		          linear-gradient(180deg, rgba(15, 21, 36, 0.64), rgba(15, 21, 36, 0.28));
-		      }
-		      .header::after {
-		        content: "";
-		        position: absolute;
-		        left: 0;
+			      .header {
+			        padding: 16px 18px 14px;
+			        display: grid;
+			        grid-template-columns: 132px 1fr;
+			        gap: 16px;
+			        align-items: center;
+			        border-bottom: 1px solid rgba(31, 42, 68, 0.95);
+			        position: relative;
+			        background:
+			          radial-gradient(900px 240px at 18% 0%, rgba(255, 123, 114, 0.12), transparent 62%),
+			          radial-gradient(900px 240px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
+			          linear-gradient(180deg, rgba(15, 21, 36, 0.64), rgba(15, 21, 36, 0.28));
+			      }
+			      .header::before {
+			        content: "";
+			        position: absolute;
+			        inset: 0;
+			        background:
+			          radial-gradient(500px 220px at 20% 35%, rgba(255, 123, 114, 0.10), transparent 68%),
+			          radial-gradient(520px 240px at 80% 55%, rgba(86, 116, 255, 0.09), transparent 70%),
+			          linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 45%);
+			        opacity: 0.85;
+			        pointer-events: none;
+			      }
+			      .header::after {
+			        content: "";
+			        position: absolute;
+			        left: 0;
 		        right: 0;
 		        bottom: -1px;
 		        height: 1px;
@@ -213,7 +235,6 @@ function blackcat_setup_page(array $paths): void
 		        overflow: visible;
 		        display: grid;
 		        place-items: center;
-		        perspective: 900px;
 		        transform-style: preserve-3d;
 		        box-shadow: none;
 		      }
@@ -233,28 +254,6 @@ function blackcat_setup_page(array $paths): void
 		        pointer-events: none;
 		        z-index: 0;
 		      }
-		      .mascotWrap::after {
-		        content: "";
-		        position: absolute;
-		        inset: 6px;
-		        border-radius: 22px;
-		        background:
-		          radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.14), transparent 52%),
-		          radial-gradient(circle at 72% 78%, rgba(86, 116, 255, 0.11), transparent 56%),
-		          linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.00) 42%, rgba(0, 0, 0, 0.18));
-		        background-size: 140% 140%, 140% 140%, 100% 100%;
-		        background-position: 0% 0%, 100% 100%, 0 0;
-		        border: 1px solid rgba(31, 42, 68, 0.92);
-		        box-shadow:
-		          inset 0 1px 0 rgba(255, 255, 255, 0.18),
-		          inset 0 -12px 20px rgba(0, 0, 0, 0.38),
-		          inset 0 0 0 1px rgba(255, 123, 114, 0.06),
-		          0 18px 70px rgba(0, 0, 0, 0.32);
-		        opacity: 0.94;
-		        transform: translateZ(6px);
-		        pointer-events: none;
-		        z-index: 1;
-		      }
 		      .mascot {
 		        width: 100%;
 		        height: 100%;
@@ -267,12 +266,7 @@ function blackcat_setup_page(array $paths): void
 		        z-index: 2;
 		      }
 		      @media (prefers-reduced-motion: no-preference) {
-		        .mascotWrap::after { animation: bcPlateSheen 7.5s ease-in-out infinite alternate; }
 		        .mascot { animation: bcMascotFloat 6.5s ease-in-out infinite; }
-		        @keyframes bcPlateSheen {
-		          from { background-position: 0% 0%, 100% 100%, 0 0; }
-		          to { background-position: 100% 0%, 0% 100%, 0 0; }
-		        }
 		        @keyframes bcMascotFloat {
 		          0%, 100% { transform: translate3d(0, 0, 18px) scale(1.06); }
 		          50% { transform: translate3d(0, -2px, 18px) scale(1.06); }
@@ -315,15 +309,28 @@ function blackcat_setup_page(array $paths): void
 	      .body { padding: 14px 18px 16px; }
 	      .grid2 { display: grid; grid-template-columns: 1fr; gap: 12px; }
 	      @media (min-width: 980px) { .grid2 { grid-template-columns: 1fr 1fr; } }
-		      .panel {
-		        margin: 0;
-		        padding: 12px 14px;
-		        border-radius: 14px;
-		        border: 1px solid rgba(31, 42, 68, 0.95);
-		        background:
-		          linear-gradient(180deg, rgba(11, 15, 23, 0.62), rgba(11, 15, 23, 0.42));
-		        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-		      }
+			      .panel {
+			        margin: 0;
+			        padding: 12px 14px;
+			        border-radius: 14px;
+			        border: 1px solid rgba(31, 42, 68, 0.95);
+			        background:
+			          linear-gradient(180deg, rgba(11, 15, 23, 0.62), rgba(11, 15, 23, 0.42));
+			        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+			        position: relative;
+			        overflow: hidden;
+			      }
+			      .panel::before {
+			        content: "";
+			        position: absolute;
+			        inset: -1px;
+			        background:
+			          radial-gradient(420px 180px at 18% 0%, rgba(255, 123, 114, 0.10), transparent 70%),
+			          radial-gradient(420px 180px at 82% 0%, rgba(86, 116, 255, 0.09), transparent 70%),
+			          linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 42%);
+			        opacity: 0.8;
+			        pointer-events: none;
+			      }
 		      .panel strong {
 		        display: inline-block;
 		        margin-bottom: 6px;
