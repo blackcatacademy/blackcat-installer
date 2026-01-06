@@ -6,12 +6,13 @@ Prefer placing assets in `site/_blackcat/asset/` (outside web docroot) — the k
 This folder (`site/public/_blackcat/assets/`) is kept for convenience / legacy and will also work if you drop the files here.
 
 Suggested files (PNG, no text recommended):
-- `https-required-cat.png` — shown when setup is opened over HTTP (BlackCat refuses; HTTPS required).
+- `fatal-error-cat.png` — generic “fatal gate” mascot (used for HTTP block / front-controller-required and similar fail-closed pages).
 - `tls-not-trusted-cat.png` — shown when setup is opened over HTTPS, but the certificate is not publicly trusted (production is fail-closed).
 - `hero-banner.png` — optional hero header background or banner.
 - `tls-not-trusted-banner.png` — optional background for the “Trusted TLS Required” block (helps differentiate from the HTTP block).
 - `trusted-vs-untrusted.png` — optional split illustration for release trust / integrity.
-- `bg-grid.png` — subtle repeating background grid (adds depth; used on error + setup pages).
+- `bg-grid.png` — repeating background grid (default theme).
+- `bg-grid-red.png` — repeating background grid for error/fail-closed pages (recommended to visually separate “blocked” states).
 - `favicon.png` (64×64 or 128×128) — high-contrast icon for tiny sizes (tab / bookmarks).
 
 Guidelines:
