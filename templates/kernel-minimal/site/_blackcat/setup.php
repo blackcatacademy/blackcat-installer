@@ -89,11 +89,12 @@ function blackcat_setup_page(array $paths): void
         min-height: 100svh;
         display: flex;
         justify-content: center;
-        align-items: flex-start;
-        padding: clamp(16px, 2.5vh, 56px) 16px 16px;
+        align-items: center;
+        padding: 16px;
         font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
         position: relative;
         isolation: isolate;
+        overflow-x: hidden;
         background:
           radial-gradient(900px 420px at 20% 0%, rgba(86, 116, 255, 0.18), transparent 55%),
           radial-gradient(900px 420px at 80% 0%, rgba(255, 123, 114, 0.12), transparent 60%),
@@ -119,34 +120,48 @@ function blackcat_setup_page(array $paths): void
           to { background-position: 240px 120px; }
         }
       }
-	      .card {
-	        max-width: 920px;
-	        width: 100%;
-	        border-radius: 18px;
-	        border: 1px solid rgba(42, 59, 99, 0.78);
-	        background:
-	          radial-gradient(900px 420px at 18% 0%, rgba(255, 255, 255, 0.07), transparent 62%),
-	          radial-gradient(900px 420px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
-	          linear-gradient(180deg, rgba(15, 21, 36, 0.74), rgba(15, 21, 36, 0.40));
-	        backdrop-filter: blur(18px) saturate(1.25);
-	        -webkit-backdrop-filter: blur(18px) saturate(1.25);
-	        box-shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
-	        overflow: hidden;
-	        position: relative;
-	        z-index: 1;
-	      }
-	      .header {
-	        padding: 16px 18px 14px;
-	        display: grid;
-	        grid-template-columns: 132px 1fr;
-	        gap: 16px;
-	        align-items: center;
-	        border-bottom: 1px solid rgba(31, 42, 68, 0.95);
-	        background:
-	          radial-gradient(900px 240px at 18% 0%, rgba(255, 123, 114, 0.12), transparent 62%),
-	          radial-gradient(900px 240px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
-	          linear-gradient(180deg, rgba(15, 21, 36, 0.64), rgba(15, 21, 36, 0.28));
-	      }
+		      .card {
+		        max-width: 920px;
+		        width: 100%;
+		        border-radius: 18px;
+		        border: 1px solid rgba(42, 59, 99, 0.74);
+		        background:
+		          radial-gradient(900px 420px at 18% 0%, rgba(255, 255, 255, 0.07), transparent 62%),
+		          radial-gradient(900px 420px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
+		          linear-gradient(180deg, rgba(15, 21, 36, 0.74), rgba(15, 21, 36, 0.40));
+		        backdrop-filter: blur(18px) saturate(1.25);
+		        -webkit-backdrop-filter: blur(18px) saturate(1.25);
+		        box-shadow:
+		          0 30px 100px rgba(0, 0, 0, 0.45),
+		          0 0 0 1px rgba(255, 123, 114, 0.08);
+		        overflow: hidden;
+		        position: relative;
+		        z-index: 1;
+		      }
+		      .header {
+		        padding: 16px 18px 14px;
+		        display: grid;
+		        grid-template-columns: 132px 1fr;
+		        gap: 16px;
+		        align-items: center;
+		        border-bottom: 1px solid rgba(31, 42, 68, 0.95);
+		        position: relative;
+		        background:
+		          radial-gradient(900px 240px at 18% 0%, rgba(255, 123, 114, 0.12), transparent 62%),
+		          radial-gradient(900px 240px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
+		          linear-gradient(180deg, rgba(15, 21, 36, 0.64), rgba(15, 21, 36, 0.28));
+		      }
+		      .header::after {
+		        content: "";
+		        position: absolute;
+		        left: 0;
+		        right: 0;
+		        bottom: -1px;
+		        height: 1px;
+		        background: linear-gradient(90deg, rgba(255, 123, 114, 0.00), rgba(255, 123, 114, 0.38), rgba(86, 116, 255, 0.32), rgba(86, 116, 255, 0.00));
+		        opacity: 0.8;
+		        pointer-events: none;
+		      }
 	      @media (max-width: 740px) {
 	        .header { grid-template-columns: 1fr; justify-items: center; text-align: center; }
 	      }
@@ -204,14 +219,23 @@ function blackcat_setup_page(array $paths): void
 	      .body { padding: 14px 18px 16px; }
 	      .grid2 { display: grid; grid-template-columns: 1fr; gap: 12px; }
 	      @media (min-width: 980px) { .grid2 { grid-template-columns: 1fr 1fr; } }
-	      .panel {
-	        margin: 0;
-	        padding: 12px 14px;
-	        border-radius: 14px;
-	        border: 1px solid rgba(31, 42, 68, 0.95);
-	        background: rgba(11, 15, 23, 0.55);
-	      }
-	      .panel strong { display: inline-block; margin-bottom: 6px; }
+		      .panel {
+		        margin: 0;
+		        padding: 12px 14px;
+		        border-radius: 14px;
+		        border: 1px solid rgba(31, 42, 68, 0.95);
+		        background:
+		          linear-gradient(180deg, rgba(11, 15, 23, 0.62), rgba(11, 15, 23, 0.42));
+		        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+		      }
+		      .panel strong {
+		        display: inline-block;
+		        margin-bottom: 6px;
+		        text-transform: uppercase;
+		        letter-spacing: 0.08em;
+		        font-size: 11px;
+		        color: #c9d6f3;
+		      }
 	      ol, ul { margin: 8px 0 0 18px; padding: 0; }
 	      li { margin: 6px 0; }
 	      code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
