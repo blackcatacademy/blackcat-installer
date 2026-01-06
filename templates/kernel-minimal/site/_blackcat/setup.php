@@ -138,8 +138,13 @@ function blackcat_setup_page(array $paths): void
           to { transform: translate3d(0.9%, 0.8%, 0) scale(1.05); }
         }
       }
-			      .card {
+			      .frame {
+			        position: relative;
 			        max-width: 920px;
+			        width: 100%;
+			        isolation: isolate;
+			      }
+			      .card {
 			        width: 100%;
 			        border-radius: 18px;
 			        border: 1px solid rgba(31, 42, 68, 0.86);
@@ -221,11 +226,9 @@ function blackcat_setup_page(array $paths): void
 			        }
 			      }
 			      .header {
-			        padding: 16px 18px 14px;
-			        display: grid;
-			        grid-template-columns: 132px 1fr;
-			        gap: 16px;
-			        align-items: center;
+			        padding: 16px 18px 14px 156px;
+			        min-height: 142px;
+			        display: block;
 			        border-bottom: 1px solid rgba(31, 42, 68, 0.95);
 			        position: relative;
 			        background:
@@ -255,25 +258,34 @@ function blackcat_setup_page(array $paths): void
 		        opacity: 0.8;
 		        pointer-events: none;
 		      }
-	      @media (max-width: 740px) {
-	        .header { grid-template-columns: 1fr; justify-items: center; text-align: center; }
-	      }
+		      @media (max-width: 740px) {
+		        .header { padding: 86px 18px 14px; min-height: 0; text-align: center; }
+		      }
 		      .mascotWrap {
-		        width: 132px;
-		        height: 132px;
+		        width: 148px;
+		        height: 148px;
 		        border-radius: 18px;
 		        border: 0;
 		        background: transparent;
-		        position: relative;
+		        position: absolute;
+		        left: -18px;
+		        top: -22px;
 		        overflow: visible;
 		        display: grid;
 		        place-items: center;
 		        transform-style: preserve-3d;
 		        box-shadow: none;
+		        z-index: 3;
 		      }
-	      @media (max-width: 740px) {
-	        .mascotWrap { width: 120px; height: 120px; }
-	      }
+		      @media (max-width: 740px) {
+		        .mascotWrap {
+		          width: 132px;
+		          height: 132px;
+		          left: 50%;
+		          top: -34px;
+		          transform: translateX(-50%);
+		        }
+		      }
 		      .mascotWrap::before {
 		        content: "";
 		        position: absolute;
@@ -411,39 +423,39 @@ function blackcat_setup_page(array $paths): void
 	    </style>
 	  </head>
 		  <body>
-			    <main class="card">
-			      <div class="cardBorder" aria-hidden="true"></div>
-			      <div class="header">
-			        <div class="mascotWrap" aria-hidden="true"><div class="mascot" aria-hidden="true"></div></div>
-			        <div>
-			          <h1>BlackCat Setup <span class="pill"><span class="pillLed" aria-hidden="true"></span>HTTPS only</span></h1>
-			          <p class="muted"><strong>Plain HTTP is not allowed.</strong> Setup is a high-trust operation (install token + wallet approvals). BlackCat blocks it over HTTP to prevent downgrade and MITM attacks.</p>
-			        </div>
-			      </div>
+		    <div class="frame">
+		      <div class="mascotWrap" aria-hidden="true"><div class="mascot" aria-hidden="true"></div></div>
+		      <main class="card">
+		        <div class="cardBorder" aria-hidden="true"></div>
+		        <div class="header">
+		          <h1>BlackCat Setup <span class="pill"><span class="pillLed" aria-hidden="true"></span>HTTPS only</span></h1>
+		          <p class="muted"><strong>Plain HTTP is not allowed.</strong> Setup is a high-trust operation (install token + wallet approvals). BlackCat blocks it over HTTP to prevent downgrade and MITM attacks.</p>
+		        </div>
 
-		      <div class="body">
-		        <div class="grid2">
-		          <div class="panel">
-		            <strong>Do this:</strong>
-		          <ol>
-		            <li>Enable HTTPS (recommended: Let’s Encrypt).</li>
-		            <li>If you use a reverse proxy, forward the original scheme (<code>Forwarded: proto=https</code> or <code>X-Forwarded-Proto: https</code>) — only trusted local peers are honored.</li>
-		            <li>Reload via <code>https://</code> and open <code>/_blackcat/setup</code> again.</li>
-		          </ol>
-		          </div>
-		          <div class="panel">
-		            <strong>Why BlackCat blocks HTTP:</strong>
-		            <ul class="muted">
-		              <li>HTTP can be downgraded or intercepted (MITM).</li>
-		              <li>Setup handles secrets + approvals; a single unsafe request can compromise the system.</li>
-		              <li>Fail-closed is intentional: no “click-through” bypass.</li>
-		            </ul>
-		          <div class="footer warn">Tip: after install, BlackCat disables setup by default. You can also delete the setup module for zero web attack surface.</div>
+		        <div class="body">
+		          <div class="grid2">
+		            <div class="panel">
+		              <strong>Do this:</strong>
+		              <ol>
+		                <li>Enable HTTPS (recommended: Let’s Encrypt).</li>
+		                <li>If you use a reverse proxy, forward the original scheme (<code>Forwarded: proto=https</code> or <code>X-Forwarded-Proto: https</code>) — only trusted local peers are honored.</li>
+		                <li>Reload via <code>https://</code> and open <code>/_blackcat/setup</code> again.</li>
+		              </ol>
+		            </div>
+		            <div class="panel">
+		              <strong>Why BlackCat blocks HTTP:</strong>
+		              <ul class="muted">
+		                <li>HTTP can be downgraded or intercepted (MITM).</li>
+		                <li>Setup handles secrets + approvals; a single unsafe request can compromise the system.</li>
+		                <li>Fail-closed is intentional: no “click-through” bypass.</li>
+		              </ul>
+		              <div class="footer warn">Tip: after install, BlackCat disables setup by default. You can also delete the setup module for zero web attack surface.</div>
+		            </div>
 		          </div>
 		        </div>
-		      </div>
-		    </main>
-	  </body>
+		      </main>
+		    </div>
+		  </body>
 </html>
 HTML;
         exit;
