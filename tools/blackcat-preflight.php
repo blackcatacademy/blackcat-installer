@@ -621,7 +621,7 @@ function blackcat_preflight_check_basic_hardening(): array
             'Harden php.ini (hosting settings) to remove the unsafe flags above.',
         ];
         if ($meta['cgi_fix_pathinfo_enabled']) {
-            $hints[] = 'If you cannot change php.ini, you may use ?policy=less-strict (fail-closed; requires a clean PathInfo probe).';
+            $hints[] = 'If you cannot change php.ini, you may use ?policy=less-strict (fail-closed; requires a clean PathInfo probe + a locked on-chain probe attestation).';
         }
         $hints[] = 'Use ?policy=warn to evaluate a non-strict deployment.';
         return [
@@ -1205,7 +1205,10 @@ if ($probeMode === 'pathinfo') {
         . '    summary.textContent = "No PHP execution observed for the tested PathInfo variants in this probe.";' 
         . '    addHint("This does not guarantee safety; it only indicates this specific probe did not trigger execution.");'
         . '    if (cfg.policy === "less-strict") {'
-        . '      if (cfg.less_strict_can_clear) { setCheck("pass", "cgi.fix_pathinfo is enabled, but the PathInfo probe observed NO EXEC for tested variants."); }'
+        . '      if (cfg.less_strict_can_clear) {'
+        . '        setCheck("pass", "cgi.fix_pathinfo is enabled, but the PathInfo probe observed NO EXEC for tested variants.");'
+        . '        addHint("Note: less-strict still requires a locked on-chain probe attestation to satisfy TrustKernel.");'
+        . '      }'
         . '      recomputeOverall();'
         . '    }'
         . '    if (cfg.policy === "strict") {'

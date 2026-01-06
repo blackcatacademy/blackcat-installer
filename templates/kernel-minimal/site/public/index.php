@@ -368,7 +368,7 @@ HttpKernel::run(
 
         if ($path === '/health' || $path === '/_blackcat/health') {
             $payload = $status->toMonitorArray();
-            $ok = ($status->enforcement !== 'strict') || $status->readAllowed;
+            $ok = ($status->enforcement === 'warn') || $status->readAllowed;
             $code = $ok ? 200 : 503;
 
             http_response_code($code);
@@ -544,7 +544,9 @@ HTML;
         $trustedBadge = $isTrusted ? '<span class="pill ok">trusted</span>' : '<span class="pill bad">untrusted</span>';
         $enforcementBadge = $status->enforcement === 'strict'
             ? '<span class="pill warn">strict</span>'
-            : '<span class="pill">warn</span>';
+            : ($status->enforcement === 'less-strict'
+                ? '<span class="pill warn">less-strict</span>'
+                : '<span class="pill">warn</span>');
 
         $extraBadges = '<div class="row">'
             . $trustedBadge
@@ -556,7 +558,7 @@ HTML;
 
         $setupAvailable = is_file($setupPath) && !is_file($stateDir . DIRECTORY_SEPARATOR . 'installed.flag');
 
-        if ($status->enforcement === 'strict' && !$status->readAllowed) {
+        if ($status->enforcement !== 'warn' && !$status->readAllowed) {
             $codes = $status->errorCodes;
             $codeHtml = $codes !== []
                 ? '<div class="box"><strong>Trust errors:</strong><ul><li><code>' . implode('</code></li><li><code>', array_map(static fn (string $c): string => htmlspecialchars($c, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), $codes)) . '</code></li></ul></div>'

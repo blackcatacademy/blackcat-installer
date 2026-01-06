@@ -31,8 +31,8 @@ Before you upload a full bundle, you can run a **single-file** diagnostics check
    - JSON output: `https://YOUR_DOMAIN/blackcat-preflight.php?format=json`
    - Policy override: `?policy=strict` (default), `?policy=less-strict`, or `?policy=warn`
      - `strict`: conservative; blocks when `cgi.fix_pathinfo` is enabled.
-     - `less-strict`: fail-closed, but may allow `cgi.fix_pathinfo` if the probe shows **NO EXEC**.
-     - `warn`: non-strict evaluation (for dev / compatibility).
+     - `less-strict`: fail-closed, but may allow `cgi.fix_pathinfo` only if the probe shows **NO EXEC** *and* the install has a locked on-chain probe attestation.
+     - `warn`: non-strict evaluation (compatibility only; do not use for production).
    - Best-effort PathInfo probe:
      - Auto-runs when `cgi.fix_pathinfo` is enabled on FPM/CGI.
      - More variants: `?deep=1` (also tests `/index.php`, `;x.php`, etc.)
