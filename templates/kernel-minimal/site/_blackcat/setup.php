@@ -279,27 +279,41 @@ function blackcat_setup_page(array $paths): void
 		        flex-wrap: wrap;
 		        gap: 10px;
 		        align-items: baseline;
-		        color: #ff7b72;
+		        color: #ff6b66;
 		        text-shadow:
-		          0 1px 0 rgba(0, 0, 0, 0.72),
-		          0 14px 60px rgba(0, 0, 0, 0.42);
+		          0 1px 0 rgba(0, 0, 0, 0.78),
+		          0 2px 0 rgba(0, 0, 0, 0.38),
+		          0 -1px 0 rgba(255, 255, 255, 0.10),
+		          0 18px 70px rgba(0, 0, 0, 0.48);
+		      }
+		      @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+		        h1 {
+		          background: linear-gradient(180deg, #ffd6d3 0%, #ff7b72 55%, #ff5e57 100%);
+		          -webkit-background-clip: text;
+		          background-clip: text;
+		          color: transparent;
+		        }
 		      }
 	      .muted { color: #9fb0d0; }
+	      .muted strong { color: #ff9c98; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.65); }
 		      .pill {
 		        display: inline-block;
 	        padding: 2px 10px;
 	        border-radius: 999px;
 	        background:
-	          linear-gradient(180deg, rgba(255, 123, 114, 0.22), rgba(255, 123, 114, 0.10));
-	        border: 1px solid rgba(255, 123, 114, 0.34);
+	          linear-gradient(180deg, rgba(255, 123, 114, 0.30), rgba(255, 123, 114, 0.12));
+	        border: 1px solid rgba(255, 123, 114, 0.44);
 	        color: #ff9c98;
 	        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-	        text-shadow: 0 1px 0 rgba(0, 0, 0, 0.65);
+	        letter-spacing: 0.03em;
+	        text-shadow:
+	          0 1px 0 rgba(0, 0, 0, 0.72),
+	          0 10px 40px rgba(0, 0, 0, 0.35);
 	        box-shadow:
 	          inset 0 1px 0 rgba(255, 255, 255, 0.18),
-	          inset 0 -12px 20px rgba(0, 0, 0, 0.30),
+	          inset 0 -12px 20px rgba(0, 0, 0, 0.36),
 	          0 0 0 1px rgba(255, 123, 114, 0.08),
-	          0 12px 38px rgba(0, 0, 0, 0.26);
+	          0 16px 52px rgba(0, 0, 0, 0.34);
 		        margin-left: 0;
 		      }
 	      .body { padding: 14px 18px 16px; }
