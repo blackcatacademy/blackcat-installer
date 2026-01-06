@@ -145,6 +145,26 @@ function blackcat_preflight_request_dir_url_path(): string
 }
 
 /**
+ * @return string
+ */
+function blackcat_preflight_request_url_path(): string
+{
+    $uri = $_SERVER['REQUEST_URI'] ?? null;
+    if (!is_string($uri) || $uri === '' || str_contains($uri, "\0")) {
+        return '/';
+    }
+
+    $path = parse_url($uri, PHP_URL_PATH);
+    if (!is_string($path) || $path === '' || str_contains($path, "\0")) {
+        return '/';
+    }
+    if ($path[0] !== '/') {
+        $path = '/' . $path;
+    }
+    return $path;
+}
+
+/**
  * @return string|null
  */
 function blackcat_preflight_request_origin(): ?string
@@ -186,6 +206,9 @@ function blackcat_preflight_absolute_url(string $relative): ?string
     $origin = blackcat_preflight_request_origin();
     if ($origin === null) {
         return null;
+    }
+    if ($relative !== '' && $relative[0] === '?') {
+        return $origin . blackcat_preflight_request_url_path() . $relative;
     }
     $dir = blackcat_preflight_request_dir_url_path();
     $rel = ltrim($relative, '/');
