@@ -142,7 +142,7 @@ function blackcat_setup_page(array $paths): void
 			        max-width: 920px;
 			        width: 100%;
 			        border-radius: 18px;
-			        border: 1px solid rgba(42, 59, 99, 0.74);
+			        border: 1px solid rgba(31, 42, 68, 0.86);
 			        background:
 			          radial-gradient(900px 420px at 18% 0%, rgba(255, 255, 255, 0.07), transparent 62%),
 			          radial-gradient(900px 420px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
@@ -155,6 +155,41 @@ function blackcat_setup_page(array $paths): void
 			        overflow: hidden;
 			        position: relative;
 			        z-index: 2;
+			      }
+			      .cardBorder {
+			        position: absolute;
+			        inset: 0;
+			        border-radius: 18px;
+			        pointer-events: none;
+			      }
+			      .cardBorder::before {
+			        content: "";
+			        position: absolute;
+			        inset: 0;
+			        border-radius: 18px;
+			        padding: 1px;
+			        background: conic-gradient(
+			          from 210deg,
+			          rgba(255, 123, 114, 0.00),
+			          rgba(255, 123, 114, 0.24),
+			          rgba(86, 116, 255, 0.18),
+			          rgba(255, 212, 107, 0.12),
+			          rgba(255, 123, 114, 0.00)
+			        );
+			        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+			        -webkit-mask-composite: xor;
+			        mask-composite: exclude;
+			        opacity: 0.9;
+			      }
+			      .cardBorder::after {
+			        content: "";
+			        position: absolute;
+			        inset: 1px;
+			        border-radius: 17px;
+			        box-shadow:
+			          inset 0 1px 0 rgba(255, 255, 255, 0.10),
+			          inset 0 -24px 40px rgba(0, 0, 0, 0.28);
+			        opacity: 0.85;
 			      }
 			      .card::before {
 			        content: "";
@@ -308,6 +343,26 @@ function blackcat_setup_page(array $paths): void
 	          0 16px 52px rgba(0, 0, 0, 0.34);
 		        margin-left: 0;
 		      }
+		      .pillLed {
+		        width: 8px;
+		        height: 8px;
+		        border-radius: 999px;
+		        display: inline-block;
+		        background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.00) 45%), #ff6b66;
+		        box-shadow:
+		          0 0 0 1px rgba(0, 0, 0, 0.35),
+		          0 0 14px rgba(255, 107, 102, 0.42),
+		          0 0 28px rgba(255, 107, 102, 0.18);
+		        margin-right: 8px;
+		        transform: translateY(-1px);
+		      }
+		      @media (prefers-reduced-motion: no-preference) {
+		        .pillLed { animation: bcLedPulse 1.8s ease-in-out infinite; }
+		        @keyframes bcLedPulse {
+		          0%, 100% { opacity: 0.72; filter: saturate(1); }
+		          50% { opacity: 1; filter: saturate(1.15); }
+		        }
+		      }
 	      .body { padding: 14px 18px 16px; }
 	      .grid2 { display: grid; grid-template-columns: 1fr; gap: 12px; }
 	      @media (min-width: 980px) { .grid2 { grid-template-columns: 1fr 1fr; } }
@@ -356,14 +411,15 @@ function blackcat_setup_page(array $paths): void
 	    </style>
 	  </head>
 		  <body>
-		    <main class="card">
-		      <div class="header">
-		        <div class="mascotWrap" aria-hidden="true"><div class="mascot" aria-hidden="true"></div></div>
-		        <div>
-		          <h1>BlackCat Setup <span class="pill">HTTPS only</span></h1>
-		          <p class="muted"><strong>Plain HTTP is not allowed.</strong> Setup is a high-trust operation (install token + wallet approvals). BlackCat blocks it over HTTP to prevent downgrade and MITM attacks.</p>
-		        </div>
-		      </div>
+			    <main class="card">
+			      <div class="cardBorder" aria-hidden="true"></div>
+			      <div class="header">
+			        <div class="mascotWrap" aria-hidden="true"><div class="mascot" aria-hidden="true"></div></div>
+			        <div>
+			          <h1>BlackCat Setup <span class="pill"><span class="pillLed" aria-hidden="true"></span>HTTPS only</span></h1>
+			          <p class="muted"><strong>Plain HTTP is not allowed.</strong> Setup is a high-trust operation (install token + wallet approvals). BlackCat blocks it over HTTP to prevent downgrade and MITM attacks.</p>
+			        </div>
+			      </div>
 
 		      <div class="body">
 		        <div class="grid2">
