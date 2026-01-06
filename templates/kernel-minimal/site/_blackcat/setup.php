@@ -2161,39 +2161,305 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
         border: 1px solid rgba(31, 42, 68, 0.95);
         background: rgba(11, 15, 23, 0.55);
       }
-      code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-      .small { font-size: 12px; }
-      .warn { color: #ffd46b; }
-    </style>
-  </head>
-  <body>
-    <main class="card">
-      <div class="banner" aria-hidden="true"></div>
-      <div class="top">
-        <div class="iconWrap" aria-hidden="true"></div>
-        <div>
-          <h1>BlackCat Setup <span class="pill">trusted TLS required</span></h1>
-          <p class="muted"><strong>HTTPS is not enough.</strong> The certificate is not publicly trusted. In production, BlackCat is <strong>fail-closed</strong> here to prevent MITM during setup.</p>
-        </div>
-      </div>
-      <div class="body">
-        <div class="box">
-          <div><strong>Fix:</strong></div>
-          <ol>
-            <li>Install a CA-trusted certificate (Let’s Encrypt).</li>
-            <li>Confirm the browser lock has no warnings.</li>
-            <li>Reload this page.</li>
-          </ol>
-          <div class="muted warn">Dev: <code>localhost</code> is allowed, but shows a persistent warning banner until you deploy a trusted cert.</div>
-        </div>
-        <div class="box">
-          <div><strong>Details (server-side TLS check):</strong></div>
-          <div class="muted small">CA-trusted TLS verification failed for <code>__TLS_HOST__</code>:<code>__TLS_PORT__</code>.</div>
-          <div class="muted small">Error: <code>__TLS_ERR__</code></div>
-        </div>
-      </div>
-    </main>
-  </body>
+	      code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+	      .small { font-size: 12px; }
+	      .warn { color: #ffd46b; }
+	      body {
+	        align-items: center;
+	        padding: 16px;
+	        overflow-x: hidden;
+	      }
+	      body::before {
+	        opacity: 0.36;
+	        filter: brightness(2.2) contrast(1.35) saturate(1.15);
+	        z-index: 1;
+	      }
+	      body::after {
+	        content: "";
+	        position: fixed;
+	        inset: -20%;
+	        background:
+	          radial-gradient(circle at 18% 18%, rgba(255, 123, 114, 0.18), transparent 52%),
+	          radial-gradient(circle at 82% 28%, rgba(86, 116, 255, 0.18), transparent 54%),
+	          radial-gradient(circle at 55% 85%, rgba(255, 212, 107, 0.10), transparent 56%);
+	        filter: blur(56px) saturate(1.06);
+	        opacity: 0.38;
+	        pointer-events: none;
+	        z-index: 0;
+	      }
+	      @media (prefers-reduced-motion: no-preference) {
+	        body::after { animation: bcAuroraDrift 54s ease-in-out infinite alternate; }
+	        @keyframes bcAuroraDrift {
+	          from { transform: translate3d(-0.6%, -0.4%, 0) scale(1.02); }
+	          to { transform: translate3d(0.9%, 0.8%, 0) scale(1.05); }
+	        }
+	      }
+	      .banner, .top, .iconWrap { display: none !important; }
+	      .frame {
+	        position: relative;
+	        max-width: 920px;
+	        width: 100%;
+	        isolation: isolate;
+	      }
+	      .card {
+	        border: 1px solid rgba(31, 42, 68, 0.86);
+	        box-shadow:
+	          0 30px 100px rgba(0, 0, 0, 0.45),
+	          0 0 0 1px rgba(255, 123, 114, 0.08);
+	      }
+	      .cardBorder {
+	        position: absolute;
+	        inset: 0;
+	        border-radius: 18px;
+	        pointer-events: none;
+	      }
+	      .cardBorder::before {
+	        content: "";
+	        position: absolute;
+	        inset: 0;
+	        border-radius: 18px;
+	        padding: 1px;
+	        background: conic-gradient(
+	          from 210deg,
+	          rgba(255, 123, 114, 0.00),
+	          rgba(255, 123, 114, 0.24),
+	          rgba(86, 116, 255, 0.18),
+	          rgba(255, 212, 107, 0.12),
+	          rgba(255, 123, 114, 0.00)
+	        );
+	        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+	        -webkit-mask-composite: xor;
+	        mask-composite: exclude;
+	        opacity: 0.9;
+	      }
+	      .cardBorder::after {
+	        content: "";
+	        position: absolute;
+	        inset: 1px;
+	        border-radius: 17px;
+	        box-shadow:
+	          inset 0 1px 0 rgba(255, 255, 255, 0.10),
+	          inset 0 -24px 40px rgba(0, 0, 0, 0.28);
+	        opacity: 0.85;
+	      }
+	      .header {
+	        padding: 16px 18px 14px 156px;
+	        min-height: 142px;
+	        display: block;
+	        border-bottom: 1px solid rgba(31, 42, 68, 0.95);
+	        position: relative;
+	        background:
+	          radial-gradient(900px 240px at 18% 0%, rgba(255, 123, 114, 0.12), transparent 62%),
+	          radial-gradient(900px 240px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
+	          linear-gradient(180deg, rgba(15, 21, 36, 0.64), rgba(15, 21, 36, 0.28));
+	      }
+	      .header::before {
+	        content: "";
+	        position: absolute;
+	        inset: 0;
+	        background:
+	          radial-gradient(500px 220px at 20% 35%, rgba(255, 123, 114, 0.10), transparent 68%),
+	          radial-gradient(520px 240px at 80% 55%, rgba(86, 116, 255, 0.09), transparent 70%),
+	          linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 45%);
+	        opacity: 0.85;
+	        pointer-events: none;
+	      }
+	      .header::after {
+	        content: "";
+	        position: absolute;
+	        left: 0;
+	        right: 0;
+	        bottom: -1px;
+	        height: 1px;
+	        background: linear-gradient(90deg, rgba(255, 123, 114, 0.00), rgba(255, 123, 114, 0.38), rgba(86, 116, 255, 0.32), rgba(86, 116, 255, 0.00));
+	        opacity: 0.8;
+	        pointer-events: none;
+	      }
+	      @media (max-width: 740px) {
+	        .header { padding: 86px 18px 14px; min-height: 0; }
+	      }
+	      .mascotWrap {
+	        width: 148px;
+	        height: 148px;
+	        border-radius: 18px;
+	        background: transparent;
+	        position: absolute;
+	        left: -18px;
+	        top: -22px;
+	        overflow: visible;
+	        display: grid;
+	        place-items: center;
+	        transform-style: preserve-3d;
+	        z-index: 3;
+	      }
+	      @media (max-width: 740px) {
+	        .mascotWrap {
+	          width: 132px;
+	          height: 132px;
+	          left: 50%;
+	          top: -34px;
+	          transform: translateX(-50%);
+	        }
+	      }
+	      .mascotWrap::before {
+	        content: "";
+	        position: absolute;
+	        inset: -34px;
+	        background:
+	          radial-gradient(circle at 35% 22%, rgba(255, 212, 107, 0.26), transparent 60%),
+	          radial-gradient(circle at 74% 70%, rgba(86, 116, 255, 0.16), transparent 62%);
+	        filter: blur(14px);
+	        opacity: 0.9;
+	        pointer-events: none;
+	        z-index: 0;
+	      }
+	      .mascot {
+	        width: 100%;
+	        height: 100%;
+	        background:
+	          url("/_blackcat/assets/tls-not-trusted-cat.png") center / contain no-repeat,
+	          url("/_blackcat/assets/tls-not-trusted-fallback.svg") center / 92px 92px no-repeat;
+	        filter: none;
+	        transform: translate3d(0, 0, 18px) scale(1.06);
+	        position: relative;
+	        z-index: 2;
+	      }
+	      @media (prefers-reduced-motion: no-preference) {
+	        .mascot { animation: bcMascotFloat 6.5s ease-in-out infinite; }
+	        @keyframes bcMascotFloat {
+	          0%, 100% { transform: translate3d(0, 0, 18px) scale(1.06); }
+	          50% { transform: translate3d(0, -2px, 18px) scale(1.06); }
+	        }
+	      }
+		      h1 {
+		        display: flex;
+		        flex-wrap: wrap;
+		        gap: 10px;
+		        justify-content: flex-end;
+		        align-items: baseline;
+		        font-weight: 780;
+		        text-shadow:
+		          0 1px 0 rgba(0, 0, 0, 0.78),
+	          0 2px 0 rgba(0, 0, 0, 0.38),
+	          0 -1px 0 rgba(255, 255, 255, 0.10),
+	          0 18px 70px rgba(0, 0, 0, 0.48);
+	      }
+	      .header .muted {
+	        margin: 6px 0 0;
+	        max-width: 640px;
+	        margin-left: auto;
+	        text-align: left;
+	      }
+	      .muted strong { color: #ffd46b; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.65); }
+	      .pill {
+	        margin-left: 0;
+	        background: linear-gradient(180deg, rgba(255, 212, 107, 0.22), rgba(255, 212, 107, 0.10));
+	        border: 1px solid rgba(255, 212, 107, 0.38);
+	        color: #ffe4a6;
+	        letter-spacing: 0.03em;
+	        text-shadow:
+	          0 1px 0 rgba(0, 0, 0, 0.72),
+	          0 10px 40px rgba(0, 0, 0, 0.35);
+	        box-shadow:
+	          inset 0 1px 0 rgba(255, 255, 255, 0.18),
+	          inset 0 -12px 20px rgba(0, 0, 0, 0.36),
+	          0 0 0 1px rgba(255, 212, 107, 0.08),
+	          0 16px 52px rgba(0, 0, 0, 0.34);
+	      }
+	      .pillLed {
+	        width: 8px;
+	        height: 8px;
+	        border-radius: 999px;
+	        display: inline-block;
+	        background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.00) 45%), #ffd46b;
+	        box-shadow:
+	          0 0 0 1px rgba(0, 0, 0, 0.35),
+	          0 0 14px rgba(255, 212, 107, 0.34),
+	          0 0 28px rgba(255, 212, 107, 0.16);
+	        margin-right: 8px;
+	        transform: translateY(-1px);
+	      }
+	      @media (prefers-reduced-motion: no-preference) {
+	        .pillLed { animation: bcLedPulse 1.8s ease-in-out infinite; }
+	        @keyframes bcLedPulse {
+	          0%, 100% { opacity: 0.72; filter: saturate(1); }
+	          50% { opacity: 1; filter: saturate(1.12); }
+	        }
+	      }
+	      .body { padding: 14px 18px 16px; }
+	      .grid2 { display: grid; grid-template-columns: 1fr; gap: 12px; }
+	      @media (min-width: 980px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+	      .panel {
+	        margin: 0;
+	        padding: 12px 14px;
+	        border-radius: 14px;
+	        border: 1px solid rgba(31, 42, 68, 0.95);
+	        background: linear-gradient(180deg, rgba(11, 15, 23, 0.62), rgba(11, 15, 23, 0.42));
+	        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+	        position: relative;
+	        overflow: hidden;
+	      }
+	      .panel::before {
+	        content: "";
+	        position: absolute;
+	        inset: -1px;
+	        background:
+	          radial-gradient(420px 180px at 18% 0%, rgba(255, 212, 107, 0.10), transparent 70%),
+	          radial-gradient(420px 180px at 82% 0%, rgba(86, 116, 255, 0.09), transparent 70%),
+	          linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 42%);
+	        opacity: 0.62;
+	        pointer-events: none;
+	      }
+	      .panel strong {
+	        display: inline-block;
+	        margin-bottom: 6px;
+	        text-transform: uppercase;
+	        letter-spacing: 0.08em;
+	        font-size: 11px;
+	        color: #c9d6f3;
+	      }
+	      ol, ul { margin: 8px 0 0 18px; padding: 0; }
+	      li { margin: 6px 0; }
+	      code {
+	        padding: 1px 6px;
+	        border-radius: 8px;
+	        border: 1px solid rgba(31, 42, 68, 0.95);
+	        background: rgba(11, 15, 23, 0.48);
+	        color: #d7e3ff;
+	      }
+	      .footer { margin-top: 10px; font-size: 12px; color: #9fb0d0; }
+	    </style>
+	  </head>
+	  <body>
+	    <div class="frame">
+	      <div class="mascotWrap" aria-hidden="true"><div class="mascot" aria-hidden="true"></div></div>
+	      <main class="card">
+	        <div class="cardBorder" aria-hidden="true"></div>
+	        <div class="header">
+	          <h1>BlackCat Setup <span class="pill"><span class="pillLed" aria-hidden="true"></span>trusted TLS required</span></h1>
+	          <p class="muted"><strong>HTTPS is not enough.</strong> The certificate is not publicly trusted. In production, BlackCat is <strong>fail-closed</strong> here to prevent MITM during setup.</p>
+	        </div>
+	        <div class="body">
+	          <div class="grid2">
+	            <div class="panel">
+	              <strong>Fix:</strong>
+	              <ol>
+	                <li>Install a CA-trusted certificate (Let’s Encrypt).</li>
+	                <li>Confirm the browser lock has no warnings.</li>
+	                <li>Reload this page.</li>
+	              </ol>
+	              <div class="footer warn">Dev: <code>localhost</code> is allowed, but shows a persistent warning banner until you deploy a trusted cert.</div>
+	            </div>
+	            <div class="panel">
+	              <strong>Details (server-side TLS check):</strong>
+	              <div class="muted small">CA-trusted TLS verification failed for <code>__TLS_HOST__</code>:<code>__TLS_PORT__</code>.</div>
+	              <div class="muted small">Error: <code>__TLS_ERR__</code></div>
+	            </div>
+	          </div>
+	        </div>
+	      </main>
+	    </div>
+	  </body>
 </html>
 HTML;
     echo str_replace(
