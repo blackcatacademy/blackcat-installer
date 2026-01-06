@@ -23,7 +23,18 @@ header('Cross-Origin-Opener-Policy: same-origin');
 header('Cross-Origin-Resource-Policy: same-origin');
 // Default CSP is script-less. `?probe=pathinfo` enables a minimal inline script to run same-origin fetches.
 $probe = $_GET['probe'] ?? null;
-$allowInlineScript = is_string($probe) && strtolower(trim($probe)) === 'pathinfo';
+$probeRequested = is_string($probe) && strtolower(trim($probe)) === 'pathinfo';
+// Auto-enable the PathInfo probe when cgi.fix_pathinfo is enabled on FPM/CGI (so users don't need extra steps).
+$autoPathinfoProbe = false;
+$cgiFixRaw = ini_get('cgi.fix_pathinfo');
+if ($cgiFixRaw !== false) {
+    $v = strtolower(trim((string) $cgiFixRaw));
+    $cgiFixEnabled = !($v === '' || $v === '0' || $v === 'off' || $v === 'false' || $v === 'no');
+    if ($cgiFixEnabled && in_array(PHP_SAPI, ['fpm-fcgi', 'cgi', 'cgi-fcgi'], true)) {
+        $autoPathinfoProbe = true;
+    }
+}
+$allowInlineScript = $probeRequested || $autoPathinfoProbe;
 $csp = "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 if ($allowInlineScript) {
     $csp .= "; script-src 'unsafe-inline'; connect-src 'self'";
@@ -47,7 +58,7 @@ const BLACKCAT_PREFLIGHT_RPC_URLS = [
 ];
 
 /**
- * @return array{policy:'strict'|'warn',value:string}
+ * @return array{policy:'strict'|'less-strict'|'warn',value:string}
  */
 function blackcat_preflight_policy(): array
 {
@@ -56,6 +67,9 @@ function blackcat_preflight_policy(): array
         $v = strtolower(trim($raw));
         if ($v === 'warn' || $v === 'dev') {
             return ['policy' => 'warn', 'value' => $v];
+        }
+        if ($v === 'less-strict' || $v === 'less_strict' || $v === 'lessstrict' || $v === 'ls') {
+            return ['policy' => 'less-strict', 'value' => $v];
         }
         if ($v === 'strict' || $v === 'prod') {
             return ['policy' => 'strict', 'value' => $v];
@@ -81,6 +95,15 @@ function blackcat_preflight_probe_deep(): bool
 {
     $raw = $_GET['deep'] ?? null;
     if (!is_string($raw)) {
+        // If we're auto-probing, default to deep mode for better confidence.
+        $cgiFixRaw = ini_get('cgi.fix_pathinfo');
+        if ($cgiFixRaw !== false) {
+            $v = strtolower(trim((string) $cgiFixRaw));
+            $cgiFixEnabled = !($v === '' || $v === '0' || $v === 'off' || $v === 'false' || $v === 'no');
+            if ($cgiFixEnabled && in_array(PHP_SAPI, ['fpm-fcgi', 'cgi', 'cgi-fcgi'], true)) {
+                return true;
+            }
+        }
         return false;
     }
     $v = strtolower(trim($raw));
@@ -460,9 +483,18 @@ function blackcat_preflight_check_basic_hardening(): array
     $fails = [];
     $warns = [];
     $info = [];
+    $failIds = [];
+    $warnIds = [];
+    $meta = [
+        'cgi_fix_pathinfo_enabled' => false,
+        'cgi_fix_pathinfo_only_fail' => false,
+        'cgi_fix_pathinfo_probe_supported' => true, // browser probe (same-origin fetch)
+        'cgi_fix_pathinfo_probe_mode' => 'browser',
+    ];
 
     if (blackcat_preflight_ini_flag('allow_url_include')) {
         $fails[] = 'allow_url_include is enabled (unsafe).';
+        $failIds[] = 'allow_url_include';
     }
 
     $displayErrors = blackcat_preflight_ini_flag('display_errors');
@@ -478,64 +510,80 @@ function blackcat_preflight_check_basic_hardening(): array
             $canOverride = !$afterErrors && !$afterStartup;
         }
 
-        if ($policy === 'strict' && !$canOverride) {
+        if ($policy !== 'warn' && !$canOverride) {
             $fails[] = 'display_errors/display_startup_errors is enabled (information disclosure).';
+            $failIds[] = 'display_errors';
         } else {
             $warns[] = 'display_errors/display_startup_errors is enabled (information disclosure).'
                 . ($canOverride ? ' Note: it appears overrideable at runtime (ini_set), but production should still disable it in hosting settings.' : '');
+            $warnIds[] = 'display_errors';
         }
     }
 
     $pharReadonly = ini_get('phar.readonly');
     if (is_string($pharReadonly) && trim($pharReadonly) !== '' && trim($pharReadonly) !== '1') {
-        if ($policy === 'strict') {
+        if ($policy !== 'warn') {
             $fails[] = 'phar.readonly is disabled (PHAR deserialization risk).';
+            $failIds[] = 'phar_readonly';
         } else {
             $warns[] = 'phar.readonly is disabled (PHAR deserialization risk).';
+            $warnIds[] = 'phar_readonly';
         }
     }
 
     if (blackcat_preflight_ini_flag('enable_dl')) {
-        if ($policy === 'strict') {
+        if ($policy !== 'warn') {
             $fails[] = 'enable_dl is enabled (runtime extension loading increases attack surface).';
+            $failIds[] = 'enable_dl';
         } else {
             $warns[] = 'enable_dl is enabled (runtime extension loading increases attack surface).';
+            $warnIds[] = 'enable_dl';
         }
     }
 
     $autoPrepend = ini_get('auto_prepend_file');
     if (is_string($autoPrepend) && trim($autoPrepend) !== '') {
-        if ($policy === 'strict') {
+        if ($policy !== 'warn') {
             $fails[] = 'auto_prepend_file is set (hidden code injection risk).';
+            $failIds[] = 'auto_prepend_file';
         } else {
             $warns[] = 'auto_prepend_file is set (hidden code injection risk).';
+            $warnIds[] = 'auto_prepend_file';
         }
     }
 
     $autoAppend = ini_get('auto_append_file');
     if (is_string($autoAppend) && trim($autoAppend) !== '') {
-        if ($policy === 'strict') {
+        if ($policy !== 'warn') {
             $fails[] = 'auto_append_file is set (hidden code injection risk).';
+            $failIds[] = 'auto_append_file';
         } else {
             $warns[] = 'auto_append_file is set (hidden code injection risk).';
+            $warnIds[] = 'auto_append_file';
         }
     }
 
     $cgiFixPathinfo = blackcat_preflight_ini_flag('cgi.fix_pathinfo');
     if ($cgiFixPathinfo && in_array(PHP_SAPI, ['fpm-fcgi', 'cgi', 'cgi-fcgi'], true)) {
-        if ($policy === 'strict') {
-            $fails[] = 'cgi.fix_pathinfo is enabled (risk in some FPM/CGI configurations; detected via ini_get). Optional: run ?probe=pathinfo (or &deep=1) for a best-effort black-box probe.';
+        $meta['cgi_fix_pathinfo_enabled'] = true;
+        if ($policy === 'warn') {
+            $warns[] = 'cgi.fix_pathinfo is enabled (detected via ini_get). A best-effort PathInfo probe will run automatically below.';
+            $warnIds[] = 'cgi_fix_pathinfo';
         } else {
-            $warns[] = 'cgi.fix_pathinfo is enabled (risk in some FPM/CGI configurations; detected via ini_get). Optional: run ?probe=pathinfo (or &deep=1) for a best-effort black-box probe.';
+            // strict + less-strict are fail-closed here; less-strict may be allowed only if the probe shows NO EXEC.
+            $fails[] = 'cgi.fix_pathinfo is enabled (detected via ini_get). A best-effort PathInfo probe will run automatically below.';
+            $failIds[] = 'cgi_fix_pathinfo';
         }
     }
 
     $openBasedir = ini_get('open_basedir');
     if (!is_string($openBasedir) || trim($openBasedir) === '') {
-        if ($policy === 'strict') {
+        if ($policy !== 'warn') {
             $fails[] = 'open_basedir is not set (required hardening control).';
+            $failIds[] = 'open_basedir';
         } else {
             $warns[] = 'open_basedir is not set (recommended hardening control).';
+            $warnIds[] = 'open_basedir';
         }
     } else {
         $info[] = 'open_basedir is set. Ensure it includes your BlackCat bundle root (config.runtime.json + .blackcat) and any OS paths you use (/etc/blackcat, /var/lib/blackcat).';
@@ -554,25 +602,34 @@ function blackcat_preflight_check_basic_hardening(): array
 
     if ($callable !== []) {
         $msg = 'Dangerous process-exec functions are callable: ' . implode(', ', $callable) . '. Disable them (recommended: disable_functions=' . implode(',', $dangerous) . ').';
-        if ($policy === 'strict') {
+        if ($policy !== 'warn') {
             $fails[] = $msg;
+            $failIds[] = 'dangerous_exec';
         } else {
             $warns[] = $msg;
+            $warnIds[] = 'dangerous_exec';
         }
     } elseif ($disabled === []) {
         // Informational only: some hostings may disable exec primitives at another layer.
         $info[] = 'disable_functions is empty, but no dangerous process-exec functions appear callable in this runtime.';
     }
 
+    $meta['cgi_fix_pathinfo_only_fail'] = $meta['cgi_fix_pathinfo_enabled'] && ($failIds !== [] && $failIds === ['cgi_fix_pathinfo']);
+
     if ($fails !== []) {
+        $hints = [
+            'Harden php.ini (hosting settings) to remove the unsafe flags above.',
+        ];
+        if ($meta['cgi_fix_pathinfo_enabled']) {
+            $hints[] = 'If you cannot change php.ini, you may use ?policy=less-strict (fail-closed; requires a clean PathInfo probe).';
+        }
+        $hints[] = 'Use ?policy=warn to evaluate a non-strict deployment.';
         return [
             'ok' => false,
             'code' => 'php_ini_unsafe',
             'details' => implode(' ', $fails),
-            'hints' => [
-                'Harden php.ini (hosting settings) to remove the unsafe flags above.',
-                'If you cannot change php.ini, strict TrustKernel will fail-closed on this hosting. Re-run with ?policy=warn to evaluate a non-strict deployment.',
-            ],
+            'hints' => $hints,
+            'meta' => $meta,
         ];
     }
 
@@ -585,6 +642,7 @@ function blackcat_preflight_check_basic_hardening(): array
                 'Align php.ini with the TrustKernel policy you intend to run.',
                 'If open_basedir is set, ensure the BlackCat bundle root is inside the allowed directories.',
             ],
+            'meta' => $meta,
         ];
     }
 
@@ -596,12 +654,14 @@ function blackcat_preflight_check_basic_hardening(): array
             'hints' => [
                 'Ensure the BlackCat bundle root is inside open_basedir.',
             ],
+            'meta' => $meta,
         ];
     }
 
     return [
         'ok' => true,
         'details' => 'php.ini hardening: OK',
+        'meta' => $meta,
     ];
 }
 
@@ -779,10 +839,19 @@ function blackcat_preflight_check_outbound_rpc(): array
 }
 
 /**
- * @param array{status:string,title:string,details:string,hints:list<string>} $check
+ * @param array{id?:string,status:string,title:string,details:string,hints:list<string>,meta?:array<string,mixed>} $check
  */
 function blackcat_preflight_render_check(array $check): string
 {
+    $rawId = $check['id'] ?? '';
+    $safeId = '';
+    if (is_string($rawId) && $rawId !== '') {
+        $safeId = preg_replace('/[^a-z0-9_\\-]/i', '_', $rawId) ?? '';
+    }
+    $rootId = $safeId !== '' ? ('bcCheck_' . $safeId) : '';
+    $badgeId = $safeId !== '' ? ('bcCheckBadge_' . $safeId) : '';
+    $detailsId = $safeId !== '' ? ('bcCheckDetails_' . $safeId) : '';
+
     $status = $check['status'];
     $badgeClass = $status === 'pass' ? 'pass' : ($status === 'warn' ? 'warn' : 'fail');
     $badgeText = strtoupper($status);
@@ -796,13 +865,28 @@ function blackcat_preflight_render_check(array $check): string
         $hintsHtml .= '</ul>';
     }
 
-    return '<div class="check">'
+    $attrs = '';
+    if ($safeId !== '') {
+        $attrs .= ' id="' . htmlspecialchars($rootId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '"';
+        $attrs .= ' data-check-id="' . htmlspecialchars($safeId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '"';
+        $attrs .= ' data-check-status="' . htmlspecialchars($status, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '"';
+        if (isset($check['meta']) && is_array($check['meta'])) {
+            if (!empty($check['meta']['cgi_fix_pathinfo_enabled'])) {
+                $attrs .= ' data-meta-cgi-fix-pathinfo-enabled="1"';
+            }
+            if (!empty($check['meta']['cgi_fix_pathinfo_only_fail'])) {
+                $attrs .= ' data-meta-cgi-fix-pathinfo-only-fail="1"';
+            }
+        }
+    }
+
+    return '<div class="check"' . $attrs . '>'
         . '<div class="checkHead">'
-        . '<span class="badge ' . $badgeClass . '">' . $badgeText . '</span>'
+        . '<span class="badge ' . $badgeClass . '"' . ($badgeId !== '' ? ' id="' . htmlspecialchars($badgeId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '"' : '') . '>' . $badgeText . '</span>'
         . '<div class="checkTitle">' . htmlspecialchars($check['title'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</div>'
         . '</div>'
         . '<div class="checkBody">'
-        . '<div class="checkDetails">' . htmlspecialchars($check['details'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</div>'
+        . '<div class="checkDetails"' . ($detailsId !== '' ? ' id="' . htmlspecialchars($detailsId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '"' : '') . '>' . htmlspecialchars($check['details'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</div>'
         . $hintsHtml
         . '</div>'
         . '</div>';
@@ -862,6 +946,7 @@ $checks[] = [
     'status' => ($iniCheck['ok'] && ($iniCheck['code'] ?? '') === 'php_ini_warn') ? 'warn' : ($iniCheck['ok'] ? 'pass' : 'fail'),
     'details' => $iniCheck['details'] ?? 'Unknown',
     'hints' => $iniCheck['hints'] ?? [],
+    'meta' => $iniCheck['meta'] ?? [],
 ];
 
 $writeCheck = blackcat_preflight_check_write_access();
@@ -963,6 +1048,11 @@ if ($wantJson) {
     exit;
 }
 
+// HTML mode: if cgi.fix_pathinfo is enabled on FPM/CGI, auto-run the best-effort probe (no extra steps).
+if ($probeMode !== 'pathinfo' && $autoPathinfoProbe) {
+    $probeMode = 'pathinfo';
+}
+
 $overallBadgeClass = $overall === 'pass' ? 'pass' : ($overall === 'warn' ? 'warn' : 'fail');
 $overallTitle = $overall === 'pass' ? 'READY' : ($overall === 'warn' ? 'WARNINGS' : 'BLOCKED');
 
@@ -974,10 +1064,37 @@ foreach ($checks as $check) {
 $docLink = 'blackcat-installer/docs/STAGE3_KERNEL_MINIMAL_BUNDLE.md';
 $policy = blackcat_preflight_policy()['policy'];
 
+$policyNav = '';
+if (!$wantJson) {
+    $currentPath = blackcat_preflight_request_url_path();
+    $qs = $_GET;
+    unset($qs['policy']);
+    $mk = static function (string $p) use ($currentPath, $qs): string {
+        $next = $qs;
+        $next['policy'] = $p;
+        $href = $currentPath . '?' . http_build_query($next);
+        return htmlspecialchars($href, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    };
+
+    $policyNav = '<div class="policyNav">'
+        . '<span class="policyLabel">Policy</span>'
+        . '<a class="pill' . ($policy === 'strict' ? ' active' : '') . '" href="' . $mk('strict') . '">strict</a>'
+        . '<a class="pill' . ($policy === 'less-strict' ? ' active' : '') . '" href="' . $mk('less-strict') . '">less-strict</a>'
+        . '<a class="pill' . ($policy === 'warn' ? ' active' : '') . '" href="' . $mk('warn') . '">warn</a>'
+        . '</div>';
+}
+
 $probePanel = '';
 if ($probeMode === 'pathinfo') {
     $p = blackcat_preflight_prepare_pathinfo_probe();
     $deep = blackcat_preflight_probe_deep();
+    $phpIniMeta = [];
+    foreach ($checks as $c) {
+        if (($c['id'] ?? '') === 'php_ini' && isset($c['meta']) && is_array($c['meta'])) {
+            $phpIniMeta = $c['meta'];
+            break;
+        }
+    }
     $probeConfig = [
         'id' => $p['id'],
         'filename' => $p['filename'],
@@ -995,6 +1112,9 @@ if ($probeMode === 'pathinfo') {
         'marker' => $p['marker'] ?? null,
         'cleanup_url' => '?probe=pathinfo&cleanup=1&token=' . rawurlencode($p['id']) . '&file=' . rawurlencode($p['filename']),
         'deep' => $deep,
+        'policy' => $policy,
+        'affects_check_id' => 'php_ini',
+        'less_strict_can_clear' => !empty($phpIniMeta['cgi_fix_pathinfo_only_fail']),
     ];
 
     $probePanel = '<div class="check" style="margin-top:12px;">'
@@ -1017,6 +1137,33 @@ if ($probeMode === 'pathinfo') {
         . 'const hints = document.getElementById("bcProbeHints");'
         . 'const set = (cls, txt) => { badge.className = "badge " + cls; badge.textContent = txt; };'
         . 'const addHint = (t) => { const li = document.createElement("li"); li.textContent = t; hints.appendChild(li); };'
+        . 'const setCheck = (status, detail) => {'
+        . '  if (!cfg.affects_check_id) return;'
+        . '  const id = String(cfg.affects_check_id);'
+        . '  const safeId = id.replace(/[^a-z0-9_\\-]/gi, "_");'
+        . '  const badgeEl = document.getElementById("bcCheckBadge_" + safeId);'
+        . '  const detailsEl = document.getElementById("bcCheckDetails_" + safeId);'
+        . '  const rootEl = document.getElementById("bcCheck_" + safeId);'
+        . '  if (rootEl) rootEl.dataset.checkStatus = status;'
+        . '  if (badgeEl) { badgeEl.className = "badge " + (status === "pass" ? "pass" : (status === "warn" ? "warn" : "fail")); badgeEl.textContent = status.toUpperCase(); }'
+        . '  if (detailsEl && typeof detail === "string" && detail) detailsEl.textContent = detail;'
+        . '};'
+        . 'const recomputeOverall = () => {'
+        . '  const overall = document.getElementById("bcOverallBadge");'
+        . '  if (!overall) return;'
+        . '  const checks = Array.from(document.querySelectorAll(".check[data-check-id]"));'
+        . '  let anyFail = false;'
+        . '  let anyWarn = false;'
+        . '  for (const c of checks) {'
+        . '    const s = c.dataset.checkStatus || "";'
+        . '    if (s === "fail") { anyFail = true; break; }'
+        . '    if (s === "warn") anyWarn = true;'
+        . '  }'
+        . '  const next = anyFail ? { s: "fail", t: "BLOCKED", cls: "fail" } : (anyWarn ? { s: "warn", t: "WARNINGS", cls: "warn" } : { s: "pass", t: "READY", cls: "pass" });'
+        . '  overall.className = "badge " + next.cls;'
+        . '  overall.textContent = next.t;'
+        . '  overall.dataset.overallStatus = next.s;'
+        . '};'
         . 'const readText = async (url) => {'
         . '  try {'
         . '    const res = await fetch(url, { cache: "no-store", credentials: "same-origin" });'
@@ -1047,14 +1194,23 @@ if ($probeMode === 'pathinfo') {
         . '  } else if (controlExec) {'
         . '    set("fail", "VULNERABLE");'
         . '    summary.textContent = "CRITICAL: The server executed a .txt file as PHP. This hosting is unsafe for strict deployments.";' 
+        . '    if (cfg.policy === "less-strict") { setCheck("fail", "cgi.fix_pathinfo probe indicates a critical execution surface; strict deployment is unsafe."); recomputeOverall(); }'
         . '  } else if (variantExec) {'
         . '    set("fail", "VULNERABLE");'
         . '    summary.textContent = "VULNERABLE: A PathInfo-style request caused PHP execution (cgi.fix_pathinfo-style exploit surface).";'
         . '    addHint("Fix: Set php.ini cgi.fix_pathinfo=0 and ensure webserver uses try_files / correct SCRIPT_FILENAME routing.");'
+        . '    if (cfg.policy === "less-strict") { setCheck("fail", "cgi.fix_pathinfo probe indicates a PathInfo execution surface; strict deployment is unsafe."); recomputeOverall(); }'
         . '  } else {'
         . '    set("pass", "NO EXEC");'
         . '    summary.textContent = "No PHP execution observed for the tested PathInfo variants in this probe.";' 
         . '    addHint("This does not guarantee safety; it only indicates this specific probe did not trigger execution.");'
+        . '    if (cfg.policy === "less-strict") {'
+        . '      if (cfg.less_strict_can_clear) { setCheck("pass", "cgi.fix_pathinfo is enabled, but the PathInfo probe observed NO EXEC for tested variants."); }'
+        . '      recomputeOverall();'
+        . '    }'
+        . '    if (cfg.policy === "strict") {'
+        . '      addHint("Strict remains blocked when cgi.fix_pathinfo is enabled. Consider policy=less-strict if you accept probe-based gating.");'
+        . '    }'
         . '  }'
         . '  if (cfg.deep) {'
         . '    for (const r of results) {'
@@ -1083,6 +1239,10 @@ echo '<!doctype html>'
     . '.head{padding:16px 18px;border-bottom:1px solid rgba(31,42,68,.95);display:flex;align-items:center;justify-content:space-between;gap:12px;}'
     . '.title{margin:0;font-size:18px;letter-spacing:.2px;}'
     . '.sub{margin:4px 0 0;color:#9fb0d0;font-size:12px;}'
+    . '.policyNav{margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}'
+    . '.policyLabel{color:#9fb0d0;font-size:12px;margin-right:6px;}'
+    . '.pill{display:inline-flex;align-items:center;border:1px solid rgba(31,42,68,.95);border-radius:999px;padding:4px 10px;font-weight:700;font-size:12px;color:#e7eefc;text-decoration:none;}'
+    . '.pill.active{background:rgba(138,180,255,.12);border-color:rgba(138,180,255,.35);color:#8ab4ff;}'
     . '.badge{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:6px 10px;'
     . 'border:1px solid rgba(31,42,68,.95);font-weight:700;letter-spacing:.6px;font-size:11px;}'
     . '.badge.pass{background:rgba(118,227,157,.12);border-color:rgba(118,227,157,.28);color:#76e39d;}'
@@ -1107,8 +1267,10 @@ echo '<!doctype html>'
     . '<div class="wrap"><div class="card">'
     . '<div class="head">'
     . '<div><h1 class="title">BlackCat Hosting Preflight</h1>'
-    . '<div class="sub">Single-file diagnostics for constrained hosting (FTP / no Composer). Policy: <code>' . htmlspecialchars($policy, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</code>. Delete this file after use.</div></div>'
-    . '<div class="badge ' . $overallBadgeClass . '">' . $overallTitle . '</div>'
+    . '<div class="sub">Single-file diagnostics for constrained hosting (FTP / no Composer). Policy: <code>' . htmlspecialchars($policy, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</code>. Delete this file after use.</div>'
+    . $policyNav
+    . '</div>'
+    . '<div class="badge ' . $overallBadgeClass . '" id="bcOverallBadge" data-overall-status="' . htmlspecialchars($overall, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '">' . $overallTitle . '</div>'
     . '</div>'
     . '<div class="body">'
     . '<div class="note"><strong>Action:</strong> remove this file after you finish checking. It should not remain publicly accessible.</div>'
