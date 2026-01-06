@@ -120,6 +120,79 @@ function blackcat_preflight_script_dir_url_path(): string
 }
 
 /**
+ * @return string
+ */
+function blackcat_preflight_request_dir_url_path(): string
+{
+    $uri = $_SERVER['REQUEST_URI'] ?? null;
+    if (!is_string($uri) || $uri === '' || str_contains($uri, "\0")) {
+        return '/';
+    }
+
+    $path = parse_url($uri, PHP_URL_PATH);
+    if (!is_string($path) || $path === '' || str_contains($path, "\0")) {
+        return '/';
+    }
+
+    $dir = str_replace('\\', '/', dirname($path));
+    if ($dir === '.' || $dir === '') {
+        return '/';
+    }
+    if ($dir[0] !== '/') {
+        $dir = '/' . $dir;
+    }
+    return rtrim($dir, '/') . '/';
+}
+
+/**
+ * @return string|null
+ */
+function blackcat_preflight_request_origin(): ?string
+{
+    $host = $_SERVER['HTTP_HOST'] ?? null;
+    if (!is_string($host) || $host === '' || str_contains($host, "\0")) {
+        $host = $_SERVER['SERVER_NAME'] ?? null;
+    }
+    if (!is_string($host) || $host === '' || str_contains($host, "\0")) {
+        return null;
+    }
+    // Allow host[:port] with sane characters only.
+    if (!preg_match('/^[a-z0-9][a-z0-9.-]*(?::[0-9]{1,5})?$/i', $host)) {
+        return null;
+    }
+
+    $scheme = null;
+    $https = $_SERVER['HTTPS'] ?? null;
+    if (is_string($https) && $https !== '' && strtolower($https) !== 'off') {
+        $scheme = 'https';
+    }
+    $requestScheme = $_SERVER['REQUEST_SCHEME'] ?? null;
+    if ($scheme === null && is_string($requestScheme) && ($requestScheme === 'http' || $requestScheme === 'https')) {
+        $scheme = $requestScheme;
+    }
+    if ($scheme === null) {
+        $scheme = 'http';
+    }
+
+    return $scheme . '://' . $host;
+}
+
+/**
+ * @param string $relative
+ * @return string|null
+ */
+function blackcat_preflight_absolute_url(string $relative): ?string
+{
+    $origin = blackcat_preflight_request_origin();
+    if ($origin === null) {
+        return null;
+    }
+    $dir = blackcat_preflight_request_dir_url_path();
+    $rel = ltrim($relative, '/');
+    return $origin . $dir . $rel;
+}
+
+/**
  * @return array{id:string, filename:string, file_path:string, url_path:string, expected:string, marker:string}
  */
 function blackcat_preflight_prepare_pathinfo_probe(): array
@@ -800,8 +873,61 @@ if (!$wantJson) {
     }
 }
 
+$probeMode = blackcat_preflight_probe();
+$cleanup = $_GET['cleanup'] ?? null;
+if ($probeMode === 'pathinfo' && is_string($cleanup) && trim($cleanup) === '1') {
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(blackcat_preflight_cleanup_pathinfo_probe(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n";
+    exit;
+}
+
 if ($wantJson) {
     $policyInfo = blackcat_preflight_policy();
+    $probe = null;
+    if ($probeMode === 'pathinfo') {
+        $p = blackcat_preflight_prepare_pathinfo_probe();
+        $deep = blackcat_preflight_probe_deep();
+        $variants = $deep ? [
+            $p['url_path'] . '/x.php',
+            $p['url_path'] . '/index.php',
+            $p['url_path'] . '/a.php',
+            $p['url_path'] . ';x.php',
+            $p['url_path'] . '%3bx.php',
+        ] : [
+            $p['url_path'] . '/x.php',
+        ];
+
+        $probe = [
+            'pathinfo' => [
+                'mode' => 'browser_or_client',
+                'deep' => $deep,
+                'control' => [
+                    'relative' => $p['url_path'],
+                    'absolute' => blackcat_preflight_absolute_url($p['url_path']),
+                    'expected_http_status' => 200,
+                    'marker' => $p['marker'],
+                    'expected_output_token' => $p['expected'],
+                ],
+                'variants' => array_map(static function (string $u): array {
+                    return [
+                        'relative' => $u,
+                        'absolute' => blackcat_preflight_absolute_url($u),
+                    ];
+                }, $variants),
+                'cleanup' => [
+                    'required' => true,
+                    'relative' => '?probe=pathinfo&cleanup=1&token=' . rawurlencode($p['id']) . '&file=' . rawurlencode($p['filename']),
+                    'absolute' => blackcat_preflight_absolute_url('?probe=pathinfo&cleanup=1&token=' . rawurlencode($p['id']) . '&file=' . rawurlencode($p['filename'])),
+                ],
+                'notes' => [
+                    'This probe is best-effort and cannot prove 100% safety.',
+                    'Run it in any web-accessible directory where uploads can land.',
+                    'Always call cleanup after testing (it removes the probe file).',
+                ],
+            ],
+        ];
+    }
+
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode([
         'generated_at' => gmdate('c'),
@@ -809,15 +935,8 @@ if ($wantJson) {
         'php_sapi' => PHP_SAPI,
         'overall' => $overall,
         'checks' => $checks,
+        'probe' => $probe,
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n";
-    exit;
-}
-
-$probeMode = blackcat_preflight_probe();
-$cleanup = $_GET['cleanup'] ?? null;
-if ($probeMode === 'pathinfo' && is_string($cleanup) && trim($cleanup) === '1') {
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(blackcat_preflight_cleanup_pathinfo_probe(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n";
     exit;
 }
 
