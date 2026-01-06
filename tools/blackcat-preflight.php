@@ -120,18 +120,21 @@ function blackcat_preflight_script_dir_url_path(): string
 }
 
 /**
- * @return array{id:string, filename:string, file_path:string, url_path:string, expected:string}
+ * @return array{id:string, filename:string, file_path:string, url_path:string, expected:string, marker:string}
  */
 function blackcat_preflight_prepare_pathinfo_probe(): array
 {
     $id = blackcat_preflight_random_id();
     $filename = 'blackcat-pathinfo-probe.' . $id . '.txt';
     $filePath = __DIR__ . DIRECTORY_SEPARATOR . $filename;
-    $urlPath = blackcat_preflight_script_dir_url_path() . $filename;
+    // Use a relative URL for probes: some hostings populate SCRIPT_NAME with a filesystem-like path.
+    // The browser will resolve this relative to the currently opened preflight URL.
+    $urlPath = $filename;
     $expected = 'BLACKCAT_PATHINFO_PROBE_' . $id;
+    $marker = 'BLACKCAT_PATHINFO_PROBE_FILE_' . $id;
 
     // Avoid embedding the expected output string verbatim in the source file.
-    $php = "<?php echo 'BLACKCAT_PATHINFO_' . 'PROBE_' . '" . $id . "'; ?>\n";
+    $php = "<?php /* " . $marker . " */ echo 'BLACKCAT_PATHINFO_' . 'PROBE_' . '" . $id . "'; ?>\n";
     @file_put_contents($filePath, $php, LOCK_EX);
 
     return [
@@ -140,6 +143,7 @@ function blackcat_preflight_prepare_pathinfo_probe(): array
         'file_path' => $filePath,
         'url_path' => $urlPath,
         'expected' => $expected,
+        'marker' => $marker,
     ];
 }
 
@@ -846,6 +850,7 @@ if ($probeMode === 'pathinfo') {
             $p['url_path'] . '/x.php',
         ],
         'expected' => $p['expected'],
+        'marker' => $p['marker'] ?? null,
         'cleanup_url' => '?probe=pathinfo&cleanup=1&token=' . rawurlencode($p['id']) . '&file=' . rawurlencode($p['filename']),
         'deep' => $deep,
     ];
@@ -874,9 +879,9 @@ if ($probeMode === 'pathinfo') {
         . '  try {'
         . '    const res = await fetch(url, { cache: "no-store", credentials: "same-origin" });'
         . '    const text = await res.text();'
-        . '    return { ok: true, status: res.status, text };'
+        . '    return { fetched: true, status: res.status, ok: res.ok, text };'
         . '  } catch (e) {'
-        . '    return { ok: false, status: 0, text: "", error: String(e && e.message ? e.message : e) };'
+        . '    return { fetched: false, status: 0, ok: false, text: "", error: String(e && e.message ? e.message : e) };'
         . '  }'
         . '};'
         . '(async () => {'
@@ -884,14 +889,19 @@ if ($probeMode === 'pathinfo') {
         . '  const variants = Array.isArray(cfg.variants) ? cfg.variants : [];'
         . '  const results = [];'
         . '  for (const u of variants) { results.push({ url: u, res: await readText(u) }); }'
-        . '  const controlExec = control.ok && control.text.includes(cfg.expected);'
-        . '  const variantExec = results.some((r) => r.res.ok && r.res.text.includes(cfg.expected));'
-        . '  const allOk = control.ok && results.every((r) => r.res.ok);'
-        . '  if (!allOk) {'
+        . '  const marker = (typeof cfg.marker === "string" && cfg.marker) ? cfg.marker : null;'
+        . '  const controlIsReachable = control.fetched && control.status === 200 && (!marker || control.text.includes(marker));'
+        . '  const controlExec = control.fetched && control.text.includes(cfg.expected);'
+        . '  const variantExec = results.some((r) => r.res.fetched && r.res.text.includes(cfg.expected));'
+        . '  if (!control.fetched) {'
         . '    set("warn", "INCONCLUSIVE");'
-        . '    summary.textContent = "Probe could not be fully executed (network/hosting limitations).";'
-        . '    if (!control.ok) addHint("Control request failed: " + control.error);'
-        . '    for (const r of results) { if (!r.res.ok) addHint("Variant request failed: " + r.url + " — " + r.res.error); }'
+        . '    summary.textContent = "Probe could not run (browser could not fetch the control file).";'
+        . '    addHint("Control fetch failed: " + (control.error || "unknown error"));'
+        . '  } else if (!controlIsReachable) {'
+        . '    set("warn", "INCONCLUSIVE");'
+        . '    summary.textContent = "Probe is inconclusive: the control probe file was not reachable (expected HTTP 200).";'
+        . '    addHint("Control URL: " + cfg.url + " (HTTP " + String(control.status) + ")");'
+        . '    addHint("Ensure this preflight file is served from a normal web-accessible directory (not rewritten), then re-run the probe.");'
         . '  } else if (controlExec) {'
         . '    set("fail", "VULNERABLE");'
         . '    summary.textContent = "CRITICAL: The server executed a .txt file as PHP. This hosting is unsafe for strict deployments.";' 
@@ -906,8 +916,8 @@ if ($probeMode === 'pathinfo') {
         . '  }'
         . '  if (cfg.deep) {'
         . '    for (const r of results) {'
-        . '      const ok = r.res.ok && !r.res.text.includes(cfg.expected);'
-        . '      addHint((ok ? "PASS" : "CHECK") + ": " + r.url + " (HTTP " + String(r.res.status) + ")");'
+        . '      const safe = r.res.fetched && !r.res.text.includes(cfg.expected);'
+        . '      addHint((safe ? "PASS" : "CHECK") + ": " + r.url + " (HTTP " + String(r.res.status) + ")");'
         . '    }'
         . '  }'
         . '  try { await fetch(cfg.cleanup_url, { cache: "no-store", credentials: "same-origin" }); } catch (e) {}'
