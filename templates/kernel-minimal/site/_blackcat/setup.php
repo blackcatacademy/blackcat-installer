@@ -231,6 +231,7 @@ function blackcat_setup_page(array $paths): void
 			        display: block;
 			        border-bottom: 1px solid rgba(31, 42, 68, 0.95);
 			        position: relative;
+			        text-align: right;
 			        background:
 			          radial-gradient(900px 240px at 18% 0%, rgba(255, 123, 114, 0.12), transparent 62%),
 			          radial-gradient(900px 240px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
@@ -325,6 +326,7 @@ function blackcat_setup_page(array $paths): void
 		        display: flex;
 		        flex-wrap: wrap;
 		        gap: 10px;
+		        justify-content: flex-end;
 		        align-items: baseline;
 		        color: #e7eefc;
 		        text-shadow:
