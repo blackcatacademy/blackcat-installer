@@ -484,9 +484,19 @@ function blackcat_error_ui_style_tag(array $vars = []): string
         ? $vars['mascot_primary_url']
         : '/_blackcat/assets/fatal-error-cat.png';
 
-    $fallback = isset($vars['mascot_fallback_url']) && (is_string($vars['mascot_fallback_url']) || $vars['mascot_fallback_url'] === null)
-        ? $vars['mascot_fallback_url']
-        : null;
+    $fallbackKeyPresent = array_key_exists('mascot_fallback_url', $vars);
+    $fallbackExplicit = $fallbackKeyPresent ? ($vars['mascot_fallback_url'] ?? null) : null;
+    $fallbackExplicit = is_string($fallbackExplicit) || $fallbackExplicit === null ? $fallbackExplicit : null;
+
+    $accentCompact = str_replace(' ', '', $accent);
+    $isAmberTheme = ($accentCompact === '255,212,107');
+    $fallbackAuto = $isAmberTheme
+        ? '/_blackcat/assets/mascot-fallback-amber.svg'
+        : '/_blackcat/assets/mascot-fallback-red.svg';
+
+    // Default: always include a fallback mascot (so missing PNG assets do not break the UI).
+    // Opt-out is possible only if the caller explicitly passes `mascot_fallback_url => null`.
+    $fallback = $fallbackKeyPresent ? $fallbackExplicit : $fallbackAuto;
 
     $fallbackPx = isset($vars['mascot_fallback_px']) && is_int($vars['mascot_fallback_px']) ? $vars['mascot_fallback_px'] : 92;
 

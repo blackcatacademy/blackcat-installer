@@ -6,6 +6,40 @@ This bundle ships:
 - `site/public/index.php` — single entrypoint (front controller)
 - `/_blackcat/setup` — one-time installer UI (token-gated), disabled after install
 
+## Important hosting note (why setup may be unavailable)
+
+Some shared hostings are *too constrained* to safely run the web installer:
+
+- **No server-side TLS verification capability** (common: `ext-openssl` disabled; sometimes `ext-curl` disabled too).
+- **Outbound HTTPS blocked** (egress restrictions) — the kernel must be able to reach RPC endpoints over HTTPS.
+- **Local TLS checks blocked** (some environments disallow loopback/self-connects).
+
+BlackCat intentionally requires **server-side** verification for certain steps (especially setup), because:
+- Setup establishes long-lived trust anchors (authorities, policy commitments, release roots).
+- If a MITM can intercept/modify setup traffic, they can permanently compromise control of the installation.
+
+If your hosting cannot provide *any* TLS verification path (OpenSSL **or** cURL with HTTPS support), the correct behavior is **fail-closed**.
+In that case, do **not** try to bypass setup — use the **offline preparation flow** described below and upload the prepared bundle.
+
+## Hosting preflight (recommended before uploading the bundle)
+
+Before you upload a full bundle, you can run a **single-file** diagnostics check on the target hosting:
+
+1) Upload `blackcat-installer/tools/blackcat-preflight.php` to the hosting docroot (rename it if you want).
+2) Open it in a browser:
+   - `https://YOUR_DOMAIN/blackcat-preflight.php`
+   - JSON output: `https://YOUR_DOMAIN/blackcat-preflight.php?format=json`
+   - Policy override: `?policy=strict` (default) or `?policy=warn`
+   - Optional best-effort probe: `?probe=pathinfo` (tests for classic `file.txt/x.php` execution surface when `cgi.fix_pathinfo` is enabled)
+3) **Delete the file** after checking (it prints environment details).
+
+What it checks (high-level):
+- PHP version (kernel-minimal currently requires PHP 8.3+ because of `blackcat-config`)
+- Required extensions (`ext-json`, `ext-sodium`, `ext-pdo`)
+- TLS verification capability (OpenSSL or cURL SSL)
+- Outbound HTTPS connectivity to an Edgen RPC endpoint (basic `eth_chainId`)
+- Basic php.ini safety posture (eg. blocks `allow_url_include`)
+
 ## 1) Build the bundle (workstation / CI)
 
 From the monorepo root (where `blackcat-core/` and `blackcat-config/` are present):
@@ -29,7 +63,7 @@ blackcat-kernel-minimal-bundle/
 ```
 
 Important:
-- The web docroot must point to `site/public/`.
+- The web docroot must point to the directory that contains the front controller (`site/public/` in this bundle).
 - Keep `.blackcat/` and `config.runtime.json` outside web docroot.
 
 ## 3) Run the one-time installer
@@ -65,6 +99,31 @@ Notes:
 - `ReleaseRegistry` is a global trust list for **official** BlackCat release roots; end-users should not need to publish anything there.
 - If you modify the bundle files after building it, your computed manifest `root` will not match any trusted release root, and instance creation will fail (by design).
 
+## Offline preparation (recommended for constrained hostings)
+
+If your hosting cannot safely run `/_blackcat/setup` (eg. missing OpenSSL/cURL, outbound HTTPS blocked, or you simply want **zero** setup surface on the server),
+prepare the bundle on a **trusted device** and only upload the final artifacts.
+
+High-level flow:
+1) Build the bundle on a trusted workstation/CI (including `site/vendor/`).
+2) Run the Stage 3 setup locally (Docker demo is fine) to:
+   - generate `.blackcat/integrity.manifest.json` (release root),
+   - create the on-chain instance (manual tx intent, signed on your wallet),
+   - generate `config.runtime.json`,
+   - lock attestations (manual tx intent).
+3) Upload the prepared bundle to the hosting (FTP/SFTP), then lock it down:
+   - disable/remove `site/_blackcat/setup.php`,
+   - create `.blackcat/installed.flag`,
+   - disable FTP after upload.
+
+This avoids relying on the hosting to perform TLS trust verification during setup.
+
+Important:
+- Ensure the generated runtime config matches the **target** deployment:
+  - set `http.allowed_hosts` to your real domain (not `localhost`),
+  - keep the integrity layout consistent (in this bundle, `trust.integrity.root_dir` points to `site/` and the manifest lives under `.blackcat/`).
+- Do not modify bundle files after computing the manifest root; otherwise the on-chain root will not match.
+
 ## 4) Troubleshooting
 
 - If you see `503` at `/`:
@@ -76,9 +135,13 @@ Notes:
   - enable TLS (Let’s Encrypt) and ensure the app is not downgraded to HTTP between proxy and PHP.
 
 - If setup says “trusted TLS required”:
-  - production setup is fail-closed until the HTTPS certificate validates against a trusted CA,
-  - fix TLS (recommended: Let’s Encrypt) and reload,
-  - for localhost demo a self-signed cert is allowed and the UI shows a persistent **DEV WARNING** banner.
+  - setup is fail-closed until the HTTPS certificate validates against a trusted CA,
+  - fix TLS (recommended: Let’s Encrypt) and reload.
+  - For local demos, self-signed certificates may be tolerated, but do not treat them as production-safe.
+
+- If setup says “preflight failed” and mentions TLS verification:
+  - the installer needs a server-side way to verify CA trust (OpenSSL extension **or** PHP cURL with HTTPS support),
+  - if your hosting cannot provide either, use the **Offline preparation** flow and do not run setup on the server.
 
 - If instance creation fails:
   - ensure MetaMask is on **Edgen Chain** (`chain_id=4207`) and your wallet has enough EDGEN for gas,

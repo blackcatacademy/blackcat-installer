@@ -34,11 +34,11 @@ $assetMap = [
     // Setup UI images (optional, but recommended).
     '/_blackcat/assets/hero-banner.png' => ['file' => 'hero-banner.png', 'type' => 'image/png'],
     '/_blackcat/assets/fatal-error-cat.png' => ['file' => 'fatal-error-cat.png', 'type' => 'image/png'],
-    '/_blackcat/assets/https-required-cat-fallback.svg' => ['file' => 'https-required-cat-fallback.svg', 'type' => 'image/svg+xml; charset=utf-8'],
     '/_blackcat/assets/trusted-vs-untrusted.png' => ['file' => 'trusted-vs-untrusted.png', 'type' => 'image/png'],
     '/_blackcat/assets/tls-not-trusted-cat.png' => ['file' => 'tls-not-trusted-cat.png', 'type' => 'image/png'],
-    '/_blackcat/assets/tls-not-trusted-banner.png' => ['file' => 'tls-not-trusted-banner.png', 'type' => 'image/png'],
-    '/_blackcat/assets/tls-not-trusted-fallback.svg' => ['file' => 'tls-not-trusted-fallback.svg', 'type' => 'image/svg+xml; charset=utf-8'],
+    // Universal mascot fallbacks (used by error-ui.php; color depends on theme).
+    '/_blackcat/assets/mascot-fallback-red.svg' => ['file' => 'mascot-fallback-red.svg', 'type' => 'image/svg+xml; charset=utf-8'],
+    '/_blackcat/assets/mascot-fallback-amber.svg' => ['file' => 'mascot-fallback-amber.svg', 'type' => 'image/svg+xml; charset=utf-8'],
     '/_blackcat/assets/bg-grid.png' => ['file' => 'bg-grid.png', 'type' => 'image/png'],
     '/_blackcat/assets/bg-grid-red.png' => ['file' => 'bg-grid-red.png', 'type' => 'image/png'],
     // Optional mascots (used by various fail-closed pages).
@@ -119,15 +119,15 @@ if (is_string($documentRootReal) && $documentRootReal !== '' && is_string($publi
                 <div class="panel">
                   <strong>Fix:</strong>
                   <ul>
-                    <li>Set the document root to <code>site/public/</code>.</li>
-                    <li>Ensure all requests route through <code>site/public/index.php</code> (front controller).</li>
+                    <li>Set the document root to the directory that contains <code>index.php</code> (front controller).</li>
+                    <li>Ensure all requests route through the front controller.</li>
                     <li>Reload the page.</li>
                   </ul>
                 </div>
                 <div class="panel">
                   <strong>Why BlackCat blocks this:</strong>
                   <ul class="muted">
-                    <li>Misconfigured docroot can expose <code>vendor/</code>, <code>config.runtime.json</code>, and <code>.blackcat/</code>.</li>
+                    <li>A misconfigured docroot can expose internal files (dependencies, runtime config, state).</li>
                     <li>Front controller boundary is required for BlackCat security guarantees.</li>
                   </ul>
                   <div class="footer warn"><strong>Action required:</strong> fix docroot before continuing.</div>
@@ -139,7 +139,7 @@ if (is_string($documentRootReal) && $documentRootReal !== '' && is_string($publi
             'title' => 'BlackCat — Docroot misconfigured',
             'h1_prefix' => 'BlackCat',
             'pill' => 'docroot misconfigured',
-            'lede_html' => '<strong>Fail-closed:</strong> your web server is not pointing to <code>site/public/</code> as the document root.',
+            'lede_html' => '<strong>Fail-closed:</strong> the document root does not match the directory containing the BlackCat front controller (<code>index.php</code>).',
             'grid_html' => $gridHtml,
             'after_grid_html' => $docHint,
             'style_vars' => [
@@ -171,15 +171,14 @@ if (!is_file($autoload)) {
                 <div class="panel">
                   <strong>What’s missing:</strong>
                   <ul class="muted">
-                    <li><code>vendor/</code> (Composer dependencies)</li>
-                    <li><code>vendor/autoload.php</code> (required bootstrap)</li>
+                    <li>Dependency bundle / autoloader bootstrap</li>
+                    <li>Required runtime files from the release bundle</li>
                   </ul>
                 </div>
                 <div class="panel">
                   <strong>Fix:</strong>
                   <ul>
-                    <li>Upload the full bundle (including <code>vendor/</code>) via FTP/SFTP.</li>
-                    <li>Ensure the web root points to <code>site/public/</code>.</li>
+                    <li>Upload the complete release bundle (do not omit dependencies) via FTP/SFTP.</li>
                     <li>Reload this page.</li>
                   </ul>
                   <div class="footer warn">Tip: for FTP installs, always upload the bundle as a whole — partial uploads are a common cause.</div>
@@ -191,7 +190,7 @@ if (!is_file($autoload)) {
             'title' => 'BlackCat — Bundle incomplete',
             'h1_prefix' => 'BlackCat',
             'pill' => 'bundle incomplete',
-            'lede_html' => '<strong>Blocked:</strong> <code>vendor/autoload.php</code> is missing, so the kernel cannot boot safely.',
+            'lede_html' => '<strong>Blocked:</strong> dependencies are missing, so the kernel cannot boot safely.',
             'grid_html' => $gridHtml,
             'style_vars' => [
                 'grid_url' => '/_blackcat/assets/bg-grid-red.png',
@@ -267,8 +266,8 @@ if (!is_file($configPath)) {
                 <div class="panel">
                   <strong>Fix:</strong>
                   <ul>
-                    <li>Upload <code>config.runtime.json</code> to the bundle root, or</li>
-                    <li>Restore the setup module and open <code>/_blackcat/setup</code>.</li>
+                    <li>Upload a valid <code>config.runtime.json</code> to the bundle root.</li>
+                    <li>Generate it from a trusted device using the BlackCat tooling (do not edit by hand).</li>
                   </ul>
                 </div>
                 <div class="panel">
@@ -286,7 +285,7 @@ if (!is_file($configPath)) {
             'title' => 'BlackCat — Not installed',
             'h1_prefix' => 'BlackCat',
             'pill' => 'not installed',
-            'lede_html' => '<strong>Missing runtime config:</strong> <code>config.runtime.json</code> is not present and the installer is not available.',
+            'lede_html' => '<strong>Missing runtime config:</strong> <code>config.runtime.json</code> is not present, so the kernel cannot boot.',
             'grid_html' => $gridHtml,
             'style_vars' => [
                 'accent_rgb' => '255, 212, 107',
@@ -319,24 +318,11 @@ if (class_exists($configClass) && is_callable([$configClass, 'initFromJsonFileIf
         header('X-Robots-Tag: noindex, nofollow, noarchive');
         header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
 
-        $host = $_SERVER['HTTP_HOST'] ?? '';
-        $host = is_string($host) ? strtolower(trim($host)) : '';
-        $host = explode(':', $host, 2)[0] ?? '';
-        $isDev = in_array($host, ['localhost', '127.0.0.1', '::1'], true);
-
-        $debugHtml = '';
-        if ($isDev) {
-            $debugHtml = '<details class="panel"><summary><strong>Dev debug</strong> (exception)</summary>'
-                . '<pre><code>' . htmlspecialchars(get_class($e) . ': ' . $e->getMessage(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</code></pre>'
-                . '</details>';
-        }
-
         $gridHtml = <<<'HTML'
                     <div class="panel">
                       <strong>Fix:</strong>
                       <ul>
-                        <li>If the installer is available: open <code>/_blackcat/setup</code> and regenerate the runtime config.</li>
-                        <li>If the installer is disabled: upload a valid <code>config.runtime.json</code> to the bundle root.</li>
+                        <li>Replace <code>config.runtime.json</code> with a valid file generated from your trusted device.</li>
                         <li>Reload after fixing.</li>
                       </ul>
                     </div>
@@ -346,7 +332,7 @@ if (class_exists($configClass) && is_callable([$configClass, 'initFromJsonFileIf
                         <li>Config is security-critical (RPC endpoints, policies, integrity settings).</li>
                         <li>Running with a tampered config can permanently weaken the security kernel.</li>
                       </ul>
-                      <div class="footer warn">In production, treat unexpected config changes as an incident.</div>
+                      <div class="footer warn">Unexpected config changes should be investigated immediately.</div>
                     </div>
         HTML;
 
@@ -357,7 +343,6 @@ if (class_exists($configClass) && is_callable([$configClass, 'initFromJsonFileIf
                 'pill' => 'config invalid',
                 'lede_html' => '<strong>Fail-closed:</strong> <code>config.runtime.json</code> failed validation, so the kernel refused to boot.',
                 'grid_html' => $gridHtml,
-                'after_grid_html' => $debugHtml,
                 'style_vars' => [
                     'grid_url' => '/_blackcat/assets/bg-grid-red.png',
                     'mascot_primary_url' => '/_blackcat/assets/config-invalid-cat.png',
@@ -578,17 +563,18 @@ HTML;
                 : '<div class="box"><strong>Trust errors:</strong> <span class="muted">none</span></div>';
 
             $actions = '<div class="box"><strong>What happens now:</strong><ul>'
-                . '<li>BlackCat denies sensitive operations and blocks the request entry in <strong>strict</strong> mode.</li>'
-                . '<li>This prevents secret exfiltration / DB writes during tamper or RPC outage.</li>'
+                . '<li><strong class="bad">SYSTEM LOCKED</strong> — trust could not be established.</li>'
+                . '<li>The kernel stays fail-closed until a trusted state is restored.</li>'
+                . '<li>An incident may already be queued for reporting.</li>'
                 . '</ul></div>';
 
             $fixes = '<div class="box"><strong>How to fix:</strong><ul>'
-                . '<li>Restore integrity (remove unexpected files, revert tampered changes).</li>'
-                . '<li>Ensure your RPC quorum is healthy (multiple endpoints recommended).</li>'
-                . ($setupAvailable ? '<li>Open <code>/_blackcat/setup</code> (maintenance only) to review and re-attest the release root.</li>' : '<li>If setup is disabled, fix files and redeploy a trusted bundle.</li>')
+                . '<li>Restore trusted files (undo tamper / redeploy a trusted bundle).</li>'
+                . '<li>Ensure your RPC quorum is healthy (production requires multiple endpoints + quorum).</li>'
+                . '<li>If the instance controller is paused, unpause via the authorized flow.</li>'
                 . '</ul></div>';
 
-            $lead = 'Your instance is currently <strong>untrusted</strong>. This is a fail-closed security kernel: it blocks writes and sensitive operations until integrity is restored.';
+            $lead = '<strong>SYSTEM LOCKED.</strong> Your instance is currently <strong>untrusted</strong>. Restore a trusted state to continue.';
 
             $render = $extraBadges . '<div class="grid2">' . $actions . $fixes . '</div>' . $codeHtml;
             $mascot = '/_blackcat/assets/fatal-error-cat.png';
@@ -612,12 +598,14 @@ HTML;
         }
 
         if ($path !== '/' && $path !== '/index.php') {
-            $lead = 'This is a <strong>kernel-minimal</strong> bundle template. Only the front controller and setup module are present.';
+            $lead = 'The requested path does not exist.';
             $body = $extraBadges
                 . '<div class="box"><strong>Try:</strong><ul>'
                 . '<li><a href="/">/</a> — kernel status</li>'
                 . '<li><a href="/health">/health</a> — monitoring JSON</li>'
-                . ($setupAvailable ? '<li><a href="/_blackcat/setup">/_blackcat/setup</a> — Stage 3 installer</li>' : '')
+                . '</ul></div>'
+                . '<div class="box"><strong>Security note:</strong><ul class="muted">'
+                . '<li>BlackCat exposes only approved endpoints by design.</li>'
                 . '</ul></div>';
 
             $renderShell(404, 'BlackCat Kernel', '<span class="pill warn">404</span>', $lead, $body, '/_blackcat/assets/not-found-cat.png');
@@ -628,7 +616,7 @@ HTML;
         $configLabel = $isDevHost
             ? $configPath
             : 'config.runtime.json (bundle root)';
-        $lead = 'Your kernel is running. In production, BlackCat enforces <strong>HTTPS-only</strong>, strict runtime hardening, and <strong>Web3-backed integrity</strong> checks.';
+        $lead = 'Your kernel is running. BlackCat enforces <strong>HTTPS-only</strong>, strict runtime hardening, and <strong>Web3-backed integrity</strong> checks.';
         $body = $extraBadges
             . '<div class="grid2">'
             . '<div class="box"><strong>On-chain anchor:</strong><div class="muted">Instance controller</div><div><code>' . $controller . '</code></div></div>'

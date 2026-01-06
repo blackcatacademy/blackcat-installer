@@ -132,19 +132,18 @@ HTML;
 
         $gridHtml = <<<'HTML'
             <div class="panel">
-              <strong>Allowed:</strong>
+              <strong>Allowed on this endpoint:</strong>
               <ul>
                 <li><code>GET</code></li>
                 <li><code>HEAD</code></li>
               </ul>
             </div>
             <div class="panel">
-              <strong>Try:</strong>
-              <ul>
-                <li>Open <code>/_blackcat/setup</code> in a browser.</li>
-                <li>If you’re scripting, call <code>/_blackcat/setup/api/*</code> instead.</li>
+              <strong>What to do:</strong>
+              <ul class="muted">
+                <li>Retry with <code>GET</code> (open <code>/_blackcat/setup</code> in a browser).</li>
+                <li>For scripts and automation, use <code>/_blackcat/setup/api/*</code>.</li>
               </ul>
-              <div class="footer muted">This restriction reduces accidental exposure and request-smuggling style attack surface during setup.</div>
             </div>
 HTML;
 
@@ -153,7 +152,7 @@ HTML;
                 'title' => 'BlackCat Setup — Method Not Allowed',
                 'h1_prefix' => 'BlackCat Setup',
                 'pill' => 'method not allowed',
-                'lede_html' => '<strong>For safety</strong>, the installer UI only allows <code>GET</code>/<code>HEAD</code>. JSON endpoints exist under <code>/_blackcat/setup/api/*</code>.',
+                'lede_html' => '<strong>This endpoint is read-only.</strong> Only <code>GET</code>/<code>HEAD</code> are accepted here. For actions, use the setup API endpoints.',
                 'grid_html' => $gridHtml,
                 'style_vars' => [
                     'accent_rgb' => '255, 212, 107',
@@ -183,11 +182,6 @@ HTML;
     }
 
     $tlsGate = blackcat_setup_tls_gate($stateDir);
-    $debug = $_GET['debug'] ?? null;
-    if ($tlsGate['mode'] === 'dev' && $tlsGate['trusted'] !== true && is_string($debug) && $debug === 'tls_not_trusted') {
-        blackcat_setup_render_tls_not_trusted_page($tlsGate);
-        exit;
-    }
     if ($tlsGate['mode'] === 'prod' && $tlsGate['trusted'] !== true) {
         blackcat_setup_render_tls_not_trusted_page($tlsGate);
         exit;
@@ -213,7 +207,6 @@ HTML;
         $tlsBarHtml = '<div class="tlsBar" role="status">'
             . '<strong>DEV WARNING:</strong> TLS certificate is not publicly trusted. '
             . 'Do <strong>not</strong> use this mode in production. Install a CA-trusted certificate (e.g., Let’s Encrypt) and reload. '
-            . '<a class="tlsBarLink" href="/_blackcat/setup?debug=tls_not_trusted" target="_blank" rel="noreferrer">Debug: view the prod block page</a>'
             . '</div>';
     }
 
@@ -413,8 +406,6 @@ HTML;
         backdrop-filter: blur(10px);
       }
       .tlsBar strong { color: #ff7b72; }
-      .tlsBar a { color: #ffd46b; font-weight: 650; text-decoration: underline; }
-      .tlsBar a:hover { color: #fff; }
     </style>
   </head>
   <body>
@@ -1513,45 +1504,102 @@ function blackcat_tls_is_publicly_trusted(string $host, int $port): array
         }
     }
 
-    if (!extension_loaded('openssl')) {
-        return [false, 'openssl_missing'];
-    }
-
     $connectHost = $host;
     if (@filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
         $connectHost = '[' . $host . ']';
     }
 
-    $ctx = stream_context_create([
-        'ssl' => [
-            'verify_peer' => true,
-            'verify_peer_name' => true,
-            'allow_self_signed' => false,
-            'SNI_enabled' => true,
-            'peer_name' => $host,
-            'disable_compression' => true,
-        ],
-    ]);
+    // Prefer OpenSSL extension (stream_socket_client + strict peer verification).
+    if (extension_loaded('openssl')) {
+        $ctx = stream_context_create([
+            'ssl' => [
+                'verify_peer' => true,
+                'verify_peer_name' => true,
+                'allow_self_signed' => false,
+                'SNI_enabled' => true,
+                'peer_name' => $host,
+                'disable_compression' => true,
+            ],
+        ]);
 
-    $errno = 0;
-    $errstr = '';
-    $timeout = 2.0;
-    $fp = @stream_socket_client(
-        'ssl://' . $connectHost . ':' . $port,
-        $errno,
-        $errstr,
-        $timeout,
-        STREAM_CLIENT_CONNECT,
-        $ctx
-    );
+        $errno = 0;
+        $errstr = '';
+        $timeout = 2.0;
+        $fp = @stream_socket_client(
+            'ssl://' . $connectHost . ':' . $port,
+            $errno,
+            $errstr,
+            $timeout,
+            STREAM_CLIENT_CONNECT,
+            $ctx
+        );
 
-    if (!is_resource($fp)) {
-        return [false, 'tls_connect_failed'];
+        if (!is_resource($fp)) {
+            return [false, 'tls_connect_failed'];
+        }
+
+        @stream_set_timeout($fp, 2);
+        @fclose($fp);
+        return [true, null];
     }
 
-    @stream_set_timeout($fp, 2);
-    @fclose($fp);
-    return [true, null];
+    // Fallback: cURL HTTPS verification (does not require PHP OpenSSL extension).
+    $hasCurl = extension_loaded('curl') && function_exists('curl_init') && function_exists('curl_version');
+    $hasCurlSsl = false;
+    if ($hasCurl) {
+        $v = @curl_version();
+        if (is_array($v)) {
+            $features = $v['features'] ?? null;
+            $sslVersion = $v['ssl_version'] ?? null;
+            if (is_int($features) && defined('CURL_VERSION_SSL') && (($features & CURL_VERSION_SSL) !== 0)) {
+                $hasCurlSsl = true;
+            } elseif (is_string($sslVersion) && $sslVersion !== '') {
+                $hasCurlSsl = true;
+            }
+        }
+    }
+    if (!$hasCurlSsl) {
+        return [false, 'tls_verify_unavailable'];
+    }
+
+    $url = 'https://' . $connectHost . ':' . $port . '/';
+    $ch = @curl_init();
+    if ($ch === false) {
+        return [false, 'tls_verify_unavailable'];
+    }
+
+    @curl_setopt($ch, CURLOPT_URL, $url);
+    @curl_setopt($ch, CURLOPT_NOBODY, true);
+    @curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    @curl_setopt($ch, CURLOPT_HEADER, false);
+    @curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+    @curl_setopt($ch, CURLOPT_MAXREDIRS, 0);
+    @curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
+    @curl_setopt($ch, CURLOPT_TIMEOUT, 2);
+    @curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    @curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+    if (defined('CURLPROTO_HTTPS')) {
+        @curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS);
+        @curl_setopt($ch, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTPS);
+    }
+
+    $ok = @curl_exec($ch);
+    if ($ok !== false) {
+        @curl_close($ch);
+        return [true, null];
+    }
+
+    $errno = @curl_errno($ch);
+    @curl_close($ch);
+    if (is_int($errno) && $errno !== 0) {
+        // 60 = CURLE_PEER_FAILED_VERIFICATION (common "untrusted cert" case).
+        if ($errno === 60) {
+            return [false, 'tls_not_trusted'];
+        }
+        return [false, 'curl_error_' . (string) $errno];
+    }
+
+    return [false, 'tls_connect_failed'];
 }
 
 /**
@@ -1591,7 +1639,6 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
         . '<li>Confirm the browser lock has no warnings.</li>'
         . '<li>Reload this page.</li>'
         . '</ol>'
-        . '<div class="footer warn">Dev: <code>localhost</code> is allowed, but shows a persistent warning banner until you deploy a trusted cert.</div>'
         . '</div>'
         . '<div class="panel">'
         . '<strong>Details (server-side TLS check):</strong>'
@@ -1603,7 +1650,7 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
             'title' => 'BlackCat Setup — Trusted TLS Required',
             'h1_prefix' => 'BlackCat Setup',
             'pill' => 'trusted TLS required',
-            'lede_html' => '<strong>HTTPS is not enough.</strong> The certificate is not publicly trusted. In production, BlackCat is <strong>fail-closed</strong> here to prevent MITM during setup.',
+            'lede_html' => '<strong>Blocked:</strong> the TLS certificate is not publicly trusted. BlackCat refuses to continue to prevent MITM during setup.',
             'grid_html' => $gridHtml,
             'style_vars' => [
                 'accent_rgb' => '255, 212, 107',
@@ -1623,11 +1670,230 @@ function blackcat_setup_preflight(array $paths): array
     $errors = [];
     $warnings = [];
 
-    if (!extension_loaded('openssl')) {
-        $errors[] = 'Missing PHP extension: openssl (required for TLS verification + crypto).';
+    $hostPort = blackcat_normalize_http_host($_SERVER['HTTP_HOST'] ?? null);
+    $isDevHost = blackcat_is_dev_host($hostPort['host']);
+
+    $iniBool = static function (string $key): bool {
+        $raw = @ini_get($key);
+        if ($raw === false) {
+            return false;
+        }
+        $v = strtolower(trim((string) $raw));
+        if ($v === '' || $v === '0' || $v === 'off' || $v === 'false' || $v === 'no') {
+            return false;
+        }
+        return true;
+    };
+
+    $iniStr = static function (string $key): ?string {
+        $raw = @ini_get($key);
+        if ($raw === false) {
+            return null;
+        }
+        $v = trim((string) $raw);
+        return $v !== '' ? $v : null;
+    };
+
+    // --- Runtime hardening gate (align with TrustKernel strict policy) ---
+
+    if ($iniBool('allow_url_include')) {
+        $errors[] = 'php.ini hardening: allow_url_include is enabled. Disable it (high-risk remote file include).';
     }
 
-    $bundleRoot = $paths['bundle_root'];
+    $displayErrorsEnabled = $iniBool('display_errors') || $iniBool('display_startup_errors');
+    if ($displayErrorsEnabled) {
+        // Best-effort: detect whether the runtime can override this (ini_set) like HttpKernel does.
+        $canOverride = false;
+        if (function_exists('ini_set')) {
+            @ini_set('display_errors', '0');
+            @ini_set('display_startup_errors', '0');
+            $afterErrors = $iniBool('display_errors');
+            $afterStartup = $iniBool('display_startup_errors');
+            $canOverride = !$afterErrors && !$afterStartup;
+        }
+
+        $msg = 'php.ini hardening: display_errors/display_startup_errors is enabled. Disable them to prevent information disclosure (use log_errors instead).'
+            . ($canOverride ? ' Note: it appears overrideable at runtime (ini_set), but you should still disable it in hosting settings.' : '');
+
+        if ($isDevHost || $canOverride) {
+            $warnings[] = $msg;
+        } else {
+            $errors[] = $msg;
+        }
+    }
+
+    $logErrors = $iniBool('log_errors');
+    if (!$logErrors) {
+        $warnings[] = 'php.ini hardening: log_errors is disabled. Enable it so errors are logged instead of displayed.';
+    }
+
+    $openBasedir = $iniStr('open_basedir');
+    if ($openBasedir === null) {
+        $msg = 'php.ini hardening: open_basedir is not set. Set it to restrict filesystem access (required for a strict trust-kernel deployment).';
+        if ($isDevHost) {
+            $warnings[] = $msg;
+        } else {
+            $errors[] = $msg;
+        }
+    } else {
+        $allowed = array_filter(array_map('trim', explode(PATH_SEPARATOR, $openBasedir)), static fn (string $p): bool => $p !== '');
+
+        $bundleRoot = $paths['bundle_root'];
+        $stateDir = $paths['state_dir'];
+        $configPath = $paths['config_path'];
+
+        $mustAllow = [
+            'bundle_root' => $bundleRoot,
+            '.blackcat' => $stateDir,
+            'config.runtime.json dir' => dirname($configPath),
+        ];
+
+        $allowedOk = static function (string $required, array $allowedList): bool {
+            $req = @realpath($required);
+            $req = is_string($req) && $req !== '' ? $req : $required;
+            $req = rtrim($req, "/\\") . DIRECTORY_SEPARATOR;
+
+            foreach ($allowedList as $base) {
+                $b = @realpath($base);
+                $b = is_string($b) && $b !== '' ? $b : $base;
+                $b = rtrim($b, "/\\") . DIRECTORY_SEPARATOR;
+                if (str_starts_with($req, $b)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        foreach ($mustAllow as $label => $path) {
+            if (!$allowedOk($path, $allowed)) {
+                $msg = 'php.ini hardening: open_basedir blocks access to ' . $label . '. Adjust open_basedir or deploy the bundle under an allowed path.';
+                if ($isDevHost) {
+                    $warnings[] = $msg;
+                } else {
+                    $errors[] = $msg;
+                }
+            }
+        }
+    }
+
+    $pharReadonly = $iniStr('phar.readonly');
+    if ($pharReadonly !== null && $pharReadonly !== '1') {
+        $msg = 'php.ini hardening: phar.readonly is disabled. Set phar.readonly=1 to reduce PHAR deserialization risks.';
+        if ($isDevHost) {
+            $warnings[] = $msg;
+        } else {
+            $errors[] = $msg;
+        }
+    }
+
+    if ($iniBool('enable_dl')) {
+        $msg = 'php.ini hardening: enable_dl is enabled. Disable it (runtime extension loading increases attack surface).';
+        if ($isDevHost) {
+            $warnings[] = $msg;
+        } else {
+            $errors[] = $msg;
+        }
+    }
+
+    $autoPrepend = $iniStr('auto_prepend_file');
+    if ($autoPrepend !== null) {
+        $msg = 'php.ini hardening: auto_prepend_file is set. Remove it (hidden code injection risk).';
+        if ($isDevHost) {
+            $warnings[] = $msg;
+        } else {
+            $errors[] = $msg;
+        }
+    }
+
+    $autoAppend = $iniStr('auto_append_file');
+    if ($autoAppend !== null) {
+        $msg = 'php.ini hardening: auto_append_file is set. Remove it (hidden code injection risk).';
+        if ($isDevHost) {
+            $warnings[] = $msg;
+        } else {
+            $errors[] = $msg;
+        }
+    }
+
+    $cgiFixPathinfo = $iniBool('cgi.fix_pathinfo');
+    if ($cgiFixPathinfo && in_array(PHP_SAPI, ['fpm-fcgi', 'cgi', 'cgi-fcgi'], true)) {
+        $msg = 'php.ini hardening: cgi.fix_pathinfo is enabled. Set cgi.fix_pathinfo=0 for FPM/CGI.';
+        if ($isDevHost) {
+            $warnings[] = $msg;
+        } else {
+            $errors[] = $msg;
+        }
+    }
+
+    $disableFunctionsRaw = $iniStr('disable_functions');
+    $parseCsv = static function (?string $raw): array {
+        if ($raw === null || trim($raw) === '') {
+            return [];
+        }
+        $out = [];
+        foreach (preg_split('/[\\s,]+/', trim($raw)) ?: [] as $part) {
+            $p = strtolower(trim((string) $part));
+            if ($p === '' || str_contains($p, "\0")) {
+                continue;
+            }
+            $out[$p] = true;
+        }
+        return array_keys($out);
+    };
+    $disabled = $parseCsv($disableFunctionsRaw);
+    $dangerous = ['exec', 'shell_exec', 'system', 'passthru', 'popen', 'proc_open', 'pcntl_exec'];
+    $callable = [];
+    foreach ($dangerous as $fn) {
+        // If disabled (disable_functions) or unavailable (extension not loaded),
+        // function_exists() should be false. Treat "callable" as the actual risk.
+        if (function_exists($fn)) {
+            $callable[] = $fn;
+        }
+    }
+    if ($callable !== []) {
+        $msg = 'php.ini hardening: dangerous process-exec functions are callable: ' . implode(', ', $callable) . '. Disable them (recommended: disable_functions=' . implode(',', $dangerous) . ').';
+        if ($isDevHost) {
+            $warnings[] = $msg;
+        } else {
+            $errors[] = $msg;
+        }
+    } elseif ($disabled === [] && $isDevHost) {
+        // Informational: some hostings disable these at another layer; strict prod should still disable explicitly.
+        $warnings[] = 'php.ini hardening: disable_functions is empty, but no dangerous process-exec functions appear callable in this runtime.';
+    }
+
+    $hasOpenSsl = extension_loaded('openssl');
+    $hasCurl = extension_loaded('curl') && function_exists('curl_init') && function_exists('curl_version');
+    $hasCurlSsl = false;
+    if ($hasCurl) {
+        $v = @curl_version();
+        if (is_array($v)) {
+            $features = $v['features'] ?? null;
+            $sslVersion = $v['ssl_version'] ?? null;
+            if (is_int($features) && defined('CURL_VERSION_SSL') && (($features & CURL_VERSION_SSL) !== 0)) {
+                $hasCurlSsl = true;
+            } elseif (is_string($sslVersion) && $sslVersion !== '') {
+                // Some builds expose ssl_version but not features reliably.
+                $hasCurlSsl = true;
+            }
+        }
+    }
+    if (!$hasOpenSsl && !$hasCurlSsl) {
+        $errors[] = 'Missing TLS verification capability (OpenSSL extension or PHP curl with HTTPS support). BlackCat crypto uses libsodium, but setup still requires CA-trusted TLS verification to prevent MITM.';
+    }
+
+    // Web3 transport (align with TrustKernel expectations).
+    $allowUrlFopen = $iniBool('allow_url_fopen');
+    $web3TransportOk = $hasCurlSsl || ($allowUrlFopen && $hasOpenSsl);
+    if (!$web3TransportOk) {
+        $msg = 'Web3 transport is unavailable: no HTTPS-capable client detected (need cURL with SSL or OpenSSL + allow_url_fopen). TrustKernel cannot read on-chain state on this hosting.';
+        if ($isDevHost) {
+            $warnings[] = $msg;
+        } else {
+            $errors[] = $msg;
+        }
+    }
+
     $docroot = $paths['docroot'];
     $stateDir = $paths['state_dir'];
     $configPath = $paths['config_path'];
@@ -1716,7 +1982,8 @@ function blackcat_setup_render_preflight_page(array $paths, array $errors, array
         . '<div class="panel">'
         . '<strong>Common fixes:</strong>'
         . '<ul class="muted">'
-        . '<li>Enable PHP OpenSSL extension (<code>openssl</code>).</li>'
+        . '<li>Ensure server-side TLS verification works (OpenSSL extension or PHP <code>curl</code> with HTTPS support).</li>'
+        . '<li>Harden php.ini (disable <code>display_errors</code>, set <code>open_basedir</code>, and disable dangerous functions via <code>disable_functions</code>).</li>'
         . '<li>Ensure <code>.blackcat/</code> is writable and not world-writable.</li>'
         . '<li>Ensure the bundle root is writable for <code>config.runtime.json</code>.</li>'
         . '<li>Reload <code>/_blackcat/setup</code> after fixing permissions.</li>'
@@ -1756,19 +2023,18 @@ function blackcat_setup_render_disabled_page(array $paths): void
     header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
 
     $gridHtml = '<div class="panel">'
-        . '<strong>What happened:</strong>'
+        . '<strong>What this means:</strong>'
         . '<ul class="muted">'
-        . '<li><code>.blackcat/installed.flag</code> exists.</li>'
-        . '<li>The setup module is intentionally locked after installation.</li>'
+        . '<li>This instance has already been initialized.</li>'
+        . '<li>The web installer is intentionally locked after setup.</li>'
         . '</ul>'
         . '</div>'
         . '<div class="panel">'
-        . '<strong>Re-enable (dev only):</strong>'
-        . '<ul>'
-        . '<li>Delete <code>.blackcat/installed.flag</code>.</li>'
-        . '<li>Reload <code>/_blackcat/setup</code>.</li>'
+        . '<strong>Next steps:</strong>'
+        . '<ul class="muted">'
+        . '<li>Use the signed upgrade/recovery flow to make changes.</li>'
+        . '<li>If you need a clean install, deploy a fresh bundle.</li>'
         . '</ul>'
-        . '<div class="footer warn">Warning: re-enabling the installer increases attack surface. Only do this in a safe maintenance window.</div>'
         . '</div>';
 
     if (function_exists('blackcat_error_ui_render_page')) {
@@ -1776,7 +2042,7 @@ function blackcat_setup_render_disabled_page(array $paths): void
             'title' => 'BlackCat Setup — Disabled',
             'h1_prefix' => 'BlackCat Setup',
             'pill' => 'installer locked',
-            'lede_html' => '<strong>Setup is disabled.</strong> This is the recommended production posture (minimal web attack surface).',
+            'lede_html' => '<strong>Installer locked.</strong> This deployment is sealed to keep the web attack surface minimal.',
             'grid_html' => $gridHtml,
             'style_vars' => [
                 'accent_rgb' => '255, 212, 107',
@@ -1807,18 +2073,18 @@ function blackcat_setup_render_front_controller_required_page(): void
     $gridHtml = '<div class="panel">'
         . '<strong>What this means:</strong>'
         . '<ul>'
-        . '<li>Your server must route all requests to <code>site/public/index.php</code> (front controller).</li>'
+        . '<li>Your server must route all requests to the front controller (<code>index.php</code>).</li>'
         . '<li>Direct access to <code>/_blackcat/setup.php</code> is blocked by design.</li>'
         . '</ul>'
         . '</div>'
         . '<div class="panel">'
         . '<strong>Fix:</strong>'
         . '<ul class="muted">'
-        . '<li>Point the document root to <code>site/public/</code>.</li>'
-        . '<li>Enable URL rewriting (Apache: <code>AllowOverride All</code> / Nginx: <code>try_files</code>).</li>'
+        . '<li>Point the document root to the directory that contains <code>index.php</code>.</li>'
+        . '<li>Enable URL rewriting so all requests route through <code>index.php</code> (Apache: <code>AllowOverride All</code> / Nginx: <code>try_files</code>).</li>'
         . '<li>Reload and open <code>/_blackcat/setup</code> again.</li>'
         . '</ul>'
-        . '<div class="footer warn"><strong>Fail-closed:</strong> without a front controller boundary, BlackCat security guarantees do not apply.</div>'
+        . '<div class="footer warn">Front controller is a required part of BlackCat security (single entrypoint).</div>'
         . '</div>';
 
     if (function_exists('blackcat_error_ui_render_page')) {
@@ -2044,6 +2310,25 @@ function blackcat_setup_api_write_config(array $paths): void
             return;
         }
     }
+    if ($quorum < 1) {
+        blackcat_json(['ok' => false, 'error' => 'rpc_quorum must be >= 1.'], 400);
+        return;
+    }
+    if ($quorum > count($endpoints)) {
+        blackcat_json(['ok' => false, 'error' => 'rpc_quorum must be <= number of rpc_endpoints.'], 400);
+        return;
+    }
+
+    // This Stage 3 installer generates a strict, fail-closed kernel config.
+    // Strict mode requires at least 2 independent RPC endpoints and quorum >= 2.
+    if (count($endpoints) < 2) {
+        blackcat_json(['ok' => false, 'error' => 'At least 2 rpc_endpoints are required (quorum trust needs redundancy).'], 400);
+        return;
+    }
+    if ($quorum < 2) {
+        blackcat_json(['ok' => false, 'error' => 'rpc_quorum must be >= 2 for a strict trust kernel deployment.'], 400);
+        return;
+    }
 
     $mode = $decoded['mode'] ?? 'full';
     if (!is_string($mode)) {
@@ -2178,7 +2463,7 @@ function blackcat_setup_api_finish(array $paths): void
         'ok' => true,
         'installed_flag' => $flag,
         'install_token_removed' => $tokenRemoved,
-        'note' => 'Installer disabled. For re-install, remove installed.flag and re-open /_blackcat/setup to generate a new install token.',
+        'note' => 'Installer disabled. This deployment is sealed to keep the web attack surface minimal. Use the signed upgrade/recovery flow for changes; for a clean reinstall, deploy a fresh bundle.',
     ]);
 }
 
