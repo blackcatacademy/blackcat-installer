@@ -30,7 +30,8 @@ Before you upload a full bundle, you can run a **single-file** diagnostics check
    - `https://YOUR_DOMAIN/blackcat-preflight.php`
    - JSON output: `https://YOUR_DOMAIN/blackcat-preflight.php?format=json`
    - Policy override: `?policy=strict` (default) or `?policy=warn`
-   - Optional best-effort probe: `?probe=pathinfo` (tests for classic `file.txt/x.php` execution surface when `cgi.fix_pathinfo` is enabled)
+   - Optional best-effort probe: `?probe=pathinfo` (browser probe for classic `file.txt/x.php` execution surface when `cgi.fix_pathinfo` is enabled)
+     - More variants: `?probe=pathinfo&deep=1` (also tests `/index.php`, `;x.php`, etc.)
 3) **Delete the file** after checking (it prints environment details).
 
 What it checks (high-level):

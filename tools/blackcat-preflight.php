@@ -77,6 +77,16 @@ function blackcat_preflight_probe(): ?string
     return $v === 'pathinfo' ? 'pathinfo' : null;
 }
 
+function blackcat_preflight_probe_deep(): bool
+{
+    $raw = $_GET['deep'] ?? null;
+    if (!is_string($raw)) {
+        return false;
+    }
+    $v = strtolower(trim($raw));
+    return $v === '1' || $v === 'true' || $v === 'yes';
+}
+
 function blackcat_preflight_random_id(): string
 {
     try {
@@ -414,9 +424,9 @@ function blackcat_preflight_check_basic_hardening(): array
     $cgiFixPathinfo = blackcat_preflight_ini_flag('cgi.fix_pathinfo');
     if ($cgiFixPathinfo && in_array(PHP_SAPI, ['fpm-fcgi', 'cgi', 'cgi-fcgi'], true)) {
         if ($policy === 'strict') {
-            $fails[] = 'cgi.fix_pathinfo is enabled (risk in some FPM/CGI configurations). Optional: run ?probe=pathinfo for a best-effort black-box probe.';
+            $fails[] = 'cgi.fix_pathinfo is enabled (risk in some FPM/CGI configurations; detected via ini_get). Optional: run ?probe=pathinfo (or &deep=1) for a best-effort black-box probe.';
         } else {
-            $warns[] = 'cgi.fix_pathinfo is enabled (risk in some FPM/CGI configurations). Optional: run ?probe=pathinfo for a best-effort black-box probe.';
+            $warns[] = 'cgi.fix_pathinfo is enabled (risk in some FPM/CGI configurations; detected via ini_get). Optional: run ?probe=pathinfo (or &deep=1) for a best-effort black-box probe.';
         }
     }
 
@@ -821,13 +831,23 @@ $policy = blackcat_preflight_policy()['policy'];
 $probePanel = '';
 if ($probeMode === 'pathinfo') {
     $p = blackcat_preflight_prepare_pathinfo_probe();
+    $deep = blackcat_preflight_probe_deep();
     $probeConfig = [
         'id' => $p['id'],
         'filename' => $p['filename'],
         'url' => $p['url_path'],
-        'url_pathinfo' => $p['url_path'] . '/x.php',
+        'variants' => $deep ? [
+            $p['url_path'] . '/x.php',
+            $p['url_path'] . '/index.php',
+            $p['url_path'] . '/a.php',
+            $p['url_path'] . ';x.php',
+            $p['url_path'] . '%3bx.php',
+        ] : [
+            $p['url_path'] . '/x.php',
+        ],
         'expected' => $p['expected'],
         'cleanup_url' => '?probe=pathinfo&cleanup=1&token=' . rawurlencode($p['id']) . '&file=' . rawurlencode($p['filename']),
+        'deep' => $deep,
     ];
 
     $probePanel = '<div class="check" style="margin-top:12px;">'
@@ -838,6 +858,7 @@ if ($probeMode === 'pathinfo') {
         . '<div class="checkDetails" id="bcProbeSummary">Running probe…</div>'
         . '<ul class="hints" id="bcProbeHints">'
         . '<li>Note: This probe is <strong>informational</strong>. Strict production should still disable <code>cgi.fix_pathinfo</code> where possible.</li>'
+        . ($deep ? '<li>Deep mode: multiple variants are tested (<code>deep=1</code>).</li>' : '<li>Tip: add <code>&amp;deep=1</code> to test more variants.</li>')
         . '</ul>'
         . '</div>'
         . '</div>'
@@ -860,25 +881,34 @@ if ($probeMode === 'pathinfo') {
         . '};'
         . '(async () => {'
         . '  const control = await readText(cfg.url);'
-        . '  const pathinfo = await readText(cfg.url_pathinfo);'
+        . '  const variants = Array.isArray(cfg.variants) ? cfg.variants : [];'
+        . '  const results = [];'
+        . '  for (const u of variants) { results.push({ url: u, res: await readText(u) }); }'
         . '  const controlExec = control.ok && control.text.includes(cfg.expected);'
-        . '  const pathinfoExec = pathinfo.ok && pathinfo.text.includes(cfg.expected);'
-        . '  if (!control.ok || !pathinfo.ok) {'
+        . '  const variantExec = results.some((r) => r.res.ok && r.res.text.includes(cfg.expected));'
+        . '  const allOk = control.ok && results.every((r) => r.res.ok);'
+        . '  if (!allOk) {'
         . '    set("warn", "INCONCLUSIVE");'
         . '    summary.textContent = "Probe could not be fully executed (network/hosting limitations).";'
         . '    if (!control.ok) addHint("Control request failed: " + control.error);'
-        . '    if (!pathinfo.ok) addHint("PathInfo request failed: " + pathinfo.error);'
+        . '    for (const r of results) { if (!r.res.ok) addHint("Variant request failed: " + r.url + " — " + r.res.error); }'
         . '  } else if (controlExec) {'
         . '    set("fail", "VULNERABLE");'
         . '    summary.textContent = "CRITICAL: The server executed a .txt file as PHP. This hosting is unsafe for strict deployments.";' 
-        . '  } else if (pathinfoExec) {'
+        . '  } else if (variantExec) {'
         . '    set("fail", "VULNERABLE");'
-        . '    summary.textContent = "VULNERABLE: Requesting file.txt/x.php caused PHP execution (cgi.fix_pathinfo-style exploit surface).";'
+        . '    summary.textContent = "VULNERABLE: A PathInfo-style request caused PHP execution (cgi.fix_pathinfo-style exploit surface).";'
         . '    addHint("Fix: Set php.ini cgi.fix_pathinfo=0 and ensure webserver uses try_files / correct SCRIPT_FILENAME routing.");'
         . '  } else {'
         . '    set("pass", "NO EXEC");'
-        . '    summary.textContent = "No PHP execution observed for file.txt or file.txt/x.php in this probe.";' 
+        . '    summary.textContent = "No PHP execution observed for the tested PathInfo variants in this probe.";' 
         . '    addHint("This does not guarantee safety; it only indicates this specific probe did not trigger execution.");'
+        . '  }'
+        . '  if (cfg.deep) {'
+        . '    for (const r of results) {'
+        . '      const ok = r.res.ok && !r.res.text.includes(cfg.expected);'
+        . '      addHint((ok ? "PASS" : "CHECK") + ": " + r.url + " (HTTP " + String(r.res.status) + ")");'
+        . '    }'
         . '  }'
         . '  try { await fetch(cfg.cleanup_url, { cache: "no-store", credentials: "same-origin" }); } catch (e) {}'
         . '})();'
