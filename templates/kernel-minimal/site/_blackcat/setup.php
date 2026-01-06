@@ -203,45 +203,78 @@ function blackcat_setup_page(array $paths): void
 	      @media (max-width: 740px) {
 	        .header { grid-template-columns: 1fr; justify-items: center; text-align: center; }
 	      }
-	      .mascotWrap {
-	        width: 132px;
-	        height: 132px;
-	        border-radius: 18px;
-	        border: 1px solid rgba(31, 42, 68, 0.95);
-	        background: rgba(11, 15, 23, 0.35);
-	        position: relative;
-	        overflow: hidden;
-	        display: grid;
-	        place-items: center;
-	        box-shadow: 0 24px 90px rgba(0, 0, 0, 0.45);
-	      }
+		      .mascotWrap {
+		        width: 132px;
+		        height: 132px;
+		        border-radius: 18px;
+		        border: 0;
+		        background: transparent;
+		        position: relative;
+		        overflow: visible;
+		        display: grid;
+		        place-items: center;
+		        box-shadow: none;
+		      }
 	      @media (max-width: 740px) {
 	        .mascotWrap { width: 120px; height: 120px; }
 	      }
-	      .mascotWrap::before {
-	        content: "";
-	        position: absolute;
-	        inset: -24px;
-	        background:
-	          radial-gradient(circle at 35% 25%, rgba(255, 123, 114, 0.26), transparent 60%),
-	          radial-gradient(circle at 70% 65%, rgba(86, 116, 255, 0.18), transparent 62%);
-	        filter: blur(10px);
-	        opacity: 0.9;
-	        pointer-events: none;
-	      }
-	      .mascot {
-	        width: 100%;
-	        height: 100%;
-	        background:
-	          url("/_blackcat/assets/fatal-error-cat.png") center / contain no-repeat,
-	          url("/_blackcat/assets/https-required-cat-fallback.svg") center / 92px 92px no-repeat;
-	        filter:
-	          drop-shadow(0 18px 55px rgba(0, 0, 0, 0.55))
-	          drop-shadow(0 0 26px rgba(255, 123, 114, 0.26))
-	          drop-shadow(0 0 46px rgba(86, 116, 255, 0.10));
-	        position: relative;
-	        z-index: 1;
-	      }
+		      .mascotWrap::before {
+		        content: "";
+		        position: absolute;
+		        inset: -34px;
+		        background:
+		          radial-gradient(circle at 35% 22%, rgba(255, 123, 114, 0.34), transparent 58%),
+		          radial-gradient(circle at 74% 70%, rgba(86, 116, 255, 0.22), transparent 60%),
+		          radial-gradient(circle at 55% 55%, rgba(255, 212, 107, 0.14), transparent 62%);
+		        filter: blur(14px);
+		        opacity: 0.92;
+		        pointer-events: none;
+		      }
+		      .mascotWrap::after {
+		        content: "";
+		        position: absolute;
+		        inset: -14px;
+		        border-radius: 999px;
+		        background: conic-gradient(
+		          from 190deg,
+		          rgba(255, 123, 114, 0.00),
+		          rgba(255, 123, 114, 0.46),
+		          rgba(86, 116, 255, 0.38),
+		          rgba(255, 212, 107, 0.22),
+		          rgba(255, 123, 114, 0.00)
+		        );
+		        -webkit-mask: radial-gradient(circle at center, transparent 56%, #000 58%);
+		        mask: radial-gradient(circle at center, transparent 56%, #000 58%);
+		        opacity: 0.82;
+		        filter: blur(0.55px);
+		        pointer-events: none;
+		      }
+		      .mascot {
+		        width: 100%;
+		        height: 100%;
+		        background:
+		          url("/_blackcat/assets/fatal-error-cat.png") center / contain no-repeat,
+		          url("/_blackcat/assets/https-required-cat-fallback.svg") center / 92px 92px no-repeat;
+		        filter:
+		          drop-shadow(0 18px 55px rgba(0, 0, 0, 0.55))
+		          drop-shadow(0 0 26px rgba(255, 123, 114, 0.26))
+		          drop-shadow(0 0 46px rgba(86, 116, 255, 0.10));
+		        transform: scale(1.06);
+		        position: relative;
+		        z-index: 1;
+		      }
+		      @media (prefers-reduced-motion: no-preference) {
+		        .mascotWrap::after { animation: bcHaloSpin 12s linear infinite; }
+		        .mascot { animation: bcMascotFloat 6.5s ease-in-out infinite; }
+		        @keyframes bcHaloSpin {
+		          from { transform: rotate(0deg); }
+		          to { transform: rotate(360deg); }
+		        }
+		        @keyframes bcMascotFloat {
+		          0%, 100% { transform: translateY(0) scale(1.06); }
+		          50% { transform: translateY(-2px) scale(1.06); }
+		        }
+		      }
 	      h1 { margin: 0; font-size: 26px; letter-spacing: 0.2px; display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; }
 	      .muted { color: #9fb0d0; }
 		      .pill {
