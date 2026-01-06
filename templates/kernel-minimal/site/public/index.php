@@ -2,6 +2,14 @@
 
 declare(strict_types=1);
 
+// Optional: shared fail-closed error page UI (no Composer dependency).
+// Keep the bundle resilient even if vendor/ is missing.
+$__blackcatErrorUi = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '_blackcat' . DIRECTORY_SEPARATOR . 'error-ui.php';
+if (is_file($__blackcatErrorUi)) {
+    /** @noinspection PhpIncludeInspection */
+    require_once $__blackcatErrorUi;
+}
+
 /**
  * BlackCat kernel minimal bundle (Stage 3 template).
  *
@@ -101,152 +109,47 @@ if (is_string($documentRootReal) && $documentRootReal !== '' && is_string($publi
     header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
 
     $docHint = $isDevHost
-        ? '<details class="box"><summary><strong>Dev details</strong> (docroot)</summary>'
+        ? '<details class="panel"><summary><strong>Dev details</strong> (docroot)</summary>'
             . '<pre><code>DOCUMENT_ROOT: ' . htmlspecialchars($documentRootReal, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n"
             . 'Expected:      ' . htmlspecialchars($publicReal, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</code></pre>'
             . '</details>'
         : '';
 
-    echo <<<HTML
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BlackCat — Docroot misconfigured</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="manifest" href="/site.webmanifest" />
-    <style>
-      :root { color-scheme: dark; }
-      *, *::before, *::after { box-sizing: border-box; }
-      body {
-        margin: 0;
-        min-height: 100svh;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        padding: clamp(16px, 2.5vh, 56px) 16px 16px;
-        font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        position: relative;
-        isolation: isolate;
-        background:
-          radial-gradient(900px 420px at 20% 0%, rgba(86, 116, 255, 0.18), transparent 55%),
-          radial-gradient(900px 420px at 80% 0%, rgba(255, 123, 114, 0.12), transparent 60%),
-          #0b0f17;
-        color: #e7eefc;
-      }
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        background: url("/_blackcat/assets/bg-grid-red.png") repeat;
-        background-size: 512px 512px;
-        opacity: 0.30;
-        mix-blend-mode: screen;
-        filter: brightness(2.1) contrast(1.32) saturate(1.1);
-        pointer-events: none;
-        z-index: 0;
-      }
-      @media (prefers-reduced-motion: no-preference) {
-        body::before { animation: bcGridDrift 52s linear infinite; }
-        @keyframes bcGridDrift {
-          from { background-position: 0 0; }
-          to { background-position: 240px 120px; }
-        }
-      }
-      .card {
-        max-width: 980px;
-        width: 100%;
-        border-radius: 18px;
-        border: 1px solid rgba(42, 59, 99, 0.78);
-        background:
-          radial-gradient(900px 420px at 18% 0%, rgba(255, 255, 255, 0.07), transparent 62%),
-          radial-gradient(900px 420px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
-          linear-gradient(180deg, rgba(15, 21, 36, 0.74), rgba(15, 21, 36, 0.40));
-        backdrop-filter: blur(18px) saturate(1.25);
-        -webkit-backdrop-filter: blur(18px) saturate(1.25);
-        box-shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
-        overflow: hidden;
-        position: relative;
-        z-index: 1;
-      }
-      .banner {
-        width: 100%;
-        height: clamp(140px, 18vw, 220px);
-        background:
-          linear-gradient(180deg, rgba(11, 15, 23, 0.00), rgba(11, 15, 23, 0.82)),
-          url("/_blackcat/assets/hero-banner.png") left center / cover no-repeat;
-        border-bottom: 1px solid rgba(31, 42, 68, 0.95);
-      }
-      .body { padding: 14px 16px 16px; }
-      h1 { margin: 0 0 6px; font-size: 24px; }
-      .muted { color: #9fb0d0; }
-      .bad { color: #ff7b72; }
-      .lead { margin: 0; }
-      .head { display: flex; gap: 14px; align-items: center; }
-      .mascot {
-        flex: 0 0 auto;
-        width: 86px;
-        height: 86px;
-        border-radius: 16px;
-        border: 1px solid rgba(31, 42, 68, 0.95);
-        background: rgba(11, 15, 23, 0.35);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
-      }
-      .mascot img { width: 92%; height: 92%; object-fit: contain; }
-      code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-      pre { margin: 10px 0 0; overflow: auto; }
-      ul { margin: 10px 0 0 18px; padding: 0; }
-      li { margin: 6px 0; }
-      .box {
-        margin-top: 12px;
-        padding: 12px 14px;
-        border-radius: 14px;
-        border: 1px solid rgba(31, 42, 68, 0.95);
-        background: rgba(11, 15, 23, 0.55);
-      }
-      details > summary { cursor: pointer; user-select: none; }
-    </style>
-  </head>
-	  <body>
-	    <main class="card">
-	      <div class="banner" aria-hidden="true"></div>
-	      <div class="body">
-	        <div class="head">
-	          <div class="mascot" aria-hidden="true">
-	            <img src="/_blackcat/assets/docroot-misconfigured-cat.png" alt="" />
-	          </div>
-	          <div>
-	            <h1>Docroot misconfigured <span class="bad">fix required</span></h1>
-	            <p class="muted lead">Your web server is not pointing to <code>site/public/</code> as the document root. This is unsafe because internal files may become directly accessible.</p>
-	          </div>
-	        </div>
-	        <div class="box">
-	          <div><strong>Fix:</strong></div>
-	          <ul>
-	            <li>Set the document root to <code>site/public/</code>.</li>
-            <li>Ensure all requests route through <code>site/public/index.php</code> (front controller).</li>
-            <li>After fixing, reload the page.</li>
-          </ul>
-        </div>
-        <div class="box">
-          <div><strong>Why this is fail-closed:</strong></div>
-          <ul class="muted">
-            <li>Misconfigured docroot can expose <code>vendor/</code>, <code>config.runtime.json</code>, and <code>.blackcat/</code>.</li>
-            <li>BlackCat refuses to boot in this state.</li>
-          </ul>
-        </div>
-        {$docHint}
-      </div>
-    </main>
-  </body>
-</html>
-HTML;
+    $gridHtml = <<<'HTML'
+                <div class="panel">
+                  <strong>Fix:</strong>
+                  <ul>
+                    <li>Set the document root to <code>site/public/</code>.</li>
+                    <li>Ensure all requests route through <code>site/public/index.php</code> (front controller).</li>
+                    <li>Reload the page.</li>
+                  </ul>
+                </div>
+                <div class="panel">
+                  <strong>Why BlackCat blocks this:</strong>
+                  <ul class="muted">
+                    <li>Misconfigured docroot can expose <code>vendor/</code>, <code>config.runtime.json</code>, and <code>.blackcat/</code>.</li>
+                    <li>Front controller boundary is required for BlackCat security guarantees.</li>
+                  </ul>
+                  <div class="footer warn"><strong>Action required:</strong> fix docroot before continuing.</div>
+                </div>
+    HTML;
+
+    if (function_exists('blackcat_error_ui_render_page')) {
+        echo blackcat_error_ui_render_page([
+            'title' => 'BlackCat — Docroot misconfigured',
+            'h1_prefix' => 'BlackCat',
+            'pill' => 'docroot misconfigured',
+            'lede_html' => '<strong>Fail-closed:</strong> your web server is not pointing to <code>site/public/</code> as the document root.',
+            'grid_html' => $gridHtml,
+            'after_grid_html' => $docHint,
+            'style_vars' => [
+                'grid_url' => '/_blackcat/assets/bg-grid-red.png',
+                'mascot_primary_url' => '/_blackcat/assets/docroot-misconfigured-cat.png',
+            ],
+        ]);
+    } else {
+        echo '<!doctype html><meta charset="utf-8" /><title>BlackCat — Docroot misconfigured</title><h1>Docroot misconfigured</h1>';
+    }
     exit;
 }
 
@@ -264,136 +167,40 @@ if (!is_file($autoload)) {
     header('X-Robots-Tag: noindex, nofollow, noarchive');
     header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
 
-    echo <<<'HTML'
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BlackCat — Bundle incomplete</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="manifest" href="/site.webmanifest" />
-    <style>
-      :root { color-scheme: dark; }
-      *, *::before, *::after { box-sizing: border-box; }
-      body {
-        margin: 0;
-        min-height: 100svh;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        padding: clamp(16px, 2.5vh, 56px) 16px 16px;
-        font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        position: relative;
-        isolation: isolate;
-        background:
-          radial-gradient(900px 420px at 20% 0%, rgba(86, 116, 255, 0.18), transparent 55%),
-          radial-gradient(900px 420px at 80% 0%, rgba(255, 123, 114, 0.12), transparent 60%),
-          #0b0f17;
-        color: #e7eefc;
-      }
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        background: url("/_blackcat/assets/bg-grid-red.png") repeat;
-        background-size: 512px 512px;
-        opacity: 0.36;
-        mix-blend-mode: screen;
-        filter: brightness(2.2) contrast(1.35) saturate(1.15);
-        pointer-events: none;
-        z-index: 0;
-      }
-      @media (prefers-reduced-motion: no-preference) {
-        body::before { animation: bcGridDrift 52s linear infinite; }
-        @keyframes bcGridDrift {
-          from { background-position: 0 0; }
-          to { background-position: 240px 120px; }
-        }
-      }
-      .card {
-        max-width: 980px;
-        width: 100%;
-        border-radius: 18px;
-        border: 1px solid rgba(42, 59, 99, 0.78);
-        background:
-          radial-gradient(900px 420px at 18% 0%, rgba(255, 255, 255, 0.07), transparent 62%),
-          radial-gradient(900px 420px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
-          linear-gradient(180deg, rgba(15, 21, 36, 0.74), rgba(15, 21, 36, 0.40));
-        backdrop-filter: blur(18px) saturate(1.25);
-        -webkit-backdrop-filter: blur(18px) saturate(1.25);
-        box-shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
-        overflow: hidden;
-        position: relative;
-        z-index: 1;
-      }
-      .banner {
-        width: 100%;
-        height: clamp(140px, 18vw, 220px);
-        background:
-          linear-gradient(180deg, rgba(11, 15, 23, 0.00), rgba(11, 15, 23, 0.82)),
-          url("/_blackcat/assets/hero-banner.png") left center / cover no-repeat;
-        border-bottom: 1px solid rgba(31, 42, 68, 0.95);
-      }
-      .body { padding: 14px 16px 16px; }
-      h1 { margin: 0 0 6px; font-size: 24px; }
-      .muted { color: #9fb0d0; }
-      .bad { color: #ff7b72; }
-      .lead { margin: 0; }
-      .head { display: flex; gap: 14px; align-items: center; }
-      .mascot {
-        flex: 0 0 auto;
-        width: 86px;
-        height: 86px;
-        border-radius: 16px;
-        border: 1px solid rgba(31, 42, 68, 0.95);
-        background: rgba(11, 15, 23, 0.35);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
-      }
-      .mascot img { width: 92%; height: 92%; object-fit: contain; }
-      code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-      ul { margin: 10px 0 0 18px; padding: 0; }
-      li { margin: 6px 0; }
-      .box {
-        margin-top: 12px;
-        padding: 12px 14px;
-        border-radius: 14px;
-        border: 1px solid rgba(31, 42, 68, 0.95);
-        background: rgba(11, 15, 23, 0.55);
-      }
-    </style>
-  </head>
-	  <body>
-	    <main class="card">
-	      <div class="banner" aria-hidden="true"></div>
-	      <div class="body">
-	        <div class="head">
-	          <div class="mascot" aria-hidden="true">
-	            <img src="/_blackcat/assets/vendor-missing-cat.png" alt="" />
-	          </div>
-	          <div>
-	            <h1>Bundle incomplete <span class="bad">vendor/ missing</span></h1>
-	            <p class="muted lead">BlackCat cannot boot because <code>vendor/autoload.php</code> is missing.</p>
-	          </div>
-	        </div>
-	        <div class="box">
-	          <div><strong>Fix:</strong></div>
-	          <ul>
-	            <li>Upload the full bundle (including <code>vendor/</code>) via FTP/SFTP.</li>
-            <li>Ensure the web root points to <code>site/public/</code>.</li>
-            <li>Reload this page.</li>
-          </ul>
-        </div>
-      </div>
-    </main>
-  </body>
-</html>
-HTML;
+    $gridHtml = <<<'HTML'
+                <div class="panel">
+                  <strong>What’s missing:</strong>
+                  <ul class="muted">
+                    <li><code>vendor/</code> (Composer dependencies)</li>
+                    <li><code>vendor/autoload.php</code> (required bootstrap)</li>
+                  </ul>
+                </div>
+                <div class="panel">
+                  <strong>Fix:</strong>
+                  <ul>
+                    <li>Upload the full bundle (including <code>vendor/</code>) via FTP/SFTP.</li>
+                    <li>Ensure the web root points to <code>site/public/</code>.</li>
+                    <li>Reload this page.</li>
+                  </ul>
+                  <div class="footer warn">Tip: for FTP installs, always upload the bundle as a whole — partial uploads are a common cause.</div>
+                </div>
+    HTML;
+
+    if (function_exists('blackcat_error_ui_render_page')) {
+        echo blackcat_error_ui_render_page([
+            'title' => 'BlackCat — Bundle incomplete',
+            'h1_prefix' => 'BlackCat',
+            'pill' => 'bundle incomplete',
+            'lede_html' => '<strong>Blocked:</strong> <code>vendor/autoload.php</code> is missing, so the kernel cannot boot safely.',
+            'grid_html' => $gridHtml,
+            'style_vars' => [
+                'grid_url' => '/_blackcat/assets/bg-grid-red.png',
+                'mascot_primary_url' => '/_blackcat/assets/vendor-missing-cat.png',
+            ],
+        ]);
+    } else {
+        echo '<!doctype html><meta charset="utf-8" /><title>BlackCat — Bundle incomplete</title><h1>Bundle incomplete</h1>';
+    }
     exit;
 }
 require $autoload;
@@ -456,134 +263,40 @@ if (!is_file($configPath)) {
     header('X-Robots-Tag: noindex, nofollow, noarchive');
     header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
 
-    echo <<<'HTML'
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BlackCat — Not installed</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="manifest" href="/site.webmanifest" />
-    <style>
-      :root { color-scheme: dark; }
-      *, *::before, *::after { box-sizing: border-box; }
-      body {
-        margin: 0;
-        min-height: 100svh;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        padding: clamp(16px, 2.5vh, 56px) 16px 16px;
-        font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        position: relative;
-        isolation: isolate;
-        background:
-          radial-gradient(900px 420px at 20% 0%, rgba(86, 116, 255, 0.18), transparent 55%),
-          radial-gradient(900px 420px at 80% 0%, rgba(255, 123, 114, 0.12), transparent 60%),
-          #0b0f17;
-        color: #e7eefc;
-      }
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        background: url("/_blackcat/assets/bg-grid-red.png") repeat;
-        background-size: 512px 512px;
-        opacity: 0.36;
-        mix-blend-mode: screen;
-        filter: brightness(2.2) contrast(1.35) saturate(1.15);
-        pointer-events: none;
-        z-index: 0;
-      }
-      @media (prefers-reduced-motion: no-preference) {
-        body::before { animation: bcGridDrift 52s linear infinite; }
-        @keyframes bcGridDrift {
-          from { background-position: 0 0; }
-          to { background-position: 240px 120px; }
-        }
-      }
-      .card {
-        max-width: 980px;
-        width: 100%;
-        border-radius: 18px;
-        border: 1px solid rgba(42, 59, 99, 0.78);
-        background:
-          radial-gradient(900px 420px at 18% 0%, rgba(255, 255, 255, 0.07), transparent 62%),
-          radial-gradient(900px 420px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
-          linear-gradient(180deg, rgba(15, 21, 36, 0.74), rgba(15, 21, 36, 0.40));
-        backdrop-filter: blur(18px) saturate(1.25);
-        -webkit-backdrop-filter: blur(18px) saturate(1.25);
-        box-shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
-        overflow: hidden;
-        position: relative;
-        z-index: 1;
-      }
-      .banner {
-        width: 100%;
-        height: clamp(140px, 18vw, 220px);
-        background:
-          linear-gradient(180deg, rgba(11, 15, 23, 0.00), rgba(11, 15, 23, 0.82)),
-          url("/_blackcat/assets/hero-banner.png") left center / cover no-repeat;
-        border-bottom: 1px solid rgba(31, 42, 68, 0.95);
-      }
-      .body { padding: 14px 16px 16px; }
-      h1 { margin: 0 0 6px; font-size: 24px; }
-      .muted { color: #9fb0d0; }
-      .lead { margin: 0; }
-      .head { display: flex; gap: 14px; align-items: center; }
-      .mascot {
-        flex: 0 0 auto;
-        width: 86px;
-        height: 86px;
-        border-radius: 16px;
-        border: 1px solid rgba(31, 42, 68, 0.95);
-        background: rgba(11, 15, 23, 0.35);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
-      }
-      .mascot img { width: 92%; height: 92%; object-fit: contain; }
-      code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-      ul { margin: 10px 0 0 18px; padding: 0; }
-      li { margin: 6px 0; }
-      .box {
-        margin-top: 12px;
-        padding: 12px 14px;
-        border-radius: 14px;
-        border: 1px solid rgba(31, 42, 68, 0.95);
-        background: rgba(11, 15, 23, 0.55);
-      }
-    </style>
-  </head>
-	  <body>
-	    <main class="card">
-	      <div class="banner" aria-hidden="true"></div>
-	      <div class="body">
-	        <div class="head">
-	          <div class="mascot" aria-hidden="true">
-	            <img src="/_blackcat/assets/config-missing-cat.png" alt="" />
-	          </div>
-	          <div>
-	            <h1>Not installed</h1>
-	            <p class="muted lead"><code>config.runtime.json</code> is missing and the installer is not available.</p>
-	          </div>
-	        </div>
-	        <div class="box">
-	          <div><strong>Fix:</strong></div>
-	          <ul>
-	            <li>Upload <code>config.runtime.json</code> to the bundle root, or</li>
-            <li>Restore the Stage-3 setup module and open <code>/_blackcat/setup</code>.</li>
-          </ul>
-        </div>
-      </div>
-    </main>
-  </body>
-</html>
-HTML;
+    $gridHtml = <<<'HTML'
+                <div class="panel">
+                  <strong>Fix:</strong>
+                  <ul>
+                    <li>Upload <code>config.runtime.json</code> to the bundle root, or</li>
+                    <li>Restore the setup module and open <code>/_blackcat/setup</code>.</li>
+                  </ul>
+                </div>
+                <div class="panel">
+                  <strong>Security note:</strong>
+                  <ul class="muted">
+                    <li>BlackCat cannot run without a validated runtime config.</li>
+                    <li>This prevents insecure “best effort” boot that could weaken fail-closed guarantees.</li>
+                  </ul>
+                  <div class="footer warn">Tip: if you’re deploying via FTP, ensure the bundle root contains <code>config.runtime.json</code>.</div>
+                </div>
+    HTML;
+
+    if (function_exists('blackcat_error_ui_render_page')) {
+        echo blackcat_error_ui_render_page([
+            'title' => 'BlackCat — Not installed',
+            'h1_prefix' => 'BlackCat',
+            'pill' => 'not installed',
+            'lede_html' => '<strong>Missing runtime config:</strong> <code>config.runtime.json</code> is not present and the installer is not available.',
+            'grid_html' => $gridHtml,
+            'style_vars' => [
+                'accent_rgb' => '255, 212, 107',
+                'grid_url' => '/_blackcat/assets/bg-grid-red.png',
+                'mascot_primary_url' => '/_blackcat/assets/config-missing-cat.png',
+            ],
+        ]);
+    } else {
+        echo '<!doctype html><meta charset="utf-8" /><title>BlackCat — Not installed</title><h1>Not installed</h1>';
+    }
     exit;
 }
 
@@ -613,144 +326,46 @@ if (class_exists($configClass) && is_callable([$configClass, 'initFromJsonFileIf
 
         $debugHtml = '';
         if ($isDev) {
-            $debugHtml = '<details class="box"><summary><strong>Dev debug</strong> (exception)</summary>'
+            $debugHtml = '<details class="panel"><summary><strong>Dev debug</strong> (exception)</summary>'
                 . '<pre><code>' . htmlspecialchars(get_class($e) . ': ' . $e->getMessage(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</code></pre>'
                 . '</details>';
         }
 
-        echo <<<HTML
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BlackCat — Config init failed</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="manifest" href="/site.webmanifest" />
-    <style>
-      :root { color-scheme: dark; }
-      *, *::before, *::after { box-sizing: border-box; }
-      body {
-        margin: 0;
-        min-height: 100svh;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        padding: clamp(16px, 2.5vh, 56px) 16px 16px;
-        font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        position: relative;
-        isolation: isolate;
-        background:
-          radial-gradient(900px 420px at 20% 0%, rgba(86, 116, 255, 0.18), transparent 55%),
-          radial-gradient(900px 420px at 80% 0%, rgba(255, 123, 114, 0.12), transparent 60%),
-          #0b0f17;
-        color: #e7eefc;
-      }
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        background: url("/_blackcat/assets/bg-grid-red.png") repeat;
-        background-size: 512px 512px;
-        opacity: 0.36;
-        mix-blend-mode: screen;
-        filter: brightness(2.2) contrast(1.35) saturate(1.15);
-        pointer-events: none;
-        z-index: 0;
-      }
-      @media (prefers-reduced-motion: no-preference) {
-        body::before { animation: bcGridDrift 52s linear infinite; }
-        @keyframes bcGridDrift {
-          from { background-position: 0 0; }
-          to { background-position: 240px 120px; }
+        $gridHtml = <<<'HTML'
+                    <div class="panel">
+                      <strong>Fix:</strong>
+                      <ul>
+                        <li>If the installer is available: open <code>/_blackcat/setup</code> and regenerate the runtime config.</li>
+                        <li>If the installer is disabled: upload a valid <code>config.runtime.json</code> to the bundle root.</li>
+                        <li>Reload after fixing.</li>
+                      </ul>
+                    </div>
+                    <div class="panel">
+                      <strong>Why this is fail-closed:</strong>
+                      <ul class="muted">
+                        <li>Config is security-critical (RPC endpoints, policies, integrity settings).</li>
+                        <li>Running with a tampered config can permanently weaken the security kernel.</li>
+                      </ul>
+                      <div class="footer warn">In production, treat unexpected config changes as an incident.</div>
+                    </div>
+        HTML;
+
+        if (function_exists('blackcat_error_ui_render_page')) {
+            echo blackcat_error_ui_render_page([
+                'title' => 'BlackCat — Config init failed',
+                'h1_prefix' => 'BlackCat',
+                'pill' => 'config invalid',
+                'lede_html' => '<strong>Fail-closed:</strong> <code>config.runtime.json</code> failed validation, so the kernel refused to boot.',
+                'grid_html' => $gridHtml,
+                'after_grid_html' => $debugHtml,
+                'style_vars' => [
+                    'grid_url' => '/_blackcat/assets/bg-grid-red.png',
+                    'mascot_primary_url' => '/_blackcat/assets/config-invalid-cat.png',
+                ],
+            ]);
+        } else {
+            echo '<!doctype html><meta charset="utf-8" /><title>BlackCat — Config init failed</title><h1>Config init failed</h1>';
         }
-      }
-      .card {
-        max-width: 980px;
-        width: 100%;
-        border-radius: 18px;
-        border: 1px solid rgba(42, 59, 99, 0.78);
-        background:
-          radial-gradient(900px 420px at 18% 0%, rgba(255, 255, 255, 0.07), transparent 62%),
-          radial-gradient(900px 420px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
-          linear-gradient(180deg, rgba(15, 21, 36, 0.74), rgba(15, 21, 36, 0.40));
-        backdrop-filter: blur(18px) saturate(1.25);
-        -webkit-backdrop-filter: blur(18px) saturate(1.25);
-        box-shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
-        overflow: hidden;
-        position: relative;
-        z-index: 1;
-      }
-      .banner {
-        width: 100%;
-        height: clamp(140px, 18vw, 220px);
-        background:
-          linear-gradient(180deg, rgba(11, 15, 23, 0.00), rgba(11, 15, 23, 0.82)),
-          url("/_blackcat/assets/hero-banner.png") left center / cover no-repeat;
-        border-bottom: 1px solid rgba(31, 42, 68, 0.95);
-      }
-      .body { padding: 14px 16px 16px; }
-      h1 { margin: 0 0 6px; font-size: 24px; }
-      .muted { color: #9fb0d0; }
-      .bad { color: #ff7b72; }
-      .lead { margin: 0; }
-      .head { display: flex; gap: 14px; align-items: center; }
-      .mascot {
-        flex: 0 0 auto;
-        width: 86px;
-        height: 86px;
-        border-radius: 16px;
-        border: 1px solid rgba(31, 42, 68, 0.95);
-        background: rgba(11, 15, 23, 0.35);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
-      }
-      .mascot img { width: 92%; height: 92%; object-fit: contain; }
-      code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-      pre { margin: 10px 0 0; background: rgba(11, 15, 23, 0.55); border: 1px solid rgba(31, 42, 68, 0.95); padding: 12px 14px; border-radius: 14px; overflow: auto; }
-      ul { margin: 10px 0 0 18px; padding: 0; }
-      li { margin: 6px 0; }
-      .box {
-        margin-top: 12px;
-        padding: 12px 14px;
-        border-radius: 14px;
-        border: 1px solid rgba(31, 42, 68, 0.95);
-        background: rgba(11, 15, 23, 0.55);
-      }
-      details > summary { cursor: pointer; user-select: none; }
-    </style>
-  </head>
-	  <body>
-	    <main class="card">
-	      <div class="banner" aria-hidden="true"></div>
-	      <div class="body">
-	        <div class="head">
-	          <div class="mascot" aria-hidden="true">
-	            <img src="/_blackcat/assets/config-invalid-cat.png" alt="" />
-	          </div>
-	          <div>
-	            <h1>Config init failed <span class="bad">fail-closed</span></h1>
-	            <p class="muted lead">BlackCat refused to boot because <code>config.runtime.json</code> failed validation. This prevents attackers from weakening the security kernel by tampering with config.</p>
-	          </div>
-	        </div>
-	        <div class="box">
-	          <div><strong>Fix:</strong></div>
-	          <ul>
-	            <li>If the installer is available: open <code>/_blackcat/setup</code> and regenerate the runtime config.</li>
-            <li>If the installer is disabled: upload a valid <code>config.runtime.json</code> to the bundle root.</li>
-            <li>Reload after fixing.</li>
-          </ul>
-        </div>
-        {$debugHtml}
-      </div>
-    </main>
-  </body>
-</html>
-HTML;
         exit;
     }
 }

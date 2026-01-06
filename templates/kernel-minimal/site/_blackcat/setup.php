@@ -2,6 +2,14 @@
 
 declare(strict_types=1);
 
+// Optional: shared fail-closed error page UI (no Composer dependency).
+// Keep the bundle resilient even if vendor/ is missing.
+$__blackcatErrorUi = __DIR__ . DIRECTORY_SEPARATOR . 'error-ui.php';
+if (is_file($__blackcatErrorUi)) {
+    /** @noinspection PhpIncludeInspection */
+    require_once $__blackcatErrorUi;
+}
+
 use BlackCat\Config\Runtime\ConfigRepository;
 use BlackCat\Config\Runtime\RuntimeConfigInstaller;
 use BlackCat\Config\Security\KernelAttestations;
@@ -70,392 +78,41 @@ function blackcat_setup_page(array $paths): void
         header('Cross-Origin-Resource-Policy: same-origin');
         header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
 
-        echo <<<'HTML'
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BlackCat Setup — HTTPS Required</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="manifest" href="/site.webmanifest" />
-    <style>
-      :root { color-scheme: dark; }
-      *, *::before, *::after { box-sizing: border-box; }
-      body {
-        margin: 0;
-        min-height: 100svh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 16px;
-        font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        position: relative;
-        isolation: isolate;
-        overflow-x: hidden;
-        background:
-          radial-gradient(900px 420px at 20% 0%, rgba(86, 116, 255, 0.18), transparent 55%),
-          radial-gradient(900px 420px at 80% 0%, rgba(255, 123, 114, 0.12), transparent 60%),
-          #0b0f17;
-        color: #e7eefc;
-      }
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-		        background: url("/_blackcat/assets/bg-grid-red.png") repeat;
-        background-size: 512px 512px;
-        opacity: 0.36;
-        mix-blend-mode: screen;
-        filter: brightness(2.2) contrast(1.35) saturate(1.15);
-        pointer-events: none;
-        z-index: 1;
-      }
-      body::after {
-        content: "";
-        position: fixed;
-        inset: -20%;
-        background:
-          radial-gradient(circle at 18% 18%, rgba(255, 123, 114, 0.18), transparent 52%),
-          radial-gradient(circle at 82% 28%, rgba(86, 116, 255, 0.18), transparent 54%),
-          radial-gradient(circle at 55% 85%, rgba(255, 212, 107, 0.10), transparent 56%);
-        filter: blur(56px) saturate(1.06);
-        opacity: 0.38;
-        pointer-events: none;
-        z-index: 0;
-      }
-      @media (prefers-reduced-motion: no-preference) {
-        body::before { animation: bcGridDrift 52s linear infinite; }
-        body::after { animation: bcAuroraDrift 54s ease-in-out infinite alternate; }
-        @keyframes bcGridDrift {
-          from { background-position: 0 0; }
-          to { background-position: 240px 120px; }
-        }
-        @keyframes bcAuroraDrift {
-          from { transform: translate3d(-0.6%, -0.4%, 0) scale(1.02); }
-          to { transform: translate3d(0.9%, 0.8%, 0) scale(1.05); }
-        }
-      }
-			      .frame {
-			        position: relative;
-			        max-width: 920px;
-			        width: 100%;
-			        isolation: isolate;
-			      }
-			      .card {
-			        width: 100%;
-			        border-radius: 18px;
-			        border: 1px solid rgba(31, 42, 68, 0.86);
-			        background:
-			          radial-gradient(900px 420px at 18% 0%, rgba(255, 255, 255, 0.07), transparent 62%),
-			          radial-gradient(900px 420px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
-			          linear-gradient(180deg, rgba(15, 21, 36, 0.74), rgba(15, 21, 36, 0.40));
-			        backdrop-filter: blur(18px) saturate(1.25);
-			        -webkit-backdrop-filter: blur(18px) saturate(1.25);
-			        box-shadow:
-			          0 30px 100px rgba(0, 0, 0, 0.45),
-			          0 0 0 1px rgba(255, 123, 114, 0.08);
-			        overflow: hidden;
-			        position: relative;
-			        z-index: 2;
-			      }
-			      .cardBorder {
-			        position: absolute;
-			        inset: 0;
-			        border-radius: 18px;
-			        pointer-events: none;
-			      }
-			      .cardBorder::before {
-			        content: "";
-			        position: absolute;
-			        inset: 0;
-			        border-radius: 18px;
-			        padding: 1px;
-			        background: conic-gradient(
-			          from 210deg,
-			          rgba(255, 123, 114, 0.00),
-			          rgba(255, 123, 114, 0.24),
-			          rgba(86, 116, 255, 0.18),
-			          rgba(255, 212, 107, 0.12),
-			          rgba(255, 123, 114, 0.00)
-			        );
-			        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-			        -webkit-mask-composite: xor;
-			        mask-composite: exclude;
-			        opacity: 0.9;
-			      }
-			      .cardBorder::after {
-			        content: "";
-			        position: absolute;
-			        inset: 1px;
-			        border-radius: 17px;
-			        box-shadow:
-			          inset 0 1px 0 rgba(255, 255, 255, 0.10),
-			          inset 0 -24px 40px rgba(0, 0, 0, 0.28);
-			        opacity: 0.85;
-			      }
-			      .card::before {
-			        content: "";
-			        position: absolute;
-			        inset: 0;
-			        background:
-			          radial-gradient(900px 360px at 15% 0%, rgba(255, 123, 114, 0.12), transparent 62%),
-			          radial-gradient(900px 360px at 85% 0%, rgba(86, 116, 255, 0.10), transparent 64%),
-			          linear-gradient(120deg, rgba(255, 255, 255, 0.06), transparent 22%, transparent 74%, rgba(255, 255, 255, 0.04));
-			        opacity: 0.62;
-			        pointer-events: none;
-			      }
-			      .card::after {
-			        content: "";
-			        position: absolute;
-			        inset: 0;
-			        background:
-			          linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 26%, transparent 78%, rgba(255, 255, 255, 0.05));
-			        opacity: 0.12;
-			        pointer-events: none;
-			      }
-			      .header {
-			        padding: 16px 18px 14px 156px;
-			        min-height: 142px;
-			        display: block;
-			        border-bottom: 1px solid rgba(31, 42, 68, 0.95);
-			        position: relative;
-			        background:
-			          radial-gradient(900px 240px at 18% 0%, rgba(255, 123, 114, 0.12), transparent 62%),
-			          radial-gradient(900px 240px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
-			          linear-gradient(180deg, rgba(15, 21, 36, 0.64), rgba(15, 21, 36, 0.28));
-			      }
-			      .header::before {
-			        content: "";
-			        position: absolute;
-			        inset: 0;
-			        background:
-			          radial-gradient(500px 220px at 20% 35%, rgba(255, 123, 114, 0.10), transparent 68%),
-			          radial-gradient(520px 240px at 80% 55%, rgba(86, 116, 255, 0.09), transparent 70%),
-			          linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 45%);
-			        opacity: 0.85;
-			        pointer-events: none;
-			      }
-			      .header::after {
-			        content: "";
-			        position: absolute;
-			        left: 0;
-		        right: 0;
-		        bottom: -1px;
-		        height: 1px;
-		        background: linear-gradient(90deg, rgba(255, 123, 114, 0.00), rgba(255, 123, 114, 0.38), rgba(86, 116, 255, 0.32), rgba(86, 116, 255, 0.00));
-		        opacity: 0.8;
-		        pointer-events: none;
-		      }
-		      @media (max-width: 740px) {
-		        .header { padding: 86px 18px 14px; min-height: 0; }
-		      }
-		      .mascotWrap {
-		        width: 148px;
-		        height: 148px;
-		        border-radius: 18px;
-		        border: 0;
-		        background: transparent;
-		        position: absolute;
-		        left: -18px;
-		        top: -22px;
-		        overflow: visible;
-		        display: grid;
-		        place-items: center;
-		        transform-style: preserve-3d;
-		        box-shadow: none;
-		        z-index: 3;
-		      }
-		      @media (max-width: 740px) {
-		        .mascotWrap {
-		          width: 132px;
-		          height: 132px;
-		          left: 50%;
-		          top: -34px;
-		          transform: translateX(-50%);
-		        }
-		      }
-		      .mascotWrap::before {
-		        content: "";
-		        position: absolute;
-		        inset: -34px;
-		        background:
-		          radial-gradient(circle at 35% 22%, rgba(255, 123, 114, 0.34), transparent 58%),
-		          radial-gradient(circle at 74% 70%, rgba(86, 116, 255, 0.22), transparent 60%),
-		          radial-gradient(circle at 55% 55%, rgba(255, 212, 107, 0.14), transparent 62%);
-		        filter: blur(14px);
-		        opacity: 0.92;
-		        pointer-events: none;
-		        z-index: 0;
-		      }
-		      .mascot {
-		        width: 100%;
-		        height: 100%;
-		        background:
-		          url("/_blackcat/assets/fatal-error-cat.png") center / contain no-repeat,
-		          url("/_blackcat/assets/https-required-cat-fallback.svg") center / 92px 92px no-repeat;
-		        filter: none;
-		        transform: translate3d(0, 0, 18px) scale(1.06);
-		        position: relative;
-		        z-index: 2;
-		      }
-		      @media (prefers-reduced-motion: no-preference) {
-		        .mascot { animation: bcMascotFloat 6.5s ease-in-out infinite; }
-		        @keyframes bcMascotFloat {
-		          0%, 100% { transform: translate3d(0, 0, 18px) scale(1.06); }
-		          50% { transform: translate3d(0, -2px, 18px) scale(1.06); }
-		        }
-		      }
-		      h1 {
-		        margin: 0;
-		        font-size: 26px;
-		        font-weight: 780;
-		        letter-spacing: 0.2px;
-		        display: flex;
-		        flex-wrap: wrap;
-		        gap: 10px;
-		        justify-content: flex-end;
-		        align-items: baseline;
-		        color: #e7eefc;
-		        text-shadow:
-		          0 1px 0 rgba(0, 0, 0, 0.78),
-		          0 2px 0 rgba(0, 0, 0, 0.38),
-		          0 -1px 0 rgba(255, 255, 255, 0.10),
-		          0 18px 70px rgba(0, 0, 0, 0.48);
-		      }
-	      .muted { color: #9fb0d0; }
-	      .header .muted {
-	        margin: 6px 0 0;
-	        max-width: 640px;
-	        margin-left: auto;
-	        text-align: left;
-	      }
-	      .muted strong { color: #ff9c98; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.65); }
-		      .pill {
-		        display: inline-block;
-	        padding: 2px 10px;
-	        border-radius: 999px;
-	        background:
-	          linear-gradient(180deg, rgba(255, 123, 114, 0.30), rgba(255, 123, 114, 0.12));
-	        border: 1px solid rgba(255, 123, 114, 0.44);
-	        color: #ff9c98;
-	        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-	        letter-spacing: 0.03em;
-	        text-shadow:
-	          0 1px 0 rgba(0, 0, 0, 0.72),
-	          0 10px 40px rgba(0, 0, 0, 0.35);
-	        box-shadow:
-	          inset 0 1px 0 rgba(255, 255, 255, 0.18),
-	          inset 0 -12px 20px rgba(0, 0, 0, 0.36),
-	          0 0 0 1px rgba(255, 123, 114, 0.08),
-	          0 16px 52px rgba(0, 0, 0, 0.34);
-		        margin-left: 0;
-		      }
-		      .pillLed {
-		        width: 8px;
-		        height: 8px;
-		        border-radius: 999px;
-		        display: inline-block;
-		        background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.00) 45%), #ff6b66;
-		        box-shadow:
-		          0 0 0 1px rgba(0, 0, 0, 0.35),
-		          0 0 14px rgba(255, 107, 102, 0.42),
-		          0 0 28px rgba(255, 107, 102, 0.18);
-		        margin-right: 8px;
-		        transform: translateY(-1px);
-		      }
-		      @media (prefers-reduced-motion: no-preference) {
-		        .pillLed { animation: bcLedPulse 1.8s ease-in-out infinite; }
-		        @keyframes bcLedPulse {
-		          0%, 100% { opacity: 0.72; filter: saturate(1); }
-		          50% { opacity: 1; filter: saturate(1.15); }
-		        }
-		      }
-	      .body { padding: 14px 18px 16px; }
-	      .grid2 { display: grid; grid-template-columns: 1fr; gap: 12px; }
-	      @media (min-width: 980px) { .grid2 { grid-template-columns: 1fr 1fr; } }
-			      .panel {
-			        margin: 0;
-			        padding: 12px 14px;
-			        border-radius: 14px;
-			        border: 1px solid rgba(31, 42, 68, 0.95);
-			        background:
-			          linear-gradient(180deg, rgba(11, 15, 23, 0.62), rgba(11, 15, 23, 0.42));
-			        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-			        position: relative;
-			        overflow: hidden;
-			      }
-			      .panel::before {
-			        content: "";
-			        position: absolute;
-			        inset: -1px;
-			        background:
-			          radial-gradient(420px 180px at 18% 0%, rgba(255, 123, 114, 0.10), transparent 70%),
-			          radial-gradient(420px 180px at 82% 0%, rgba(86, 116, 255, 0.09), transparent 70%),
-			          linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 42%);
-			        opacity: 0.62;
-			        pointer-events: none;
-			      }
-		      .panel strong {
-		        display: inline-block;
-		        margin-bottom: 6px;
-		        text-transform: uppercase;
-		        letter-spacing: 0.08em;
-		        font-size: 11px;
-		        color: #c9d6f3;
-		      }
-	      ol, ul { margin: 8px 0 0 18px; padding: 0; }
-	      li { margin: 6px 0; }
-		      code {
-		        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-		        padding: 1px 6px;
-		        border-radius: 8px;
-		        border: 1px solid rgba(31, 42, 68, 0.95);
-		        background: rgba(11, 15, 23, 0.48);
-		        color: #d7e3ff;
-		      }
-	      .warn { color: #ffd46b; }
-	      .footer { margin-top: 10px; font-size: 12px; color: #9fb0d0; }
-	    </style>
-	  </head>
-		  <body>
-		    <div class="frame">
-		      <div class="mascotWrap" aria-hidden="true"><div class="mascot" aria-hidden="true"></div></div>
-		      <main class="card">
-		        <div class="cardBorder" aria-hidden="true"></div>
-		        <div class="header">
-		          <h1>BlackCat Setup <span class="pill"><span class="pillLed" aria-hidden="true"></span>HTTPS only</span></h1>
-		          <p class="muted"><strong>Plain HTTP is not allowed.</strong> Setup is a high-trust operation (install token + wallet approvals). BlackCat blocks it over HTTP to prevent downgrade and MITM attacks.</p>
-		        </div>
-
-		        <div class="body">
-		          <div class="grid2">
-		            <div class="panel">
-		              <strong>Do this:</strong>
-		              <ol>
-		                <li>Enable HTTPS (recommended: Let’s Encrypt).</li>
-		                <li>If you use a reverse proxy, forward the original scheme (<code>Forwarded: proto=https</code> or <code>X-Forwarded-Proto: https</code>) — only trusted local peers are honored.</li>
-		                <li>Reload via <code>https://</code> and open <code>/_blackcat/setup</code> again.</li>
-		              </ol>
-		            </div>
-		            <div class="panel">
-		              <strong>Why BlackCat blocks HTTP:</strong>
-		              <ul class="muted">
-		                <li>HTTP can be downgraded or intercepted (MITM).</li>
-		                <li>Setup handles secrets + approvals; a single unsafe request can compromise the system.</li>
-		                <li>Fail-closed is intentional: no “click-through” bypass.</li>
-		              </ul>
-		              <div class="footer warn">Tip: after install, BlackCat disables setup by default. You can also delete the setup module for zero web attack surface.</div>
-		            </div>
-		          </div>
-		        </div>
-		      </main>
-		    </div>
-		  </body>
-</html>
+        $gridHtml = <<<'HTML'
+            <div class="panel">
+              <strong>Do this:</strong>
+              <ol>
+                <li>Enable HTTPS (recommended: Let’s Encrypt).</li>
+                <li>If you use a reverse proxy, forward the original scheme (<code>Forwarded: proto=https</code> or <code>X-Forwarded-Proto: https</code>) — only trusted local peers are honored.</li>
+                <li>Reload via <code>https://</code> and open <code>/_blackcat/setup</code> again.</li>
+              </ol>
+            </div>
+            <div class="panel">
+              <strong>Why BlackCat blocks HTTP:</strong>
+              <ul class="muted">
+                <li>HTTP can be downgraded or intercepted (MITM).</li>
+                <li>Setup handles secrets + approvals; a single unsafe request can compromise the system.</li>
+                <li>Fail-closed is intentional: no “click-through” bypass.</li>
+              </ul>
+              <div class="footer warn">Tip: after install, BlackCat disables setup by default. You can also delete the setup module for zero web attack surface.</div>
+            </div>
 HTML;
+
+        if (function_exists('blackcat_error_ui_render_page')) {
+            echo blackcat_error_ui_render_page([
+                'title' => 'BlackCat Setup — HTTPS Required',
+                'h1_prefix' => 'BlackCat Setup',
+                'pill' => 'HTTPS only',
+                'lede_html' => '<strong>Plain HTTP is not allowed.</strong> Setup is a high-trust operation (install token + wallet approvals). BlackCat blocks it over HTTP to prevent downgrade and MITM attacks.',
+                'grid_html' => $gridHtml,
+                'style_vars' => [
+                    'grid_url' => '/_blackcat/assets/bg-grid-red.png',
+                    'mascot_primary_url' => '/_blackcat/assets/fatal-error-cat.png',
+                ],
+            ]);
+        } else {
+            echo '<!doctype html><meta charset="utf-8" /><title>BlackCat Setup — HTTPS Required</title><h1>HTTPS required</h1>';
+        }
         exit;
     }
 
@@ -473,144 +130,40 @@ HTML;
         header('Cross-Origin-Resource-Policy: same-origin');
         header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
 
-        echo <<<'HTML'
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BlackCat Setup — Method Not Allowed</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="manifest" href="/site.webmanifest" />
-    <style>
-      :root { color-scheme: dark; }
-      *, *::before, *::after { box-sizing: border-box; }
-      body {
-        margin: 0;
-        min-height: 100svh;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        padding: clamp(16px, 2.5vh, 56px) 16px 16px;
-        font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        position: relative;
-        isolation: isolate;
-        background:
-          radial-gradient(900px 420px at 20% 0%, rgba(86, 116, 255, 0.18), transparent 55%),
-          radial-gradient(900px 420px at 80% 0%, rgba(255, 123, 114, 0.12), transparent 60%),
-          #0b0f17;
-        color: #e7eefc;
-      }
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-	        background: url("/_blackcat/assets/bg-grid-red.png") repeat;
-        background-size: 512px 512px;
-        opacity: 0.32;
-        mix-blend-mode: screen;
-        filter: brightness(2.0) contrast(1.3) saturate(1.1);
-        pointer-events: none;
-        z-index: 0;
-      }
-      @media (prefers-reduced-motion: no-preference) {
-        body::before { animation: bcGridDrift 52s linear infinite; }
-        @keyframes bcGridDrift {
-          from { background-position: 0 0; }
-          to { background-position: 240px 120px; }
-        }
-      }
-      .card {
-        max-width: 920px;
-        width: 100%;
-        border-radius: 18px;
-        border: 1px solid rgba(42, 59, 99, 0.78);
-        background:
-          radial-gradient(900px 420px at 18% 0%, rgba(255, 255, 255, 0.07), transparent 62%),
-          radial-gradient(900px 420px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
-          linear-gradient(180deg, rgba(15, 21, 36, 0.74), rgba(15, 21, 36, 0.40));
-        backdrop-filter: blur(18px) saturate(1.25);
-        -webkit-backdrop-filter: blur(18px) saturate(1.25);
-        box-shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
-        overflow: hidden;
-        position: relative;
-        z-index: 1;
-      }
-      .banner {
-        width: 100%;
-        height: clamp(120px, 14vw, 180px);
-        background:
-          linear-gradient(180deg, rgba(11, 15, 23, 0.00), rgba(11, 15, 23, 0.86)),
-          url("/_blackcat/assets/hero-banner.png") left center / cover no-repeat;
-        border-bottom: 1px solid rgba(31, 42, 68, 0.95);
-	      }
-	      .body { padding: 14px 16px 16px; }
-	      h1 { margin: 0 0 6px; font-size: 24px; }
-	      .muted { color: #9fb0d0; }
-	      .lead { margin: 0; }
-	      .pill {
-	        display: inline-block;
-	        padding: 2px 10px;
-	        border-radius: 999px;
-        background: rgba(255, 212, 107, 0.12);
-        border: 1px solid rgba(255, 212, 107, 0.28);
-        color: #ffd46b;
-	        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-	        margin-left: 10px;
-	      }
-	      .head { display: flex; gap: 14px; align-items: center; }
-	      .mascot {
-	        flex: 0 0 auto;
-	        width: 86px;
-	        height: 86px;
-	        border-radius: 16px;
-	        border: 1px solid rgba(31, 42, 68, 0.95);
-	        background: rgba(11, 15, 23, 0.35);
-	        display: flex;
-	        align-items: center;
-	        justify-content: center;
-	        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
-	      }
-	      .mascot img { width: 92%; height: 92%; object-fit: contain; }
-	      code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-	      .box {
-	        margin-top: 12px;
-        padding: 12px 14px;
-        border-radius: 14px;
-        border: 1px solid rgba(31, 42, 68, 0.95);
-        background: rgba(11, 15, 23, 0.55);
-      }
-      ul { margin: 10px 0 0 18px; padding: 0; }
-      li { margin: 6px 0; }
-    </style>
-  </head>
-	  <body>
-	    <main class="card">
-	      <div class="banner" aria-hidden="true"></div>
-	      <div class="body">
-	        <div class="head">
-	          <div class="mascot" aria-hidden="true">
-	            <img src="/_blackcat/assets/method-not-allowed-cat.png" alt="" />
-	          </div>
-	          <div>
-	            <h1>Method not allowed <span class="pill">GET/HEAD only</span></h1>
-	            <p class="muted lead">For safety, the installer UI only allows <code>GET</code>/<code>HEAD</code>. API endpoints exist under <code>/_blackcat/setup/api/*</code>.</p>
-	          </div>
-	        </div>
-	        <div class="box">
-	          <div><strong>Try:</strong></div>
-	          <ul>
-	            <li>Open <code>/_blackcat/setup</code> in a browser.</li>
-            <li>If you’re scripting, call the JSON API endpoints instead.</li>
-          </ul>
-        </div>
-      </div>
-    </main>
-  </body>
-</html>
+        $gridHtml = <<<'HTML'
+            <div class="panel">
+              <strong>Allowed:</strong>
+              <ul>
+                <li><code>GET</code></li>
+                <li><code>HEAD</code></li>
+              </ul>
+            </div>
+            <div class="panel">
+              <strong>Try:</strong>
+              <ul>
+                <li>Open <code>/_blackcat/setup</code> in a browser.</li>
+                <li>If you’re scripting, call <code>/_blackcat/setup/api/*</code> instead.</li>
+              </ul>
+              <div class="footer muted">This restriction reduces accidental exposure and request-smuggling style attack surface during setup.</div>
+            </div>
 HTML;
+
+        if (function_exists('blackcat_error_ui_render_page')) {
+            echo blackcat_error_ui_render_page([
+                'title' => 'BlackCat Setup — Method Not Allowed',
+                'h1_prefix' => 'BlackCat Setup',
+                'pill' => 'method not allowed',
+                'lede_html' => '<strong>For safety</strong>, the installer UI only allows <code>GET</code>/<code>HEAD</code>. JSON endpoints exist under <code>/_blackcat/setup/api/*</code>.',
+                'grid_html' => $gridHtml,
+                'style_vars' => [
+                    'accent_rgb' => '255, 212, 107',
+                    'grid_url' => '/_blackcat/assets/bg-grid-red.png',
+                    'mascot_primary_url' => '/_blackcat/assets/method-not-allowed-cat.png',
+                ],
+            ]);
+        } else {
+            echo '<!doctype html><meta charset="utf-8" /><title>BlackCat Setup — Method Not Allowed</title><h1>Method not allowed</h1>';
+        }
         exit;
     }
 
@@ -2004,6 +1557,7 @@ function blackcat_tls_is_publicly_trusted(string $host, int $port): array
 /**
  * @param array{mode:'dev'|'prod',host:string,port:int,trusted:bool,error:?string} $tlsGate
  */
+
 function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
 {
     http_response_code(400);
@@ -2021,458 +1575,49 @@ function blackcat_setup_render_tls_not_trusted_page(array $tlsGate): void
     $port = (int) $tlsGate['port'];
     $err = $tlsGate['error'] !== null ? htmlspecialchars($tlsGate['error'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : 'unknown';
 
-    $page = <<<'HTML'
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BlackCat Setup — Trusted TLS Required</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="manifest" href="/site.webmanifest" />
-    <style>
-      :root { color-scheme: dark; }
-      *, *::before, *::after { box-sizing: border-box; }
-      body {
-        margin: 0;
-        min-height: 100svh;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        padding: clamp(16px, 2.5vh, 56px) 16px 16px;
-        font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        position: relative;
-        isolation: isolate;
-        background:
-          radial-gradient(900px 420px at 20% 0%, rgba(86, 116, 255, 0.18), transparent 55%),
-          radial-gradient(900px 420px at 80% 0%, rgba(255, 123, 114, 0.12), transparent 60%),
-          #0b0f17;
-        color: #e7eefc;
-      }
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        background: url("/_blackcat/assets/bg-grid-red.png") repeat;
-        background-size: 512px 512px;
-        opacity: 0.40;
-        mix-blend-mode: screen;
-        filter: brightness(2.2) contrast(1.35) saturate(1.2);
-        pointer-events: none;
-        z-index: 0;
-      }
-	      @media (prefers-reduced-motion: no-preference) {
-	        body::before { animation: bcGridDrift 52s linear infinite; }
-	        @keyframes bcGridDrift {
-	          from { background-position: 0 0; }
-	          to { background-position: 240px 120px; }
-	        }
-	      }
-      .card {
-        max-width: 980px;
-        width: 100%;
-        border-radius: 18px;
-        border: 1px solid rgba(42, 59, 99, 0.9);
-        background:
-          radial-gradient(900px 420px at 18% 0%, rgba(255, 255, 255, 0.07), transparent 62%),
-          radial-gradient(900px 420px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
-          linear-gradient(180deg, rgba(15, 21, 36, 0.72), rgba(15, 21, 36, 0.38));
-        backdrop-filter: blur(18px) saturate(1.25);
-        -webkit-backdrop-filter: blur(18px) saturate(1.25);
-        box-shadow:
-          0 30px 100px rgba(0, 0, 0, 0.45),
-          0 0 0 1px rgba(86, 116, 255, 0.10) inset;
-        overflow: hidden;
-        position: relative;
-        z-index: 1;
-      }
-      .banner {
-        width: 100%;
-        height: clamp(160px, 20vw, 260px);
-        background:
-          radial-gradient(900px 240px at 18% 30%, rgba(255, 212, 107, 0.16), transparent 62%),
-          linear-gradient(180deg, rgba(11, 15, 23, 0.00), rgba(11, 15, 23, 0.74)),
-          url("/_blackcat/assets/tls-not-trusted-banner.png") left center / cover no-repeat,
-          url("/_blackcat/assets/hero-banner.png") left center / cover no-repeat;
-        filter: brightness(1.08) saturate(1.12);
-        border-bottom: 1px solid rgba(31, 42, 68, 0.95);
-      }
-      .top {
-        padding: 12px 18px 8px 18px;
-        display: flex;
-        gap: 16px;
-        align-items: flex-start;
-        flex-wrap: wrap;
-      }
-      .iconWrap {
-        width: 128px;
-        height: 128px;
-        margin-top: -72px;
-        border-radius: 0;
-        position: relative;
-        background:
-          url("/_blackcat/assets/tls-not-trusted-cat.png") center / contain no-repeat,
-          url("/_blackcat/assets/tls-not-trusted-fallback.svg") center / 92px 92px no-repeat;
-        display: grid;
-        place-items: center;
-        overflow: visible;
-        filter:
-          drop-shadow(0 18px 55px rgba(0, 0, 0, 0.55))
-          drop-shadow(0 0 26px rgba(255, 212, 107, 0.22))
-          drop-shadow(0 0 46px rgba(255, 123, 114, 0.10));
-      }
-      .iconWrap::before {
-        content: "";
-        position: absolute;
-        inset: -18px;
-        background: radial-gradient(circle at 50% 45%, rgba(255, 212, 107, 0.22) 0%, rgba(255, 212, 107, 0.0) 62%);
-        filter: blur(7px);
-        opacity: 0.9;
-        pointer-events: none;
-        z-index: -1;
-      }
-      .pill {
-        display: inline-block;
-        padding: 2px 10px;
-        border-radius: 999px;
-        background: rgba(255, 123, 114, 0.12);
-        border: 1px solid rgba(255, 123, 114, 0.28);
-        color: #ff7b72;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        margin-left: 10px;
-      }
-      h1 {
-        margin: 0;
-        font-size: 26px;
-        letter-spacing: 0.2px;
-        text-shadow: 0 10px 36px rgba(0, 0, 0, 0.55);
-      }
-      .muted { color: #9fb0d0; }
-      .body { padding: 8px 18px 14px 18px; }
-      p { margin: 6px 0 0; }
-      ol { margin: 6px 0 0 16px; padding: 0; }
-      li { margin: 2px 0; }
-      .box {
-        margin-top: 8px;
-        padding: 12px 14px;
-        border-radius: 14px;
-        border: 1px solid rgba(31, 42, 68, 0.95);
-        background: rgba(11, 15, 23, 0.55);
-      }
-	      code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-	      .small { font-size: 12px; }
-	      .warn { color: #ffd46b; }
-	      body {
-	        align-items: center;
-	        padding: 16px;
-	        overflow-x: hidden;
-	      }
-	      body::before {
-	        opacity: 0.36;
-	        filter: brightness(2.2) contrast(1.35) saturate(1.15);
-	        z-index: 1;
-	      }
-	      body::after {
-	        content: "";
-	        position: fixed;
-	        inset: -20%;
-	        background:
-	          radial-gradient(circle at 18% 18%, rgba(255, 123, 114, 0.18), transparent 52%),
-	          radial-gradient(circle at 82% 28%, rgba(86, 116, 255, 0.18), transparent 54%),
-	          radial-gradient(circle at 55% 85%, rgba(255, 212, 107, 0.10), transparent 56%);
-	        filter: blur(56px) saturate(1.06);
-	        opacity: 0.38;
-	        pointer-events: none;
-	        z-index: 0;
-	      }
-	      @media (prefers-reduced-motion: no-preference) {
-	        body::after { animation: bcAuroraDrift 54s ease-in-out infinite alternate; }
-	        @keyframes bcAuroraDrift {
-	          from { transform: translate3d(-0.6%, -0.4%, 0) scale(1.02); }
-	          to { transform: translate3d(0.9%, 0.8%, 0) scale(1.05); }
-	        }
-	      }
-	      .banner, .top, .iconWrap { display: none !important; }
-	      .frame {
-	        position: relative;
-	        max-width: 920px;
-	        width: 100%;
-	        isolation: isolate;
-	      }
-	      .card {
-	        border: 1px solid rgba(31, 42, 68, 0.86);
-	        box-shadow:
-	          0 30px 100px rgba(0, 0, 0, 0.45),
-	          0 0 0 1px rgba(255, 123, 114, 0.08);
-	      }
-	      .cardBorder {
-	        position: absolute;
-	        inset: 0;
-	        border-radius: 18px;
-	        pointer-events: none;
-	      }
-	      .cardBorder::before {
-	        content: "";
-	        position: absolute;
-	        inset: 0;
-	        border-radius: 18px;
-	        padding: 1px;
-	        background: conic-gradient(
-	          from 210deg,
-	          rgba(255, 123, 114, 0.00),
-	          rgba(255, 123, 114, 0.24),
-	          rgba(86, 116, 255, 0.18),
-	          rgba(255, 212, 107, 0.12),
-	          rgba(255, 123, 114, 0.00)
-	        );
-	        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-	        -webkit-mask-composite: xor;
-	        mask-composite: exclude;
-	        opacity: 0.9;
-	      }
-	      .cardBorder::after {
-	        content: "";
-	        position: absolute;
-	        inset: 1px;
-	        border-radius: 17px;
-	        box-shadow:
-	          inset 0 1px 0 rgba(255, 255, 255, 0.10),
-	          inset 0 -24px 40px rgba(0, 0, 0, 0.28);
-	        opacity: 0.85;
-	      }
-	      .header {
-	        padding: 16px 18px 14px 156px;
-	        min-height: 142px;
-	        display: block;
-	        border-bottom: 1px solid rgba(31, 42, 68, 0.95);
-	        position: relative;
-	        background:
-	          radial-gradient(900px 240px at 18% 0%, rgba(255, 123, 114, 0.12), transparent 62%),
-	          radial-gradient(900px 240px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
-	          linear-gradient(180deg, rgba(15, 21, 36, 0.64), rgba(15, 21, 36, 0.28));
-	      }
-	      .header::before {
-	        content: "";
-	        position: absolute;
-	        inset: 0;
-	        background:
-	          radial-gradient(500px 220px at 20% 35%, rgba(255, 123, 114, 0.10), transparent 68%),
-	          radial-gradient(520px 240px at 80% 55%, rgba(86, 116, 255, 0.09), transparent 70%),
-	          linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 45%);
-	        opacity: 0.85;
-	        pointer-events: none;
-	      }
-	      .header::after {
-	        content: "";
-	        position: absolute;
-	        left: 0;
-	        right: 0;
-	        bottom: -1px;
-	        height: 1px;
-	        background: linear-gradient(90deg, rgba(255, 123, 114, 0.00), rgba(255, 123, 114, 0.38), rgba(86, 116, 255, 0.32), rgba(86, 116, 255, 0.00));
-	        opacity: 0.8;
-	        pointer-events: none;
-	      }
-	      @media (max-width: 740px) {
-	        .header { padding: 86px 18px 14px; min-height: 0; }
-	      }
-	      .mascotWrap {
-	        width: 148px;
-	        height: 148px;
-	        border-radius: 18px;
-	        background: transparent;
-	        position: absolute;
-	        left: -18px;
-	        top: -22px;
-	        overflow: visible;
-	        display: grid;
-	        place-items: center;
-	        transform-style: preserve-3d;
-	        z-index: 3;
-	      }
-	      @media (max-width: 740px) {
-	        .mascotWrap {
-	          width: 132px;
-	          height: 132px;
-	          left: 50%;
-	          top: -34px;
-	          transform: translateX(-50%);
-	        }
-	      }
-	      .mascotWrap::before {
-	        content: "";
-	        position: absolute;
-	        inset: -34px;
-	        background:
-	          radial-gradient(circle at 35% 22%, rgba(255, 212, 107, 0.26), transparent 60%),
-	          radial-gradient(circle at 74% 70%, rgba(86, 116, 255, 0.16), transparent 62%);
-	        filter: blur(14px);
-	        opacity: 0.9;
-	        pointer-events: none;
-	        z-index: 0;
-	      }
-	      .mascot {
-	        width: 100%;
-	        height: 100%;
-	        background:
-	          url("/_blackcat/assets/tls-not-trusted-cat.png") center / contain no-repeat,
-	          url("/_blackcat/assets/tls-not-trusted-fallback.svg") center / 92px 92px no-repeat;
-	        filter: none;
-	        transform: translate3d(0, 0, 18px) scale(1.06);
-	        position: relative;
-	        z-index: 2;
-	      }
-	      @media (prefers-reduced-motion: no-preference) {
-	        .mascot { animation: bcMascotFloat 6.5s ease-in-out infinite; }
-	        @keyframes bcMascotFloat {
-	          0%, 100% { transform: translate3d(0, 0, 18px) scale(1.06); }
-	          50% { transform: translate3d(0, -2px, 18px) scale(1.06); }
-	        }
-	      }
-		      h1 {
-		        display: flex;
-		        flex-wrap: wrap;
-		        gap: 10px;
-		        justify-content: flex-end;
-		        align-items: baseline;
-		        font-weight: 780;
-		        text-shadow:
-		          0 1px 0 rgba(0, 0, 0, 0.78),
-	          0 2px 0 rgba(0, 0, 0, 0.38),
-	          0 -1px 0 rgba(255, 255, 255, 0.10),
-	          0 18px 70px rgba(0, 0, 0, 0.48);
-	      }
-	      .header .muted {
-	        margin: 6px 0 0;
-	        max-width: 640px;
-	        margin-left: auto;
-	        text-align: left;
-	      }
-	      .muted strong { color: #ffd46b; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.65); }
-	      .pill {
-	        margin-left: 0;
-	        background: linear-gradient(180deg, rgba(255, 212, 107, 0.22), rgba(255, 212, 107, 0.10));
-	        border: 1px solid rgba(255, 212, 107, 0.38);
-	        color: #ffe4a6;
-	        letter-spacing: 0.03em;
-	        text-shadow:
-	          0 1px 0 rgba(0, 0, 0, 0.72),
-	          0 10px 40px rgba(0, 0, 0, 0.35);
-	        box-shadow:
-	          inset 0 1px 0 rgba(255, 255, 255, 0.18),
-	          inset 0 -12px 20px rgba(0, 0, 0, 0.36),
-	          0 0 0 1px rgba(255, 212, 107, 0.08),
-	          0 16px 52px rgba(0, 0, 0, 0.34);
-	      }
-	      .pillLed {
-	        width: 8px;
-	        height: 8px;
-	        border-radius: 999px;
-	        display: inline-block;
-	        background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.00) 45%), #ffd46b;
-	        box-shadow:
-	          0 0 0 1px rgba(0, 0, 0, 0.35),
-	          0 0 14px rgba(255, 212, 107, 0.34),
-	          0 0 28px rgba(255, 212, 107, 0.16);
-	        margin-right: 8px;
-	        transform: translateY(-1px);
-	      }
-	      @media (prefers-reduced-motion: no-preference) {
-	        .pillLed { animation: bcLedPulse 1.8s ease-in-out infinite; }
-	        @keyframes bcLedPulse {
-	          0%, 100% { opacity: 0.72; filter: saturate(1); }
-	          50% { opacity: 1; filter: saturate(1.12); }
-	        }
-	      }
-	      .body { padding: 14px 18px 16px; }
-	      .grid2 { display: grid; grid-template-columns: 1fr; gap: 12px; }
-	      @media (min-width: 980px) { .grid2 { grid-template-columns: 1fr 1fr; } }
-	      .panel {
-	        margin: 0;
-	        padding: 12px 14px;
-	        border-radius: 14px;
-	        border: 1px solid rgba(31, 42, 68, 0.95);
-	        background: linear-gradient(180deg, rgba(11, 15, 23, 0.62), rgba(11, 15, 23, 0.42));
-	        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-	        position: relative;
-	        overflow: hidden;
-	      }
-	      .panel::before {
-	        content: "";
-	        position: absolute;
-	        inset: -1px;
-	        background:
-	          radial-gradient(420px 180px at 18% 0%, rgba(255, 212, 107, 0.10), transparent 70%),
-	          radial-gradient(420px 180px at 82% 0%, rgba(86, 116, 255, 0.09), transparent 70%),
-	          linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 42%);
-	        opacity: 0.62;
-	        pointer-events: none;
-	      }
-	      .panel strong {
-	        display: inline-block;
-	        margin-bottom: 6px;
-	        text-transform: uppercase;
-	        letter-spacing: 0.08em;
-	        font-size: 11px;
-	        color: #c9d6f3;
-	      }
-	      ol, ul { margin: 8px 0 0 18px; padding: 0; }
-	      li { margin: 6px 0; }
-	      code {
-	        padding: 1px 6px;
-	        border-radius: 8px;
-	        border: 1px solid rgba(31, 42, 68, 0.95);
-	        background: rgba(11, 15, 23, 0.48);
-	        color: #d7e3ff;
-	      }
-	      .footer { margin-top: 10px; font-size: 12px; color: #9fb0d0; }
-	    </style>
-	  </head>
-	  <body>
-	    <div class="frame">
-	      <div class="mascotWrap" aria-hidden="true"><div class="mascot" aria-hidden="true"></div></div>
-	      <main class="card">
-	        <div class="cardBorder" aria-hidden="true"></div>
-	        <div class="header">
-	          <h1>BlackCat Setup <span class="pill"><span class="pillLed" aria-hidden="true"></span>trusted TLS required</span></h1>
-	          <p class="muted"><strong>HTTPS is not enough.</strong> The certificate is not publicly trusted. In production, BlackCat is <strong>fail-closed</strong> here to prevent MITM during setup.</p>
-	        </div>
-	        <div class="body">
-	          <div class="grid2">
-	            <div class="panel">
-	              <strong>Fix:</strong>
-	              <ol>
-	                <li>Install a CA-trusted certificate (Let’s Encrypt).</li>
-	                <li>Confirm the browser lock has no warnings.</li>
-	                <li>Reload this page.</li>
-	              </ol>
-	              <div class="footer warn">Dev: <code>localhost</code> is allowed, but shows a persistent warning banner until you deploy a trusted cert.</div>
-	            </div>
-	            <div class="panel">
-	              <strong>Details (server-side TLS check):</strong>
-	              <div class="muted small">CA-trusted TLS verification failed for <code>__TLS_HOST__</code>:<code>__TLS_PORT__</code>.</div>
-	              <div class="muted small">Error: <code>__TLS_ERR__</code></div>
-	            </div>
-	          </div>
-	        </div>
-	      </main>
-	    </div>
-	  </body>
-</html>
-HTML;
-    echo str_replace(
-        ['__TLS_HOST__', '__TLS_PORT__', '__TLS_ERR__'],
-        [$host, (string) $port, $err],
-        $page,
-    );
+    $detailsHtml = '<div class="muted small">CA-trusted TLS verification failed for <code>'
+        . $host
+        . '</code>:<code>'
+        . (string) $port
+        . '</code>.</div>'
+        . '<div class="muted small">Error: <code>'
+        . $err
+        . '</code></div>';
+
+    $gridHtml = '<div class="panel">'
+        . '<strong>Fix:</strong>'
+        . '<ol>'
+        . '<li>Install a CA-trusted certificate (Let’s Encrypt).</li>'
+        . '<li>Confirm the browser lock has no warnings.</li>'
+        . '<li>Reload this page.</li>'
+        . '</ol>'
+        . '<div class="footer warn">Dev: <code>localhost</code> is allowed, but shows a persistent warning banner until you deploy a trusted cert.</div>'
+        . '</div>'
+        . '<div class="panel">'
+        . '<strong>Details (server-side TLS check):</strong>'
+        . $detailsHtml
+        . '</div>';
+
+    if (function_exists('blackcat_error_ui_render_page')) {
+        echo blackcat_error_ui_render_page([
+            'title' => 'BlackCat Setup — Trusted TLS Required',
+            'h1_prefix' => 'BlackCat Setup',
+            'pill' => 'trusted TLS required',
+            'lede_html' => '<strong>HTTPS is not enough.</strong> The certificate is not publicly trusted. In production, BlackCat is <strong>fail-closed</strong> here to prevent MITM during setup.',
+            'grid_html' => $gridHtml,
+            'style_vars' => [
+                'accent_rgb' => '255, 212, 107',
+                'accent2_rgb' => '86, 116, 255',
+                'grid_url' => '/_blackcat/assets/bg-grid-red.png',
+                'mascot_primary_url' => '/_blackcat/assets/tls-not-trusted-cat.png',
+            ],
+        ]);
+        return;
+    }
+
+    echo '<!doctype html><meta charset="utf-8" /><title>BlackCat Setup — Trusted TLS Required</title><h1>Trusted TLS required</h1>';
 }
 
-/**
- * @param array{docroot:string,site_dir:string,bundle_root:string,state_dir:string,config_path:string} $paths
- * @return array{errors:list<string>,warnings:list<string>}
- */
 function blackcat_setup_preflight(array $paths): array
 {
     $errors = [];
@@ -2537,6 +1682,7 @@ function blackcat_setup_preflight(array $paths): array
  * @param list<string> $errors
  * @param list<string> $warnings
  */
+
 function blackcat_setup_render_preflight_page(array $paths, array $errors, array $warnings): void
 {
     http_response_code(503);
@@ -2559,139 +1705,43 @@ function blackcat_setup_render_preflight_page(array $paths, array $errors, array
         $warnItems .= '<li><strong class="warn">WARN</strong> ' . htmlspecialchars($w, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</li>';
     }
 
-    echo <<<HTML
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BlackCat Setup — Preflight Failed</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="manifest" href="/site.webmanifest" />
-    <style>
-      :root { color-scheme: dark; }
-      *, *::before, *::after { box-sizing: border-box; }
-      body {
-        margin: 0;
-        min-height: 100svh;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        padding: clamp(16px, 2.5vh, 56px) 16px 16px;
-        font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        position: relative;
-        isolation: isolate;
-        background:
-          radial-gradient(900px 420px at 20% 0%, rgba(86, 116, 255, 0.18), transparent 55%),
-          radial-gradient(900px 420px at 80% 0%, rgba(255, 123, 114, 0.12), transparent 60%),
-          #0b0f17;
-        color: #e7eefc;
-      }
-	      body::before {
-	        content: "";
-	        position: fixed;
-	        inset: 0;
-	        background: url("/_blackcat/assets/bg-grid-red.png") repeat;
-	        background-size: 512px 512px;
-	        opacity: 0.36;
-	        mix-blend-mode: screen;
-	        filter: brightness(2.2) contrast(1.35) saturate(1.15);
-	        pointer-events: none;
-	        z-index: 0;
-	      }
-	      @media (prefers-reduced-motion: no-preference) {
-	        body::before { animation: bcGridDrift 52s linear infinite; }
-	        @keyframes bcGridDrift {
-	          from { background-position: 0 0; }
-	          to { background-position: 240px 120px; }
-	        }
-	      }
-	      .card {
-	        max-width: 980px;
-	        width: 100%;
-	        border-radius: 18px;
-        border: 1px solid rgba(42, 59, 99, 0.78);
-        background:
-          radial-gradient(900px 420px at 18% 0%, rgba(255, 255, 255, 0.07), transparent 62%),
-          radial-gradient(900px 420px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
-          linear-gradient(180deg, rgba(15, 21, 36, 0.74), rgba(15, 21, 36, 0.40));
-        backdrop-filter: blur(18px) saturate(1.25);
-        -webkit-backdrop-filter: blur(18px) saturate(1.25);
-        box-shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
-        overflow: hidden;
-        position: relative;
-        z-index: 1;
-        padding: 16px 18px;
-      }
-	      h1 { margin: 0 0 8px; font-size: 24px; }
-	      p { margin: 0; }
-	      .muted { color: #9fb0d0; }
-	      .bad { color: #ff7b72; }
-	      .warn { color: #ffd46b; }
-	      .head { display: flex; gap: 14px; align-items: center; }
-	      .mascot {
-	        flex: 0 0 auto;
-	        width: 96px;
-	        height: 96px;
-	        border-radius: 16px;
-	        border: 1px solid rgba(31, 42, 68, 0.95);
-	        background: rgba(11, 15, 23, 0.35);
-	        display: flex;
-	        align-items: center;
-	        justify-content: center;
-	        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
-	      }
-	      .mascot img { width: 92%; height: 92%; object-fit: contain; }
-	      ul { margin: 10px 0 0 18px; padding: 0; }
-	      li { margin: 6px 0; }
-	      code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-	      .box {
-	        margin-top: 12px;
-        padding: 12px 14px;
-        border-radius: 14px;
-        border: 1px solid rgba(31, 42, 68, 0.95);
-        background: rgba(11, 15, 23, 0.55);
-      }
-    </style>
-	  </head>
-	  <body>
-	    <main class="card">
-	      <div class="head">
-	        <div class="mascot" aria-hidden="true">
-	          <img src="/_blackcat/assets/preflight-failed-cat.png" alt="" />
-	        </div>
-	        <div>
-	          <h1>BlackCat Setup <span class="bad">preflight failed</span></h1>
-	          <p class="muted">Fix the server environment before continuing. This protects the installer from writing secrets/config into unsafe locations.</p>
-	        </div>
-	      </div>
-	      <div class="box">
-	        <div><strong>Checklist:</strong></div>
-	        <ul>
-	          {$errItems}
-          {$warnItems}
-        </ul>
-      </div>
-      <div class="box">
-        <div><strong>Common fixes:</strong></div>
-        <ul class="muted">
-          <li>Enable PHP OpenSSL extension (<code>openssl</code>).</li>
-          <li>Ensure <code>.blackcat/</code> is writable and not world-writable.</li>
-          <li>Ensure the bundle root is writable for <code>config.runtime.json</code>.</li>
-          <li>Reload <code>/_blackcat/setup</code> after fixing permissions.</li>
-        </ul>
-      </div>
-    </main>
-  </body>
-</html>
-HTML;
+    $gridHtml = '<div class="panel">'
+        . '<strong>Checklist:</strong>'
+        . '<ul>'
+        . $errItems
+        . $warnItems
+        . '</ul>'
+        . '<div class="footer muted">Preflight is intentionally strict — it prevents writing secrets into unsafe paths/permissions.</div>'
+        . '</div>'
+        . '<div class="panel">'
+        . '<strong>Common fixes:</strong>'
+        . '<ul class="muted">'
+        . '<li>Enable PHP OpenSSL extension (<code>openssl</code>).</li>'
+        . '<li>Ensure <code>.blackcat/</code> is writable and not world-writable.</li>'
+        . '<li>Ensure the bundle root is writable for <code>config.runtime.json</code>.</li>'
+        . '<li>Reload <code>/_blackcat/setup</code> after fixing permissions.</li>'
+        . '</ul>'
+        . '</div>';
+
+    if (function_exists('blackcat_error_ui_render_page')) {
+        echo blackcat_error_ui_render_page([
+            'title' => 'BlackCat Setup — Preflight Failed',
+            'h1_prefix' => 'BlackCat Setup',
+            'pill' => 'preflight failed',
+            'lede_html' => '<strong>Fix the server environment</strong> before continuing. This protects the installer from writing secrets/config into unsafe locations.',
+            'grid_html' => $gridHtml,
+            'style_vars' => [
+                'grid_url' => '/_blackcat/assets/bg-grid-red.png',
+                'mascot_primary_url' => '/_blackcat/assets/preflight-failed-cat.png',
+            ],
+        ]);
+        return;
+    }
+
+    echo '<!doctype html><meta charset="utf-8" /><title>BlackCat Setup — Preflight Failed</title><h1>Preflight failed</h1>';
 }
 
-/**
- * @param array{docroot:string,site_dir:string,bundle_root:string,state_dir:string,config_path:string} $paths
- */
+
 function blackcat_setup_render_disabled_page(array $paths): void
 {
     http_response_code(404);
@@ -2705,140 +1755,41 @@ function blackcat_setup_render_disabled_page(array $paths): void
     header('Cross-Origin-Resource-Policy: same-origin');
     header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
 
-    echo <<<HTML
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BlackCat Setup — Disabled</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="manifest" href="/site.webmanifest" />
-    <style>
-      :root { color-scheme: dark; }
-      body {
-        margin: 0;
-        min-height: 100svh;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        padding: clamp(16px, 2.5vh, 56px) 16px 16px;
-        font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        position: relative;
-        isolation: isolate;
-        background:
-          radial-gradient(900px 420px at 20% 0%, rgba(86, 116, 255, 0.18), transparent 55%),
-          radial-gradient(900px 420px at 80% 0%, rgba(255, 123, 114, 0.12), transparent 60%),
-          #0b0f17;
-        color: #e7eefc;
-      }
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        background: url("/_blackcat/assets/bg-grid-red.png") repeat;
-        background-size: 512px 512px;
-        opacity: 0.32;
-        mix-blend-mode: screen;
-        filter: brightness(2.0) contrast(1.3) saturate(1.1);
-        pointer-events: none;
-        z-index: 0;
-      }
-      @media (prefers-reduced-motion: no-preference) {
-        body::before { animation: bcGridDrift 52s linear infinite; }
-        @keyframes bcGridDrift {
-          from { background-position: 0 0; }
-          to { background-position: 240px 120px; }
-        }
-      }
-      .card {
-        max-width: 920px;
-        width: 100%;
-        border-radius: 18px;
-        border: 1px solid rgba(42, 59, 99, 0.78);
-        background:
-          radial-gradient(900px 420px at 18% 0%, rgba(255, 255, 255, 0.07), transparent 62%),
-          radial-gradient(900px 420px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
-          linear-gradient(180deg, rgba(15, 21, 36, 0.74), rgba(15, 21, 36, 0.40));
-        backdrop-filter: blur(18px) saturate(1.25);
-        -webkit-backdrop-filter: blur(18px) saturate(1.25);
-        box-shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
-        overflow: hidden;
-        position: relative;
-        z-index: 1;
-      }
-	      .banner {
-	        width: 100%;
-	        height: clamp(120px, 14vw, 180px);
-	        background:
-	          linear-gradient(180deg, rgba(11, 15, 23, 0.00), rgba(11, 15, 23, 0.86)),
-	          url("/_blackcat/assets/hero-banner.png") left center / cover no-repeat;
-	        border-bottom: 1px solid rgba(31, 42, 68, 0.95);
-	      }
-	      .body { padding: 14px 16px 16px; }
-	      h1 { margin: 0 0 6px; font-size: 24px; }
-	      .lead { margin: 0; }
-	      .muted { color: #9fb0d0; }
-	      code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-	      .warn { color: #ffd46b; }
-	      .bad { color: #ff7b72; }
-	      .head { display: flex; gap: 14px; align-items: center; }
-	      .mascot {
-	        flex: 0 0 auto;
-	        width: 86px;
-	        height: 86px;
-	        border-radius: 16px;
-	        border: 1px solid rgba(31, 42, 68, 0.95);
-	        background: rgba(11, 15, 23, 0.35);
-	        display: flex;
-	        align-items: center;
-	        justify-content: center;
-	        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
-	      }
-	      .mascot img { width: 92%; height: 92%; object-fit: contain; }
-	      .box {
-	        margin-top: 12px;
-	        padding: 12px 14px;
-	        border-radius: 14px;
-        border: 1px solid rgba(31, 42, 68, 0.95);
-        background: rgba(11, 15, 23, 0.55);
-      }
-      ul { margin: 10px 0 0 18px; padding: 0; }
-      li { margin: 6px 0; }
-    </style>
-  </head>
-	  <body>
-	    <main class="card">
-	      <div class="banner" aria-hidden="true"></div>
-	      <div class="body">
-	        <div class="head">
-	          <div class="mascot" aria-hidden="true">
-	            <img src="/_blackcat/assets/installer-locked-cat.png" alt="" />
-	          </div>
-	          <div>
-	            <h1>Installer disabled <span class="bad">locked</span></h1>
-	            <p class="muted lead">The setup UI is turned off because <code>.blackcat/installed.flag</code> exists. This is the recommended production posture (lowest web attack surface).</p>
-	          </div>
-	        </div>
-	        <div class="box">
-	          <div><strong>Why:</strong></div>
-	          <ul class="muted">
-	            <li>Setup is a high-trust operation (install token + wallet approvals).</li>
-            <li>Disabling setup removes an entire class of web attack paths.</li>
-          </ul>
-        </div>
-        <div class="box">
-          <p class="warn"><strong>Danger:</strong> re-enabling the installer increases attack surface. Only do this in a safe maintenance window.</p>
-          <p class="muted">To re-enable (dev only): delete <code>.blackcat/installed.flag</code> and reload <code>/_blackcat/setup</code>.</p>
-        </div>
-      </div>
-    </main>
-  </body>
-</html>
-HTML;
+    $gridHtml = '<div class="panel">'
+        . '<strong>What happened:</strong>'
+        . '<ul class="muted">'
+        . '<li><code>.blackcat/installed.flag</code> exists.</li>'
+        . '<li>The setup module is intentionally locked after installation.</li>'
+        . '</ul>'
+        . '</div>'
+        . '<div class="panel">'
+        . '<strong>Re-enable (dev only):</strong>'
+        . '<ul>'
+        . '<li>Delete <code>.blackcat/installed.flag</code>.</li>'
+        . '<li>Reload <code>/_blackcat/setup</code>.</li>'
+        . '</ul>'
+        . '<div class="footer warn">Warning: re-enabling the installer increases attack surface. Only do this in a safe maintenance window.</div>'
+        . '</div>';
+
+    if (function_exists('blackcat_error_ui_render_page')) {
+        echo blackcat_error_ui_render_page([
+            'title' => 'BlackCat Setup — Disabled',
+            'h1_prefix' => 'BlackCat Setup',
+            'pill' => 'installer locked',
+            'lede_html' => '<strong>Setup is disabled.</strong> This is the recommended production posture (minimal web attack surface).',
+            'grid_html' => $gridHtml,
+            'style_vars' => [
+                'accent_rgb' => '255, 212, 107',
+                'grid_url' => '/_blackcat/assets/bg-grid-red.png',
+                'mascot_primary_url' => '/_blackcat/assets/installer-locked-cat.png',
+            ],
+        ]);
+        return;
+    }
+
+    echo '<!doctype html><meta charset="utf-8" /><title>BlackCat Setup — Disabled</title><h1>Installer locked</h1>';
 }
+
 
 function blackcat_setup_render_front_controller_required_page(): void
 {
@@ -2853,135 +1804,39 @@ function blackcat_setup_render_front_controller_required_page(): void
     header('Cross-Origin-Resource-Policy: same-origin');
     header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
 
-    echo <<<HTML
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BlackCat Setup — Front Controller Required</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="manifest" href="/site.webmanifest" />
-    <style>
-      :root { color-scheme: dark; }
-      body {
-        margin: 0;
-        min-height: 100svh;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        padding: clamp(16px, 2.5vh, 56px) 16px 16px;
-        font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        position: relative;
-        isolation: isolate;
-        background:
-          radial-gradient(900px 420px at 20% 0%, rgba(86, 116, 255, 0.18), transparent 55%),
-          radial-gradient(900px 420px at 80% 0%, rgba(255, 123, 114, 0.12), transparent 60%),
-          #0b0f17;
-        color: #e7eefc;
-      }
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        background: url("/_blackcat/assets/bg-grid-red.png") repeat;
-        background-size: 512px 512px;
-        opacity: 0.32;
-        mix-blend-mode: screen;
-        filter: brightness(2.0) contrast(1.3) saturate(1.1);
-        pointer-events: none;
-        z-index: 0;
-      }
-      @media (prefers-reduced-motion: no-preference) {
-        body::before { animation: bcGridDrift 52s linear infinite; }
-        @keyframes bcGridDrift {
-          from { background-position: 0 0; }
-          to { background-position: 240px 120px; }
-        }
-      }
-      .card {
-        max-width: 920px;
-        width: 100%;
-        border-radius: 18px;
-        border: 1px solid rgba(42, 59, 99, 0.78);
-        background:
-          radial-gradient(900px 420px at 18% 0%, rgba(255, 255, 255, 0.07), transparent 62%),
-          radial-gradient(900px 420px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
-          linear-gradient(180deg, rgba(15, 21, 36, 0.74), rgba(15, 21, 36, 0.40));
-        backdrop-filter: blur(18px) saturate(1.25);
-        -webkit-backdrop-filter: blur(18px) saturate(1.25);
-        box-shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
-        overflow: hidden;
-        position: relative;
-        z-index: 1;
-      }
-	      .banner {
-	        height: clamp(120px, 14vw, 180px);
-	        background:
-	          linear-gradient(180deg, rgba(11, 15, 23, 0.00), rgba(11, 15, 23, 0.86)),
-	          url("/_blackcat/assets/hero-banner.png") left center / cover no-repeat;
-	        border-bottom: 1px solid rgba(31, 42, 68, 0.95);
-	      }
-	      .body { padding: 14px 16px 16px; }
-	      h1 { margin: 0 0 6px; font-size: 22px; }
-	      .lead { margin: 0; }
-	      .muted { color: #9fb0d0; }
-	      .warn { color: #ffd46b; }
-	      code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-	      .head { display: flex; gap: 14px; align-items: center; }
-	      .mascot {
-	        flex: 0 0 auto;
-	        width: 86px;
-	        height: 86px;
-	        border-radius: 16px;
-	        border: 1px solid rgba(31, 42, 68, 0.95);
-	        background: rgba(11, 15, 23, 0.35);
-	        display: flex;
-	        align-items: center;
-	        justify-content: center;
-	        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
-	      }
-	      .mascot img { width: 92%; height: 92%; object-fit: contain; }
-	      ul { margin: 10px 0 0 18px; padding: 0; }
-	      li { margin: 6px 0; }
-	      .box {
-	        margin-top: 12px;
-        padding: 12px 14px;
-        border-radius: 14px;
-        border: 1px solid rgba(31, 42, 68, 0.95);
-        background: rgba(11, 15, 23, 0.55);
-      }
-    </style>
-  </head>
-	  <body>
-	    <main class="card">
-	      <div class="banner" aria-hidden="true"></div>
-	      <div class="body">
-	        <div class="head">
-	          <div class="mascot" aria-hidden="true">
-	            <img src="/_blackcat/assets/fatal-error-cat.png" alt="" />
-	          </div>
-	          <div>
-	            <h1>Front controller required</h1>
-	            <p class="muted lead">This file is not a public entrypoint. Your web server appears to be exposing internal files directly.</p>
-	          </div>
-	        </div>
-	        <div class="box">
-	          <div><strong>Fix:</strong></div>
-	          <ul>
-	            <li>Set the web root (docroot) to <code>site/public/</code>.</li>
-            <li>Route all requests through <code>site/public/index.php</code> (front controller).</li>
-            <li>Apache: enable <code>mod_rewrite</code> (or allow <code>.htaccess</code>). Nginx: configure <code>try_files</code>.</li>
-          </ul>
-        </div>
-        <p class="warn"><strong>Security note:</strong> if you see this on production, fix immediately (misconfigured docroot can expose secrets).</p>
-      </div>
-    </main>
-  </body>
-</html>
-HTML;
+    $gridHtml = '<div class="panel">'
+        . '<strong>What this means:</strong>'
+        . '<ul>'
+        . '<li>Your server must route all requests to <code>site/public/index.php</code> (front controller).</li>'
+        . '<li>Direct access to <code>/_blackcat/setup.php</code> is blocked by design.</li>'
+        . '</ul>'
+        . '</div>'
+        . '<div class="panel">'
+        . '<strong>Fix:</strong>'
+        . '<ul class="muted">'
+        . '<li>Point the document root to <code>site/public/</code>.</li>'
+        . '<li>Enable URL rewriting (Apache: <code>AllowOverride All</code> / Nginx: <code>try_files</code>).</li>'
+        . '<li>Reload and open <code>/_blackcat/setup</code> again.</li>'
+        . '</ul>'
+        . '<div class="footer warn"><strong>Fail-closed:</strong> without a front controller boundary, BlackCat security guarantees do not apply.</div>'
+        . '</div>';
+
+    if (function_exists('blackcat_error_ui_render_page')) {
+        echo blackcat_error_ui_render_page([
+            'title' => 'BlackCat Setup — Front Controller Required',
+            'h1_prefix' => 'BlackCat Setup',
+            'pill' => 'front controller required',
+            'lede_html' => '<strong>Fail-closed:</strong> setup must be served through the front controller to enforce routing, HTTPS, and trust checks.',
+            'grid_html' => $gridHtml,
+            'style_vars' => [
+                'grid_url' => '/_blackcat/assets/bg-grid-red.png',
+                'mascot_primary_url' => '/_blackcat/assets/fatal-error-cat.png',
+            ],
+        ]);
+        return;
+    }
+
+    echo '<!doctype html><meta charset="utf-8" /><title>BlackCat Setup — Front Controller Required</title><h1>Front controller required</h1>';
 }
 
 function blackcat_setup_api_policy_v3(): void
