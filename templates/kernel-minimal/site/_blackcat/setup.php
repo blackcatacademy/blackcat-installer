@@ -261,10 +261,7 @@ function blackcat_setup_page(array $paths): void
 		        background:
 		          url("/_blackcat/assets/fatal-error-cat.png") center / contain no-repeat,
 		          url("/_blackcat/assets/https-required-cat-fallback.svg") center / 92px 92px no-repeat;
-		        filter:
-		          drop-shadow(0 18px 55px rgba(0, 0, 0, 0.55))
-		          drop-shadow(0 0 26px rgba(255, 123, 114, 0.26))
-		          drop-shadow(0 0 46px rgba(86, 116, 255, 0.10));
+		        filter: none;
 		        transform: translate3d(0, 0, 18px) scale(1.06);
 		        position: relative;
 		        z-index: 2;
@@ -281,17 +278,38 @@ function blackcat_setup_page(array $paths): void
 		          50% { transform: translate3d(0, -2px, 18px) scale(1.06); }
 		        }
 		      }
-	      h1 { margin: 0; font-size: 26px; letter-spacing: 0.2px; display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; }
+		      h1 {
+		        margin: 0;
+		        font-size: 26px;
+		        font-weight: 780;
+		        letter-spacing: 0.2px;
+		        display: flex;
+		        flex-wrap: wrap;
+		        gap: 10px;
+		        align-items: baseline;
+		        color: #ff6b66;
+		        text-shadow:
+		          0 1px 0 rgba(0, 0, 0, 0.72),
+		          0 2px 0 rgba(0, 0, 0, 0.35),
+		          0 18px 70px rgba(0, 0, 0, 0.45),
+		          0 0 38px rgba(255, 123, 114, 0.26);
+		      }
 	      .muted { color: #9fb0d0; }
 		      .pill {
 		        display: inline-block;
 	        padding: 2px 10px;
 	        border-radius: 999px;
-	        background: rgba(255, 123, 114, 0.12);
-	        border: 1px solid rgba(255, 123, 114, 0.28);
-	        color: #ff7b72;
+	        background:
+	          linear-gradient(180deg, rgba(255, 123, 114, 0.28), rgba(255, 123, 114, 0.12));
+	        border: 1px solid rgba(255, 123, 114, 0.40);
+	        color: #ff9c98;
 	        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-	        box-shadow: 0 0 0 1px rgba(255, 123, 114, 0.06), 0 0 18px rgba(255, 123, 114, 0.14);
+	        text-shadow: 0 1px 0 rgba(0, 0, 0, 0.65);
+	        box-shadow:
+	          inset 0 1px 0 rgba(255, 255, 255, 0.18),
+	          inset 0 -12px 20px rgba(0, 0, 0, 0.34),
+	          0 0 0 1px rgba(255, 123, 114, 0.10),
+	          0 14px 50px rgba(255, 123, 114, 0.18);
 		        margin-left: 0;
 		      }
 	      .body { padding: 14px 18px 16px; }
