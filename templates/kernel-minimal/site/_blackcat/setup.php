@@ -213,6 +213,8 @@ function blackcat_setup_page(array $paths): void
 		        overflow: visible;
 		        display: grid;
 		        place-items: center;
+		        perspective: 900px;
+		        transform-style: preserve-3d;
 		        box-shadow: none;
 		      }
 	      @media (max-width: 740px) {
@@ -229,25 +231,29 @@ function blackcat_setup_page(array $paths): void
 		        filter: blur(14px);
 		        opacity: 0.92;
 		        pointer-events: none;
+		        z-index: 0;
 		      }
 		      .mascotWrap::after {
 		        content: "";
 		        position: absolute;
-		        inset: -14px;
-		        border-radius: 999px;
-		        background: conic-gradient(
-		          from 190deg,
-		          rgba(255, 123, 114, 0.00),
-		          rgba(255, 123, 114, 0.46),
-		          rgba(86, 116, 255, 0.38),
-		          rgba(255, 212, 107, 0.22),
-		          rgba(255, 123, 114, 0.00)
-		        );
-		        -webkit-mask: radial-gradient(circle at center, transparent 56%, #000 58%);
-		        mask: radial-gradient(circle at center, transparent 56%, #000 58%);
-		        opacity: 0.82;
-		        filter: blur(0.55px);
+		        inset: 6px;
+		        border-radius: 22px;
+		        background:
+		          radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.14), transparent 52%),
+		          radial-gradient(circle at 72% 78%, rgba(86, 116, 255, 0.11), transparent 56%),
+		          linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.00) 42%, rgba(0, 0, 0, 0.18));
+		        background-size: 140% 140%, 140% 140%, 100% 100%;
+		        background-position: 0% 0%, 100% 100%, 0 0;
+		        border: 1px solid rgba(31, 42, 68, 0.92);
+		        box-shadow:
+		          inset 0 1px 0 rgba(255, 255, 255, 0.18),
+		          inset 0 -12px 20px rgba(0, 0, 0, 0.38),
+		          inset 0 0 0 1px rgba(255, 123, 114, 0.06),
+		          0 18px 70px rgba(0, 0, 0, 0.32);
+		        opacity: 0.94;
+		        transform: translateZ(6px);
 		        pointer-events: none;
+		        z-index: 1;
 		      }
 		      .mascot {
 		        width: 100%;
@@ -259,20 +265,20 @@ function blackcat_setup_page(array $paths): void
 		          drop-shadow(0 18px 55px rgba(0, 0, 0, 0.55))
 		          drop-shadow(0 0 26px rgba(255, 123, 114, 0.26))
 		          drop-shadow(0 0 46px rgba(86, 116, 255, 0.10));
-		        transform: scale(1.06);
+		        transform: translate3d(0, 0, 18px) scale(1.06);
 		        position: relative;
-		        z-index: 1;
+		        z-index: 2;
 		      }
 		      @media (prefers-reduced-motion: no-preference) {
-		        .mascotWrap::after { animation: bcHaloSpin 12s linear infinite; }
+		        .mascotWrap::after { animation: bcPlateSheen 7.5s ease-in-out infinite alternate; }
 		        .mascot { animation: bcMascotFloat 6.5s ease-in-out infinite; }
-		        @keyframes bcHaloSpin {
-		          from { transform: rotate(0deg); }
-		          to { transform: rotate(360deg); }
+		        @keyframes bcPlateSheen {
+		          from { background-position: 0% 0%, 100% 100%, 0 0; }
+		          to { background-position: 100% 0%, 0% 100%, 0 0; }
 		        }
 		        @keyframes bcMascotFloat {
-		          0%, 100% { transform: translateY(0) scale(1.06); }
-		          50% { transform: translateY(-2px) scale(1.06); }
+		          0%, 100% { transform: translate3d(0, 0, 18px) scale(1.06); }
+		          50% { transform: translate3d(0, -2px, 18px) scale(1.06); }
 		        }
 		      }
 	      h1 { margin: 0; font-size: 26px; letter-spacing: 0.2px; display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; }
