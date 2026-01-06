@@ -279,20 +279,12 @@ function blackcat_setup_page(array $paths): void
 		        flex-wrap: wrap;
 		        gap: 10px;
 		        align-items: baseline;
-		        color: #ff6b66;
+		        color: #e7eefc;
 		        text-shadow:
 		          0 1px 0 rgba(0, 0, 0, 0.78),
 		          0 2px 0 rgba(0, 0, 0, 0.38),
 		          0 -1px 0 rgba(255, 255, 255, 0.10),
 		          0 18px 70px rgba(0, 0, 0, 0.48);
-		      }
-		      @supports ((-webkit-background-clip: text) or (background-clip: text)) {
-		        h1 {
-		          background: linear-gradient(180deg, #ffd6d3 0%, #ff7b72 55%, #ff5e57 100%);
-		          -webkit-background-clip: text;
-		          background-clip: text;
-		          color: transparent;
-		        }
 		      }
 	      .muted { color: #9fb0d0; }
 	      .muted strong { color: #ff9c98; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.65); }
