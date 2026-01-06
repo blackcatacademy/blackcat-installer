@@ -121,21 +121,21 @@ function blackcat_setup_page(array $paths): void
           radial-gradient(circle at 18% 18%, rgba(255, 123, 114, 0.18), transparent 52%),
           radial-gradient(circle at 82% 28%, rgba(86, 116, 255, 0.18), transparent 54%),
           radial-gradient(circle at 55% 85%, rgba(255, 212, 107, 0.10), transparent 56%);
-        filter: blur(46px) saturate(1.12);
-        opacity: 0.55;
+        filter: blur(56px) saturate(1.06);
+        opacity: 0.38;
         pointer-events: none;
         z-index: 0;
       }
       @media (prefers-reduced-motion: no-preference) {
         body::before { animation: bcGridDrift 52s linear infinite; }
-        body::after { animation: bcAuroraDrift 28s ease-in-out infinite alternate; }
+        body::after { animation: bcAuroraDrift 54s ease-in-out infinite alternate; }
         @keyframes bcGridDrift {
           from { background-position: 0 0; }
           to { background-position: 240px 120px; }
         }
         @keyframes bcAuroraDrift {
-          from { transform: translate3d(-1%, -0.5%, 0) scale(1.02); }
-          to { transform: translate3d(1.3%, 1%, 0) scale(1.07); }
+          from { transform: translate3d(-0.6%, -0.4%, 0) scale(1.02); }
+          to { transform: translate3d(0.9%, 0.8%, 0) scale(1.05); }
         }
       }
 			      .card {
@@ -164,7 +164,7 @@ function blackcat_setup_page(array $paths): void
 			          radial-gradient(900px 360px at 15% 0%, rgba(255, 123, 114, 0.12), transparent 62%),
 			          radial-gradient(900px 360px at 85% 0%, rgba(86, 116, 255, 0.10), transparent 64%),
 			          linear-gradient(120deg, rgba(255, 255, 255, 0.06), transparent 22%, transparent 74%, rgba(255, 255, 255, 0.04));
-			        opacity: 0.85;
+			        opacity: 0.62;
 			        pointer-events: none;
 			      }
 			      .card::after {
@@ -172,10 +172,8 @@ function blackcat_setup_page(array $paths): void
 			        position: absolute;
 			        inset: 0;
 			        background:
-			          linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 22%, transparent 78%, rgba(255, 255, 255, 0.04)),
-			          repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0, rgba(255, 255, 255, 0.05) 1px, transparent 1px, transparent 7px);
-			        opacity: 0.08;
-			        mix-blend-mode: overlay;
+			          linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 26%, transparent 78%, rgba(255, 255, 255, 0.05));
+			        opacity: 0.12;
 			        pointer-events: none;
 			      }
 			      @media (hover: hover) {
@@ -281,12 +279,10 @@ function blackcat_setup_page(array $paths): void
 		        flex-wrap: wrap;
 		        gap: 10px;
 		        align-items: baseline;
-		        color: #ff6b66;
+		        color: #ff7b72;
 		        text-shadow:
 		          0 1px 0 rgba(0, 0, 0, 0.72),
-		          0 2px 0 rgba(0, 0, 0, 0.35),
-		          0 18px 70px rgba(0, 0, 0, 0.45),
-		          0 0 38px rgba(255, 123, 114, 0.26);
+		          0 14px 60px rgba(0, 0, 0, 0.42);
 		      }
 	      .muted { color: #9fb0d0; }
 		      .pill {
@@ -294,16 +290,16 @@ function blackcat_setup_page(array $paths): void
 	        padding: 2px 10px;
 	        border-radius: 999px;
 	        background:
-	          linear-gradient(180deg, rgba(255, 123, 114, 0.28), rgba(255, 123, 114, 0.12));
-	        border: 1px solid rgba(255, 123, 114, 0.40);
+	          linear-gradient(180deg, rgba(255, 123, 114, 0.22), rgba(255, 123, 114, 0.10));
+	        border: 1px solid rgba(255, 123, 114, 0.34);
 	        color: #ff9c98;
 	        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 	        text-shadow: 0 1px 0 rgba(0, 0, 0, 0.65);
 	        box-shadow:
 	          inset 0 1px 0 rgba(255, 255, 255, 0.18),
-	          inset 0 -12px 20px rgba(0, 0, 0, 0.34),
-	          0 0 0 1px rgba(255, 123, 114, 0.10),
-	          0 14px 50px rgba(255, 123, 114, 0.18);
+	          inset 0 -12px 20px rgba(0, 0, 0, 0.30),
+	          0 0 0 1px rgba(255, 123, 114, 0.08),
+	          0 12px 38px rgba(0, 0, 0, 0.26);
 		        margin-left: 0;
 		      }
 	      .body { padding: 14px 18px 16px; }
@@ -328,7 +324,7 @@ function blackcat_setup_page(array $paths): void
 			          radial-gradient(420px 180px at 18% 0%, rgba(255, 123, 114, 0.10), transparent 70%),
 			          radial-gradient(420px 180px at 82% 0%, rgba(86, 116, 255, 0.09), transparent 70%),
 			          linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 42%);
-			        opacity: 0.8;
+			        opacity: 0.62;
 			        pointer-events: none;
 			      }
 		      .panel strong {
