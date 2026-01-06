@@ -216,15 +216,6 @@ function blackcat_setup_page(array $paths): void
 			        opacity: 0.12;
 			        pointer-events: none;
 			      }
-			      @media (hover: hover) {
-			        .card { transition: transform 180ms ease, box-shadow 220ms ease; }
-			        .card:hover {
-			          transform: translateY(-2px);
-			          box-shadow:
-			            0 34px 120px rgba(0, 0, 0, 0.52),
-			            0 0 0 1px rgba(255, 123, 114, 0.10);
-			        }
-			      }
 			      .header {
 			        padding: 16px 18px 14px 156px;
 			        min-height: 142px;
