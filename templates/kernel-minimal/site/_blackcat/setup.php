@@ -53,16 +53,11 @@ function blackcat_setup_handle(array $paths): void
 function blackcat_setup_page(array $paths): void
 {
     if (blackcat_setup_is_disabled($paths['state_dir'])) {
-        $hostPort = blackcat_normalize_http_host($_SERVER['HTTP_HOST'] ?? null);
-        $isDev = blackcat_is_dev_host($hostPort['host']);
-        if (!$isDev) {
-            http_response_code(404);
-            header('Content-Type: text/plain; charset=utf-8');
-            echo "Not found.\n";
-            exit;
-        }
-
-        blackcat_setup_render_disabled_page($paths);
+        // Installer is intentionally unavailable after install (minimize web attack surface).
+        // Use signed upgrade tooling instead of reopening setup.
+        http_response_code(404);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo "Not found.\n";
         exit;
     }
 
