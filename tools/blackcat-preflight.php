@@ -124,6 +124,101 @@ function blackcat_preflight_random_id(): string
 }
 
 /**
+ * Canonical JSON encoding (match `blackcat-config` CanonicalJson::encode()).
+ *
+ * This preflight runs on constrained hostings (no Composer), but it must output values that
+ * exactly match kernel attestations (bytes32 sha256 of canonical JSON).
+ *
+ * @throws \InvalidArgumentException
+ */
+function blackcat_preflight_canonical_json_encode(mixed $value): string
+{
+    $normalized = blackcat_preflight_canonical_json_normalize($value);
+    $json = json_encode($normalized, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    if (!is_string($json)) {
+        throw new \RuntimeException('Unable to encode canonical JSON.');
+    }
+    return $json;
+}
+
+function blackcat_preflight_canonical_json_is_list(array $value): bool
+{
+    $expected = 0;
+    foreach (array_keys($value) as $k) {
+        if (!is_int($k) || $k !== $expected) {
+            return false;
+        }
+        $expected++;
+    }
+    return true;
+}
+
+/**
+ * @throws \InvalidArgumentException
+ */
+function blackcat_preflight_canonical_json_normalize(mixed $value): mixed
+{
+    if (is_array($value)) {
+        if (blackcat_preflight_canonical_json_is_list($value)) {
+            $out = [];
+            foreach ($value as $v) {
+                $out[] = blackcat_preflight_canonical_json_normalize($v);
+            }
+            return $out;
+        }
+
+        $keys = array_keys($value);
+        sort($keys, SORT_STRING);
+        $out = [];
+        foreach ($keys as $k) {
+            if (!is_string($k) && !is_int($k)) {
+                throw new \InvalidArgumentException('Canonical JSON only supports string/int array keys.');
+            }
+            $out[(string) $k] = blackcat_preflight_canonical_json_normalize($value[$k]);
+        }
+        return $out;
+    }
+
+    if (is_object($value)) {
+        throw new \InvalidArgumentException('Objects are not supported in canonical JSON.');
+    }
+
+    return $value;
+}
+
+function blackcat_preflight_sha256_bytes32(mixed $value): string
+{
+    return '0x' . hash('sha256', blackcat_preflight_canonical_json_encode($value));
+}
+
+/**
+ * Canonical waiver attestation required for `policy=less-strict` when `cgi.fix_pathinfo` is enabled.
+ *
+ * Keep in sync with:
+ * - `blackcat-config/src/Security/KernelAttestations.php`
+ * - `blackcat-core/src/TrustKernel/TrustKernelConfig.php`
+ *
+ * @return array{key_label:string,key_bytes32:string,payload:array{schema_version:int,type:string,result:string},value_bytes32:string,must_be_locked:bool}
+ */
+function blackcat_preflight_pathinfo_no_exec_waiver_attestation(): array
+{
+    $keyLabel = 'blackcat.hosting.cgi_fix_pathinfo.probe.canonical_sha256.v1';
+    $payload = [
+        'schema_version' => 1,
+        'type' => 'blackcat.hosting.cgi_fix_pathinfo.probe',
+        'result' => 'no_exec',
+    ];
+
+    return [
+        'key_label' => $keyLabel,
+        'key_bytes32' => '0x' . hash('sha256', $keyLabel),
+        'payload' => $payload,
+        'value_bytes32' => blackcat_preflight_sha256_bytes32($payload),
+        'must_be_locked' => true,
+    ];
+}
+
+/**
  * @return string
  */
 function blackcat_preflight_script_dir_url_path(): string
@@ -1307,6 +1402,7 @@ if ($wantJson) {
         $probe = [
             'pathinfo' => array_merge($probeRun['plan'], [
                 'auto' => $autoPathinfoProbe,
+                'waiver_attestation' => blackcat_preflight_pathinfo_no_exec_waiver_attestation(),
                 'result' => $probeRun['result'],
             ]),
         ];
@@ -1441,6 +1537,7 @@ if ($probeMode === 'pathinfo') {
         'policy' => $policy,
         'affects_check_id' => 'php_ini',
         'less_strict_can_clear' => !empty($phpIniMeta['cgi_fix_pathinfo_only_fail']),
+        'waiver_attestation' => blackcat_preflight_pathinfo_no_exec_waiver_attestation(),
     ];
 
     $probePanel = '<div class="check" style="margin-top:12px;">'
@@ -1534,6 +1631,10 @@ if ($probeMode === 'pathinfo') {
         . '      if (cfg.less_strict_can_clear) {'
         . '        setCheck("pass", "cgi.fix_pathinfo is enabled, but the PathInfo probe observed NO EXEC for tested variants.");'
         . '        addHint("Note: less-strict still requires a locked on-chain probe attestation to satisfy TrustKernel.");'
+        . '        const w = cfg.waiver_attestation || null;'
+        . '        if (w && typeof w.key_bytes32 === "string" && typeof w.value_bytes32 === "string") {'
+        . '          addHint("Waiver attestation (rootAuthority): key=" + w.key_bytes32 + " value=" + w.value_bytes32 + " (must be locked)");'
+        . '        }'
         . '      }'
         . '      recomputeOverall();'
         . '    }'
