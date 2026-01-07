@@ -46,6 +46,17 @@ RUN a2ensite default-ssl
 COPY blackcat-installer/docker/stage3-demo/000-default.conf /etc/apache2/sites-available/000-default.conf
 COPY blackcat-installer/docker/stage3-demo/default-ssl.conf /etc/apache2/sites-available/default-ssl.conf
 
+# Demo hardening (applies to Apache SAPI; keeps Stage 3 strict preflight green by default).
+# Note: `disable_functions` cannot be reliably set per-vhost, so we set it here at the PHP_INI_SYSTEM level.
+RUN { \
+    echo "display_errors=0"; \
+    echo "display_startup_errors=0"; \
+    echo "log_errors=1"; \
+    echo "enable_dl=0"; \
+    echo "open_basedir=/srv/bundle:/tmp:/etc/ssl/certs:/etc/ssl"; \
+    echo "disable_functions=exec,shell_exec,system,passthru,popen,proc_open,pcntl_exec"; \
+  } > /usr/local/etc/php/conf.d/blackcat-demo-hardening.ini
+
 RUN mkdir -p /etc/ssl/private \
   && openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
     -subj "/CN=localhost" \
@@ -70,4 +81,3 @@ RUN mkdir -p /srv/bundle/.blackcat \
   && chmod 0770 /srv/bundle
 
 EXPOSE 80 443
-
