@@ -12,8 +12,8 @@ Suggested files (PNG, no text recommended):
 - `trusted-vs-untrusted.png` — optional split illustration for release trust / integrity.
 - `bg-grid.png` — repeating background grid (default theme).
 - `bg-grid-red.png` — repeating background grid for error/fail-closed pages (recommended to visually separate “blocked” states).
-- `mascot-fallback-red.svg` — universal fallback mascot for red/fail-closed pages (used automatically when a PNG is missing).
-- `mascot-fallback-amber.svg` — universal fallback mascot for amber/warn pages (used automatically when a PNG is missing).
+- `https-required-cat-fallback.svg` — universal fallback mascot for red/fail-closed pages (used automatically when a PNG is missing).
+- `tls-not-trusted-fallback.svg` — universal fallback mascot for amber/warn pages (used automatically when a PNG is missing).
 - `favicon.png` (64×64 or 128×128) — high-contrast icon for tiny sizes (tab / bookmarks).
 
 Guidelines:

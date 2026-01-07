@@ -491,8 +491,8 @@ function blackcat_error_ui_style_tag(array $vars = []): string
     $accentCompact = str_replace(' ', '', $accent);
     $isAmberTheme = ($accentCompact === '255,212,107');
     $fallbackAuto = $isAmberTheme
-        ? '/_blackcat/assets/mascot-fallback-amber.svg'
-        : '/_blackcat/assets/mascot-fallback-red.svg';
+        ? '/_blackcat/assets/tls-not-trusted-fallback.svg'
+        : '/_blackcat/assets/https-required-cat-fallback.svg';
 
     // Default: always include a fallback mascot (so missing PNG assets do not break the UI).
     // Opt-out is possible only if the caller explicitly passes `mascot_fallback_url => null`.

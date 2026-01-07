@@ -36,9 +36,9 @@ $assetMap = [
     '/_blackcat/assets/fatal-error-cat.png' => ['file' => 'fatal-error-cat.png', 'type' => 'image/png'],
     '/_blackcat/assets/trusted-vs-untrusted.png' => ['file' => 'trusted-vs-untrusted.png', 'type' => 'image/png'],
     '/_blackcat/assets/tls-not-trusted-cat.png' => ['file' => 'tls-not-trusted-cat.png', 'type' => 'image/png'],
-    // Universal mascot fallbacks (used by error-ui.php; color depends on theme).
-    '/_blackcat/assets/mascot-fallback-red.svg' => ['file' => 'mascot-fallback-red.svg', 'type' => 'image/svg+xml; charset=utf-8'],
-    '/_blackcat/assets/mascot-fallback-amber.svg' => ['file' => 'mascot-fallback-amber.svg', 'type' => 'image/svg+xml; charset=utf-8'],
+    // Universal mascot fallbacks (used by error-ui.php; selection depends on theme).
+    '/_blackcat/assets/https-required-cat-fallback.svg' => ['file' => 'https-required-cat-fallback.svg', 'type' => 'image/svg+xml; charset=utf-8'],
+    '/_blackcat/assets/tls-not-trusted-fallback.svg' => ['file' => 'tls-not-trusted-fallback.svg', 'type' => 'image/svg+xml; charset=utf-8'],
     '/_blackcat/assets/bg-grid.png' => ['file' => 'bg-grid.png', 'type' => 'image/png'],
     '/_blackcat/assets/bg-grid-red.png' => ['file' => 'bg-grid-red.png', 'type' => 'image/png'],
     // Optional mascots (used by various fail-closed pages).
