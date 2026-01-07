@@ -274,17 +274,35 @@ HTML;
         inset: 0;
         background: url("/_blackcat/assets/bg-grid.png") repeat;
         background-size: 512px 512px;
-        opacity: 0.22;
+        opacity: 0.34;
         mix-blend-mode: screen;
-        filter: brightness(1.7) contrast(1.2);
+        filter: brightness(2.2) contrast(1.35) saturate(1.15);
+        pointer-events: none;
+        z-index: 1;
+      }
+      body::after {
+        content: "";
+        position: fixed;
+        inset: -20%;
+        background:
+          radial-gradient(circle at 18% 18%, rgba(86, 116, 255, 0.18), transparent 52%),
+          radial-gradient(circle at 82% 28%, rgba(118, 227, 157, 0.12), transparent 54%),
+          radial-gradient(circle at 55% 85%, rgba(255, 212, 107, 0.08), transparent 56%);
+        filter: blur(56px) saturate(1.06);
+        opacity: 0.38;
         pointer-events: none;
         z-index: 0;
       }
       @media (prefers-reduced-motion: no-preference) {
         body::before { animation: bcGridDrift 52s linear infinite; }
+        body::after { animation: bcAuroraDrift 54s ease-in-out infinite alternate; }
         @keyframes bcGridDrift {
           from { background-position: 0 0; }
           to { background-position: 240px 120px; }
+        }
+        @keyframes bcAuroraDrift {
+          from { transform: translate3d(-0.6%, -0.4%, 0) scale(1.02); }
+          to { transform: translate3d(0.9%, 0.8%, 0) scale(1.05); }
         }
       }
 
@@ -292,7 +310,7 @@ HTML;
       code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
       pre { background: rgba(15, 21, 36, 0.8); border: 1px solid #1f2a44; padding: 12px; border-radius: 12px; overflow: auto; }
 
-      .wrap { max-width: 1180px; margin: 0 auto; position: relative; z-index: 1; }
+      .wrap { max-width: 1180px; margin: 0 auto; position: relative; z-index: 2; }
 
       .hero {
         display: flex;
