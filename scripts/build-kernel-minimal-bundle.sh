@@ -25,10 +25,39 @@ mkdir -p "${DEST}"
 cp -R "${TEMPLATE_DIR}/site" "${DEST}/site"
 mkdir -p "${DEST}/.blackcat"
 
-if command -v composer >/dev/null 2>&1; then
-  echo "[build] running composer install (no-dev) in a temp project..."
+BLACKCAT_SKIP_VENDOR_BUILD="${BLACKCAT_SKIP_VENDOR_BUILD:-0}"
+BLACKCAT_VENDOR_BUILDER="${BLACKCAT_VENDOR_BUILDER:-auto}" # auto|host|docker|skip
+
+if [[ "${BLACKCAT_SKIP_VENDOR_BUILD}" == "1" ]]; then
+  BLACKCAT_VENDOR_BUILDER="skip"
+fi
+
+if [[ "${BLACKCAT_VENDOR_BUILDER}" == "auto" ]]; then
+  if command -v composer >/dev/null 2>&1; then
+    BLACKCAT_VENDOR_BUILDER="host"
+  elif command -v docker >/dev/null 2>&1; then
+    BLACKCAT_VENDOR_BUILDER="docker"
+  else
+    BLACKCAT_VENDOR_BUILDER="none"
+  fi
+fi
+
+if [[ "${BLACKCAT_VENDOR_BUILDER}" == "skip" ]]; then
+  echo "[build] vendor build skipped (BLACKCAT_VENDOR_BUILDER=skip)."
+  echo "[build] WARNING: The bundle will not boot without \`site/vendor/\`."
+elif [[ "${BLACKCAT_VENDOR_BUILDER}" == "host" || "${BLACKCAT_VENDOR_BUILDER}" == "docker" ]]; then
+  echo "[build] running composer install (no-dev) in a temp project (builder=${BLACKCAT_VENDOR_BUILDER})..."
   BUILD_DIR="$(mktemp -d)"
   trap 'rm -rf "${BUILD_DIR}"' EXIT
+
+  CORE_PATH="${CORE_DIR}"
+  CONFIG_PATH="${CONFIG_DIR}"
+  DOCKER_WORKSPACE="/workspace"
+  DOCKER_BUILD="/build"
+  if [[ "${BLACKCAT_VENDOR_BUILDER}" == "docker" ]]; then
+    CORE_PATH="${DOCKER_WORKSPACE}/blackcat-core"
+    CONFIG_PATH="${DOCKER_WORKSPACE}/blackcat-config"
+  fi
 
   cat > "${BUILD_DIR}/composer.json" <<JSON
 {
@@ -40,8 +69,8 @@ if command -v composer >/dev/null 2>&1; then
     "blackcatacademy/blackcat-config": "dev-main"
   },
   "repositories": [
-    { "type": "path", "url": "${CORE_DIR}", "options": { "symlink": false } },
-    { "type": "path", "url": "${CONFIG_DIR}", "options": { "symlink": false } }
+    { "type": "path", "url": "${CORE_PATH}", "options": { "symlink": false } },
+    { "type": "path", "url": "${CONFIG_PATH}", "options": { "symlink": false } }
   ],
   "config": {
     "optimize-autoloader": true,
@@ -52,13 +81,30 @@ if command -v composer >/dev/null 2>&1; then
 }
 JSON
 
-  (cd "${BUILD_DIR}" && composer install --no-dev --optimize-autoloader --classmap-authoritative)
+  if [[ "${BLACKCAT_VENDOR_BUILDER}" == "host" ]]; then
+    (cd "${BUILD_DIR}" && composer install --no-dev --optimize-autoloader --classmap-authoritative)
+  else
+    if ! command -v docker >/dev/null 2>&1; then
+      echo "[build] ERROR: docker not available, but BLACKCAT_VENDOR_BUILDER=docker."
+      exit 2
+    fi
+    docker run --rm \
+      -u "$(id -u):$(id -g)" \
+      -v "${WORKSPACE_ROOT}:${DOCKER_WORKSPACE}:ro" \
+      -v "${BUILD_DIR}:${DOCKER_BUILD}:rw" \
+      -w "${DOCKER_BUILD}" \
+      composer:2 \
+      composer install --no-dev --optimize-autoloader --classmap-authoritative
+  fi
 
   rm -rf "${DEST}/site/vendor"
   cp -R "${BUILD_DIR}/vendor" "${DEST}/site/vendor"
 else
-  echo "[build] composer not found; skipping vendor build."
-  echo "[build] You must provide \`site/vendor/\` before uploading the bundle."
+  echo "[build] ERROR: no vendor build path available."
+  echo "[build] - Install composer locally, or"
+  echo "[build] - Install docker locally, or"
+  echo "[build] - Set BLACKCAT_VENDOR_BUILDER=skip (NOT recommended)."
+  exit 2
 fi
 
 if command -v python3 >/dev/null 2>&1; then

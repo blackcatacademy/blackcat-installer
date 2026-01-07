@@ -21,6 +21,7 @@ Stage 3 introduces a “kernel minimal bundle” intended for constrained enviro
 - Docs: `docs/STAGE3_KERNEL_MINIMAL_BUNDLE.md`
 - Hosting preflight (single-file): `tools/blackcat-preflight.php` (upload → run → delete)
 - Hosting note: some hostings cannot safely run the web installer (missing TLS verification / outbound HTTPS). In that case, prepare the bundle offline on a trusted device and upload the final artifacts.
+- Build note: the Stage 3 build script will build `site/vendor/` using **host Composer** if available, otherwise it falls back to a **Docker-based Composer** build (recommended).
 - Local demo (HTTPS): `docker compose -f docker-compose.stage3-demo.yml up --build` → `https://localhost:8449/_blackcat/setup`
 - Live editing: `docker compose -f docker-compose.stage3-demo.yml -f docker-compose.stage3-demo.dev.yml up --build`
 

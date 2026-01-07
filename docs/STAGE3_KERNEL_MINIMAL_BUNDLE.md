@@ -53,6 +53,11 @@ From the monorepo root (where `blackcat-core/` and `blackcat-config/` are presen
 bash blackcat-installer/scripts/build-kernel-minimal-bundle.sh
 ```
 
+Build requirements (on your trusted workstation/CI):
+- Either `composer` **or** `docker` must be available (the script will build `site/vendor/`).
+- You can force the builder: `BLACKCAT_VENDOR_BUILDER=host|docker` (recommended: `docker` for reproducibility).
+- You can skip vendor build only for debugging: `BLACKCAT_VENDOR_BUILDER=skip` (bundle will not boot).
+
 Output:
 - `blackcat-installer/dist/blackcat-kernel-minimal-bundle/`
 - `blackcat-installer/dist/blackcat-kernel-minimal-bundle.zip`
