@@ -233,11 +233,14 @@ HTML;
     $trustIllustrationPath = $assetDir . DIRECTORY_SEPARATOR . 'trusted-vs-untrusted.png';
     $trustIllustrationHtml = '';
     if (is_file($trustIllustrationPath)) {
-        $trustIllustrationHtml = '<div class="illustration">'
+        $trustIllustrationHtml = '<div class="panel">'
+            . '<strong>Trusted vs untrusted</strong>'
+            . '<div class="illustration">'
             . '<img src="/_blackcat/assets/trusted-vs-untrusted.png" alt="Trusted vs untrusted (release trust + integrity)" loading="lazy" />'
             . '<div class="cap">'
             . '<strong>Trusted vs Untrusted:</strong> a trusted release root lets production stay <span class="ok">trusted</span>. '
             . 'Unexpected changes flip the kernel to <span class="bad">untrusted</span> and enforce fail-closed in strict mode.'
+            . '</div>'
             . '</div>'
             . '</div>';
     }
@@ -254,7 +257,12 @@ HTML;
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <style>
-      :root { color-scheme: dark; }
+      :root {
+        color-scheme: dark;
+        --bc-accent: 86, 116, 255;
+        --bc-accent2: 118, 227, 157;
+        --bc-amber: 255, 212, 107;
+      }
 
       body {
         margin: 0;
@@ -263,8 +271,8 @@ HTML;
         position: relative;
         isolation: isolate;
         background:
-          radial-gradient(900px 420px at 20% 0%, rgba(86, 116, 255, 0.18), transparent 55%),
-          radial-gradient(900px 420px at 80% 0%, rgba(118, 227, 157, 0.12), transparent 60%),
+          radial-gradient(900px 420px at 20% 0%, rgba(var(--bc-accent), 0.18), transparent 55%),
+          radial-gradient(900px 420px at 80% 0%, rgba(var(--bc-accent2), 0.12), transparent 60%),
           #0b0f17;
         color: #e7eefc;
       }
@@ -285,9 +293,9 @@ HTML;
         position: fixed;
         inset: -20%;
         background:
-          radial-gradient(circle at 18% 18%, rgba(86, 116, 255, 0.18), transparent 52%),
-          radial-gradient(circle at 82% 28%, rgba(118, 227, 157, 0.12), transparent 54%),
-          radial-gradient(circle at 55% 85%, rgba(255, 212, 107, 0.08), transparent 56%);
+          radial-gradient(circle at 18% 18%, rgba(var(--bc-accent), 0.18), transparent 52%),
+          radial-gradient(circle at 82% 28%, rgba(var(--bc-accent2), 0.12), transparent 54%),
+          radial-gradient(circle at 55% 85%, rgba(var(--bc-amber), 0.08), transparent 56%);
         filter: blur(56px) saturate(1.06);
         opacity: 0.38;
         pointer-events: none;
@@ -308,28 +316,52 @@ HTML;
 
       a { color: #8ab4ff; }
       code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-      pre { background: rgba(15, 21, 36, 0.8); border: 1px solid #1f2a44; padding: 12px; border-radius: 12px; overflow: auto; }
+      pre {
+        background: rgba(11, 15, 23, 0.40);
+        border: 1px solid rgba(31, 42, 68, 0.95);
+        padding: 12px 14px;
+        border-radius: 14px;
+        overflow: auto;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      }
 
       .wrap { max-width: 1180px; margin: 0 auto; position: relative; z-index: 2; }
 
-      .hero {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 18px 18px;
-        border-radius: 16px;
-        border: 1px solid rgba(42, 59, 99, 0.9);
-        background:
-          linear-gradient(180deg, rgba(15, 21, 36, 0.86), rgba(15, 21, 36, 0.62)),
-          url("/_blackcat/assets/hero-banner.png") center / cover no-repeat;
-        box-shadow: 0 20px 70px rgba(0, 0, 0, 0.35);
-        margin: 4px 0 16px;
+      .hero { margin: 4px 0 16px; }
+      .heroGrid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 12px; }
+      @media (max-width: 980px) { .heroGrid { grid-template-columns: 1fr; } }
+      .hero .panel { margin-top: 0; }
+      .heroBanner {
+        position: absolute;
+        inset: 0;
+        background: url("/_blackcat/assets/hero-banner.png") left center / cover no-repeat;
+        opacity: 0.18;
+        mix-blend-mode: screen;
+        filter: saturate(1.05) contrast(1.05) brightness(1.05);
+        pointer-events: none;
+        z-index: 0;
+      }
+      .heroBanner::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, rgba(11, 15, 23, 0.10), rgba(11, 15, 23, 0.58));
       }
 
-      .heroTitle { margin: 0; font-size: 26px; letter-spacing: 0.2px; }
+      .heroTitle {
+        margin: 0;
+        font-size: 26px;
+        font-weight: 780;
+        letter-spacing: 0.2px;
+        color: #e7eefc;
+        text-shadow:
+          0 1px 0 rgba(0, 0, 0, 0.78),
+          0 2px 0 rgba(0, 0, 0, 0.38),
+          0 -1px 0 rgba(255, 255, 255, 0.10),
+          0 18px 70px rgba(0, 0, 0, 0.48);
+      }
       .heroSub { margin: 6px 0 0; }
-      .heroBadges { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 2px; }
+      .heroBadges { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
       .heroDetails { margin-top: 10px; }
       .heroDetails summary { cursor: pointer; user-select: none; }
       .heroDetails summary::-webkit-details-marker { display: none; }
@@ -355,35 +387,119 @@ HTML;
 
       .card {
         position: relative;
-        border: 1px solid rgba(31, 42, 68, 0.82);
-        border-radius: 16px;
+        border-radius: 18px;
+        border: 1px solid rgba(31, 42, 68, 0.86);
         padding: 16px;
         margin: 12px 0;
         background:
-          radial-gradient(900px 420px at 18% 0%, rgba(255, 255, 255, 0.06), transparent 62%),
-          radial-gradient(900px 420px at 82% 0%, rgba(86, 116, 255, 0.09), transparent 66%),
-          linear-gradient(180deg, rgba(15, 21, 36, 0.52), rgba(15, 21, 36, 0.22));
+          radial-gradient(900px 420px at 18% 0%, rgba(255, 255, 255, 0.07), transparent 62%),
+          radial-gradient(900px 420px at 82% 0%, rgba(var(--bc-accent2), 0.10), transparent 66%),
+          linear-gradient(180deg, rgba(15, 21, 36, 0.74), rgba(15, 21, 36, 0.40));
         backdrop-filter: blur(18px) saturate(1.25);
         -webkit-backdrop-filter: blur(18px) saturate(1.25);
         box-shadow:
-          0 20px 70px rgba(0, 0, 0, 0.30),
-          0 0 0 1px rgba(86, 116, 255, 0.08),
-          inset 0 1px 0 rgba(255, 255, 255, 0.10),
-          inset 0 -24px 40px rgba(0, 0, 0, 0.18);
+          0 30px 100px rgba(0, 0, 0, 0.45),
+          0 0 0 1px rgba(var(--bc-accent), 0.10);
         overflow: hidden;
       }
-      .card::before {
+      .cardBorder {
+        position: absolute;
+        inset: 0;
+        border-radius: 18px;
+        pointer-events: none;
+        z-index: 0;
+      }
+      .cardBorder::before {
         content: "";
         position: absolute;
-        inset: -1px;
-        background:
-          radial-gradient(420px 180px at 18% 0%, rgba(86, 116, 255, 0.10), transparent 70%),
-          radial-gradient(420px 180px at 82% 0%, rgba(118, 227, 157, 0.09), transparent 70%),
-          linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 42%);
-        opacity: 0.48;
-        pointer-events: none;
+        inset: 0;
+        border-radius: 18px;
+        padding: 1px;
+        background: conic-gradient(
+          from 210deg,
+          rgba(var(--bc-accent), 0.00),
+          rgba(var(--bc-accent), 0.24),
+          rgba(var(--bc-accent2), 0.18),
+          rgba(var(--bc-amber), 0.12),
+          rgba(var(--bc-accent), 0.00)
+        );
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        opacity: 0.9;
+        transform-origin: 50% 50%;
       }
-      .card > * { position: relative; z-index: 1; }
+      .cardBorder::after {
+        content: "";
+        position: absolute;
+        inset: 1px;
+        border-radius: 17px;
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.10),
+          inset 0 -24px 40px rgba(0, 0, 0, 0.28);
+        opacity: 0.85;
+      }
+      .card > *:not(.cardBorder) { position: relative; z-index: 1; }
+
+      @media (prefers-reduced-motion: no-preference) {
+        .cardBorder::before {
+          animation: bcBorderSpin 46s linear infinite;
+          will-change: transform;
+        }
+        @keyframes bcBorderSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      }
+
+      h2 {
+        margin: 0 0 10px;
+        font-size: 16px;
+        font-weight: 780;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #d7e3ff;
+        text-shadow:
+          0 1px 0 rgba(0, 0, 0, 0.72),
+          0 18px 70px rgba(0, 0, 0, 0.42);
+        padding-right: 52px;
+      }
+      h2::after {
+        content: "";
+        display: block;
+        height: 1px;
+        margin-top: 10px;
+        background: linear-gradient(
+          90deg,
+          rgba(var(--bc-accent), 0.00),
+          rgba(var(--bc-accent), 0.34),
+          rgba(var(--bc-accent2), 0.24),
+          rgba(var(--bc-accent2), 0.00)
+        );
+        opacity: 0.85;
+      }
+
+      .panel {
+        margin-top: 12px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid rgba(31, 42, 68, 0.62);
+        background: linear-gradient(180deg, rgba(11, 15, 23, 0.28), rgba(11, 15, 23, 0.14));
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.07),
+          0 0 0 1px rgba(var(--bc-accent), 0.06);
+        position: relative;
+        overflow: hidden;
+      }
+      .panel > * { position: relative; z-index: 1; }
+      .panel strong {
+        display: inline-block;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 11px;
+        color: #c9d6f3;
+      }
 
       .row { display: flex; gap: 12px; flex-wrap: wrap; }
       .row > * { flex: 1 1 320px; }
@@ -394,32 +510,113 @@ HTML;
       .warn { color: #ffd46b; }
 
       button {
-        background: linear-gradient(180deg, #22345f, #162342);
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(180deg, rgba(var(--bc-accent), 0.26), rgba(22, 35, 66, 0.92));
         color: #e7eefc;
-        border: 1px solid #2a3b63;
+        border: 1px solid rgba(var(--bc-accent), 0.32);
         border-radius: 12px;
         padding: 10px 12px;
         cursor: pointer;
-        transition: transform .04s ease, background .15s ease, border-color .15s ease, opacity .15s ease;
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.14),
+          inset 0 -14px 22px rgba(0, 0, 0, 0.24),
+          0 16px 52px rgba(0, 0, 0, 0.34),
+          0 0 0 1px rgba(var(--bc-accent), 0.06);
+        transition: transform .12s ease, filter .15s ease, border-color .15s ease, opacity .15s ease;
       }
-      button:hover { background: linear-gradient(180deg, #29406f, #1a2a4f); border-color: #355084; }
-      button:active { transform: translateY(1px); }
+      button::before {
+        content: "";
+        position: absolute;
+        inset: -40% -20%;
+        background: linear-gradient(120deg, rgba(255, 255, 255, 0.00), rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.00));
+        transform: translateX(-55%) rotate(12deg);
+        opacity: 0.55;
+        pointer-events: none;
+      }
+      button:hover { transform: translateY(-1px); filter: brightness(1.05) saturate(1.02); border-color: rgba(var(--bc-accent), 0.44); }
+      button:hover::before { transform: translateX(10%) rotate(12deg); transition: transform .55s ease; }
+      button:active { transform: translateY(0px); filter: brightness(1.0); }
       button:disabled { opacity: 0.55; cursor: not-allowed; }
+      button:disabled::before { opacity: 0.0; }
+      button:focus-visible {
+        outline: none;
+        box-shadow:
+          0 0 0 3px rgba(var(--bc-accent), 0.22),
+          0 16px 52px rgba(0, 0, 0, 0.34);
+      }
 
       input, textarea, select {
         width: 100%;
         padding: 10px 12px;
         border-radius: 12px;
-        border: 1px solid #2a3b63;
-        background: rgba(11, 15, 23, 0.72);
+        border: 1px solid rgba(42, 59, 99, 0.92);
+        background: rgba(11, 15, 23, 0.46);
         color: #e7eefc;
         outline: none;
+        backdrop-filter: blur(10px) saturate(1.10);
+        -webkit-backdrop-filter: blur(10px) saturate(1.10);
       }
       input:focus, textarea:focus, select:focus { border-color: #5674ff; box-shadow: 0 0 0 3px rgba(86, 116, 255, 0.18); }
       textarea { min-height: 96px; }
 
-      .grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
-      @media (min-width: 980px) { .grid { grid-template-columns: 1fr 1fr; } }
+      .steps { display: grid; grid-template-columns: 1fr; gap: 12px; }
+      .steps .card { margin: 0; }
+
+      .step { isolation: isolate; }
+      .step::before {
+        content: attr(data-step);
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        width: 38px;
+        height: 38px;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        font-weight: 900;
+        font-size: 13px;
+        letter-spacing: 0.02em;
+        color: #e7eefc;
+        background:
+          radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.00) 48%),
+          linear-gradient(180deg, rgba(var(--bc-accent), 0.32), rgba(11, 15, 23, 0.72));
+        border: 1px solid rgba(var(--bc-accent), 0.38);
+        box-shadow:
+          0 0 0 1px rgba(0, 0, 0, 0.35),
+          0 0 18px rgba(var(--bc-accent), 0.18),
+          0 18px 70px rgba(0, 0, 0, 0.44);
+        z-index: 3;
+        pointer-events: none;
+      }
+      .step[data-lane="chain"]::before {
+        background:
+          radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.50), rgba(255, 255, 255, 0.00) 48%),
+          linear-gradient(180deg, rgba(var(--bc-accent2), 0.26), rgba(11, 15, 23, 0.72));
+        border-color: rgba(var(--bc-accent2), 0.34);
+        box-shadow:
+          0 0 0 1px rgba(0, 0, 0, 0.35),
+          0 0 18px rgba(var(--bc-accent2), 0.16),
+          0 18px 70px rgba(0, 0, 0, 0.44);
+      }
+
+      @media (min-width: 1100px) {
+        .steps {
+          grid-template-columns: 1.05fr 0.95fr;
+          grid-template-areas:
+            "s1 s3"
+            "s2 s3"
+            "s4 s5"
+            "s4 s6";
+          align-items: start;
+        }
+        .step1 { grid-area: s1; }
+        .step2 { grid-area: s2; }
+        .step3 { grid-area: s3; margin-top: 18px; }
+        .step4 { grid-area: s4; }
+        .step5 { grid-area: s5; }
+        .step6 { grid-area: s6; }
+      }
 
       .k { font-weight: 650; }
 
@@ -427,11 +624,29 @@ HTML;
         display: inline-block;
         padding: 2px 10px;
         border-radius: 999px;
-        background: rgba(18, 32, 66, 0.8);
-        border: 1px solid rgba(31, 42, 68, 0.95);
+        background: linear-gradient(180deg, rgba(var(--bc-accent), 0.30), rgba(var(--bc-accent), 0.12));
+        border: 1px solid rgba(var(--bc-accent), 0.44);
+        color: rgba(var(--bc-accent), 0.95);
+        letter-spacing: 0.03em;
+        text-shadow:
+          0 1px 0 rgba(0, 0, 0, 0.72),
+          0 10px 40px rgba(0, 0, 0, 0.35);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.18),
+          inset 0 -12px 20px rgba(0, 0, 0, 0.36),
+          0 0 0 1px rgba(var(--bc-accent), 0.08),
+          0 16px 52px rgba(0, 0, 0, 0.34);
       }
-      .pill.ok { background: rgba(118, 227, 157, 0.12); border-color: rgba(118, 227, 157, 0.28); color: #76e39d; }
-      .pill.bad { background: rgba(255, 123, 114, 0.12); border-color: rgba(255, 123, 114, 0.28); color: #ff7b72; }
+      .pill.ok {
+        background: linear-gradient(180deg, rgba(118, 227, 157, 0.22), rgba(118, 227, 157, 0.10));
+        border-color: rgba(118, 227, 157, 0.34);
+        color: #76e39d;
+      }
+      .pill.bad {
+        background: linear-gradient(180deg, rgba(255, 123, 114, 0.22), rgba(255, 123, 114, 0.10));
+        border-color: rgba(255, 123, 114, 0.34);
+        color: #ff7b72;
+      }
 
       .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
       .small { font-size: 12px; }
@@ -454,64 +669,83 @@ HTML;
   </head>
   <body>
 	    <div class="wrap">
-	      <header class="hero">
-	        <div>
-	          <h1 class="heroTitle">BlackCat Setup <span class="pill mono">Kernel Minimal</span></h1>
-	          <p class="heroSub muted">FTP-friendly installer for hosting environments where you can’t run Composer on the server. It bootstraps TrustKernel (Web3-backed integrity) and writes strict runtime config.</p>
-	          <details class="heroDetails">
-	            <summary class="muted">What is “Stage 3”?</summary>
-	            <div class="small muted">
-	              Stage 3 is the <strong>kernel-minimal</strong> bootstrap: upload a prebuilt bundle, verify integrity, register it on-chain, then permanently disable the installer.
+	      <header class="card hero">
+	        <div class="cardBorder"></div>
+	        <div class="heroBanner" aria-hidden="true"></div>
+	        <div class="heroGrid">
+	          <div class="panel">
+	            <strong>Overview</strong>
+	            <h1 class="heroTitle">BlackCat Setup <span class="pill mono">Kernel Minimal</span></h1>
+	            <p class="heroSub muted">FTP-friendly installer for hosting environments where you can’t run Composer on the server. It bootstraps TrustKernel (Web3-backed integrity) and writes strict runtime config.</p>
+	            <details class="heroDetails">
+	              <summary class="muted">What is “Stage 3”?</summary>
+	              <div class="small muted">
+	                Stage 3 is the <strong>kernel-minimal</strong> bootstrap: upload a prebuilt bundle, verify integrity, register it on-chain, then permanently disable the installer.
+	              </div>
+	              <ul class="small muted">
+	                <li><span class="mono">No</span> server-side private keys.</li>
+	                <li><span class="mono">No</span> Composer required on the server.</li>
+	                <li>Production is <strong>fail-closed</strong> on untrusted TLS + integrity mismatches.</li>
+	              </ul>
+	            </details>
+	          </div>
+
+	          <div class="panel">
+	            <strong>Traits</strong>
+	            <div class="heroBadges">
+	              <span class="pill mono">HTTPS required</span>
+	              <span class="pill mono">Stage 3</span>
+	              <span class="pill mono">No server keys</span>
+	              <span class="pill mono">ReleaseRegistry</span>
+	              <span class="pill mono">Wallet-signed</span>
+	              <span class="pill mono">Edgen 4207</span>
 	            </div>
-	            <ul class="small muted">
-	              <li><span class="mono">No</span> server-side private keys.</li>
-	              <li><span class="mono">No</span> Composer required on the server.</li>
-	              <li>Production is <strong>fail-closed</strong> on untrusted TLS + integrity mismatches.</li>
-	            </ul>
-	          </details>
-	        </div>
-	        <div class="heroBadges">
-	          <span class="pill mono">HTTPS required</span>
-	          <span class="pill mono">Stage 3</span>
-	          <span class="pill mono">No server keys</span>
-	          <span class="pill mono">ReleaseRegistry</span>
-	          <span class="pill mono">Wallet-signed</span>
-	          <span class="pill mono">Edgen 4207</span>
+	          </div>
 	        </div>
 	      </header>
-
-    <div class="card">
-      <h2>1) Unlock installer</h2>
-      <p>For safety, setup is gated by an <strong>install token</strong> stored outside web docroot:</p>
-      <pre><code>.blackcat/install.token</code></pre>
-      <p>Open it via FTP/SFTP (same place you uploaded this bundle) and paste the token below.</p>
-      <div class="row">
-        <div>
-          <input id="token" placeholder="paste install token here" autocomplete="off" />
+    <div class="steps">
+      <div class="card step step1" data-step="1" data-lane="server">
+        <div class="cardBorder"></div>
+        <h2>Unlock installer</h2>
+        <div class="panel">
+          <strong>Install token</strong>
+          <p>For safety, setup is gated by an <strong>install token</strong> stored outside web docroot:</p>
+          <pre><code>.blackcat/install.token</code></pre>
+          <p>Open it via FTP/SFTP (same place you uploaded this bundle) and paste the token below.</p>
         </div>
-        <div style="flex: 0 0 220px">
-          <button id="saveToken">Save token</button>
-          <button id="clearToken" style="margin-left:8px">Clear</button>
+        <div class="panel">
+          <strong>Paste token</strong>
+          <div class="row">
+            <div>
+              <input id="token" placeholder="paste install token here" autocomplete="off" />
+            </div>
+            <div style="flex: 0 0 220px">
+              <button id="saveToken">Save token</button>
+              <button id="clearToken" style="margin-left:8px">Clear</button>
+            </div>
+          </div>
+          <p id="tokenStatus" class="muted"></p>
         </div>
       </div>
-      <p id="tokenStatus" class="muted"></p>
-    </div>
 
-    <div class="grid">
-      <div class="card">
-        <h2>2) Build integrity manifest</h2>
-        <p>This scans <code>site/</code> (immutable code root) and writes:</p>
-        <pre><code>.blackcat/integrity.manifest.json</code></pre>
-        <div class="row">
-          <div style="flex: 0 0 220px">
-            <button id="buildManifest">Build manifest</button>
-            <button id="verifyRelease" style="margin-left:8px">Verify release root</button>
-          </div>
-          <div>
-            <div class="small muted">Release trust: <span id="releaseTrust" class="pill mono">unknown</span></div>
-            <div class="small muted">
-              Registry:
-              <a id="releaseRegistryLink" href="https://edgenscan.io" target="_blank" rel="noreferrer">open explorer</a>
+      <div class="card step step2" data-step="2" data-lane="server">
+        <div class="cardBorder"></div>
+        <h2>Build integrity manifest</h2>
+        <div class="panel">
+          <strong>Manifest</strong>
+          <p>This scans <code>site/</code> (immutable code root) and writes:</p>
+          <pre><code>.blackcat/integrity.manifest.json</code></pre>
+          <div class="row">
+            <div style="flex: 0 0 220px">
+              <button id="buildManifest">Build manifest</button>
+              <button id="verifyRelease" style="margin-left:8px">Verify release root</button>
+            </div>
+            <div>
+              <div class="small muted">Release trust: <span id="releaseTrust" class="pill mono">unknown</span></div>
+              <div class="small muted">
+                Registry:
+                <a id="releaseRegistryLink" href="https://edgenscan.io" target="_blank" rel="noreferrer">open explorer</a>
+              </div>
             </div>
           </div>
         </div>
@@ -520,133 +754,168 @@ HTML;
         <pre id="releaseOut" style="display:none"></pre>
       </div>
 
-	      <div class="card">
-	        <h2>3) On-chain: create InstanceController</h2>
-	        <p class="muted">No private keys are stored on the server. Broadcast from <strong>any</strong> EVM wallet (hardware wallet recommended): browser wallet (MetaMask/Rabby), explorer “Write contract”, or CLI (cast).</p>
-	        <p class="small muted">Network: <span class="mono">Edgen Chain</span> (<span class="mono">chain_id=4207</span>)</p>
-	        <p class="small muted"><strong>Option A:</strong> use a browser wallet (below). <strong>Option B:</strong> click <span class="mono">Generate tx intent (manual)</span> and send from another device / hardware wallet.</p>
+      <div class="card step step3" data-step="3" data-lane="chain">
+        <div class="cardBorder"></div>
+        <h2>Create InstanceController (on-chain)</h2>
 
-        <div class="row">
-          <div>
-            <label class="k">Wallet</label>
-            <div class="small muted">Account: <span id="walletAccount" class="mono">not connected</span></div>
-            <div class="small muted">Chain: <span id="walletChain" class="mono">unknown</span></div>
-	          </div>
-	          <div style="flex: 0 0 240px">
-	            <button id="connectWallet">Connect browser wallet</button>
-	            <button id="switchChain" style="margin-left:8px">Switch/Add chain</button>
-	          </div>
-	        </div>
+        <div class="panel">
+          <strong>Overview</strong>
+          <p class="muted">No private keys are stored on the server. Broadcast from <strong>any</strong> EVM wallet (hardware wallet recommended): browser wallet (MetaMask/Rabby), explorer “Write contract”, or CLI (cast).</p>
+          <p class="small muted">Network: <span class="mono">Edgen Chain</span> (<span class="mono">chain_id=4207</span>)</p>
+          <p class="small muted"><strong>Option A:</strong> use a browser wallet (below). <strong>Option B:</strong> click <span class="mono">Generate tx intent (manual)</span> and send from another device / hardware wallet.</p>
+        </div>
 
-        <div class="row">
-          <div>
-            <label class="k">InstanceFactory address</label>
-            <input id="instanceFactory" placeholder="0x..." autocomplete="off" readonly />
-            <div class="small muted">This factory is also the on-chain registry of trusted installations (<span class="mono">isInstance</span>).</div>
+        <div class="panel">
+          <strong>Wallet + registries</strong>
+          <div class="row">
+            <div>
+              <label class="k">Wallet</label>
+              <div class="small muted">Account: <span id="walletAccount" class="mono">not connected</span></div>
+              <div class="small muted">Chain: <span id="walletChain" class="mono">unknown</span></div>
+            </div>
+            <div style="flex: 0 0 240px">
+              <button id="connectWallet">Connect browser wallet</button>
+              <button id="switchChain" style="margin-left:8px">Switch/Add chain</button>
+            </div>
           </div>
-          <div>
-            <label class="k">ReleaseRegistry address</label>
-            <input id="releaseRegistry" placeholder="0x..." autocomplete="off" readonly />
-            <div class="small muted">Must already trust your bundle root (official releases are published by the registry owner).</div>
+
+          <div class="row">
+            <div>
+              <label class="k">InstanceFactory address</label>
+              <input id="instanceFactory" placeholder="0x..." autocomplete="off" readonly />
+              <div class="small muted">This factory is also the on-chain registry of trusted installations (<span class="mono">isInstance</span>).</div>
+            </div>
+            <div>
+              <label class="k">ReleaseRegistry address</label>
+              <input id="releaseRegistry" placeholder="0x..." autocomplete="off" readonly />
+              <div class="small muted">Must already trust your bundle root (official releases are published by the registry owner).</div>
+            </div>
           </div>
         </div>
 
-        <div class="row">
-          <div>
-            <label class="k">Root authority (cold wallet recommended)</label>
-            <input id="rootAuthority" placeholder="0x..." autocomplete="off" />
+        <div class="panel">
+          <strong>Authorities + policy</strong>
+          <div class="row">
+            <div>
+              <label class="k">Root authority (cold wallet recommended)</label>
+              <input id="rootAuthority" placeholder="0x..." autocomplete="off" />
+            </div>
+            <div>
+              <label class="k">Upgrade authority</label>
+              <input id="upgradeAuthority" placeholder="0x..." autocomplete="off" />
+            </div>
           </div>
-          <div>
-            <label class="k">Upgrade authority</label>
-            <input id="upgradeAuthority" placeholder="0x..." autocomplete="off" />
+          <div class="row">
+            <div>
+              <label class="k">Emergency authority</label>
+              <input id="emergencyAuthority" placeholder="0x..." autocomplete="off" />
+            </div>
+            <div>
+              <label class="k">Enforcement</label>
+              <select id="enforcement">
+                <option value="strict" selected>strict (production)</option>
+                <option value="less-strict">less-strict (hosting waiver)</option>
+                <option value="warn">warn (dev/compat)</option>
+              </select>
+              <div class="small muted">Enforcement is committed on-chain via the policy hash.</div>
+            </div>
           </div>
-        </div>
-        <div class="row">
-          <div>
-            <label class="k">Emergency authority</label>
-            <input id="emergencyAuthority" placeholder="0x..." autocomplete="off" />
-          </div>
-          <div>
-            <label class="k">Enforcement</label>
-            <select id="enforcement">
-              <option value="strict" selected>strict (production)</option>
-              <option value="less-strict">less-strict (hosting waiver)</option>
-              <option value="warn">warn (dev/compat)</option>
-            </select>
-            <div class="small muted">Enforcement is committed on-chain via the policy hash.</div>
+
+          <div class="row">
+            <div>
+              <label class="k">Policy hash (v3)</label>
+              <input id="policyHash" placeholder="0x... (computed)" autocomplete="off" readonly />
+            </div>
+            <div>
+              <label class="k">Policy version</label>
+              <div class="small muted"><span class="mono">v3</span> (runtime-config attestation)</div>
+            </div>
           </div>
         </div>
 
-        <div class="row">
-          <div>
-            <label class="k">Policy hash (v3)</label>
-            <input id="policyHash" placeholder="0x... (computed)" autocomplete="off" readonly />
-          </div>
-          <div>
-            <label class="k">Policy version</label>
-            <div class="small muted"><span class="mono">v3</span> (runtime-config attestation)</div>
+        <div class="panel">
+          <strong>Broadcast</strong>
+          <p class="small muted">This step will create a new InstanceController bound to: <span class="mono">manifest.root</span> + <span class="mono">manifest.uri_hash</span> + <span class="mono">policy_hash_v3</span> (selected enforcement).</p>
+          <button id="computePolicy">Compute policy hash</button>
+          <button id="createInstance" style="margin-left:8px">Broadcast create tx (browser wallet)</button>
+          <button id="createInstanceManual" style="margin-left:8px">Generate tx intent (manual)</button>
+        </div>
+
+        <pre id="chainOut" style="display:none"></pre>
+      </div>
+
+      <div class="card step step4" data-step="4" data-lane="server">
+        <div class="cardBorder"></div>
+        <h2>Write runtime config</h2>
+        <div class="panel">
+          <strong>Runtime config</strong>
+          <p>Writes:</p>
+          <pre><code>config.runtime.json</code></pre>
+          <div class="row">
+            <div>
+              <label class="k">InstanceController address</label>
+              <input id="instanceController" placeholder="0x..." autocomplete="off" />
+            </div>
+            <div>
+              <label class="k">RPC quorum</label>
+              <input id="rpcQuorum" type="number" min="1" value="2" />
+            </div>
           </div>
         </div>
 
-	        <p class="small muted">This step will create a new InstanceController bound to: <span class="mono">manifest.root</span> + <span class="mono">manifest.uri_hash</span> + <span class="mono">policy_hash_v3</span> (selected enforcement).</p>
-	        <button id="computePolicy">Compute policy hash</button>
-	        <button id="createInstance" style="margin-left:8px">Broadcast create tx (browser wallet)</button>
-	        <button id="createInstanceManual" style="margin-left:8px">Generate tx intent (manual)</button>
-	        <pre id="chainOut" style="display:none"></pre>
-	      </div>
+        <div class="panel">
+          <strong>RPC + trust</strong>
+          <label class="k">RPC endpoints (one per line, HTTPS)</label>
+          <textarea id="rpcEndpoints" spellcheck="false"></textarea>
+          <div class="row">
+            <div>
+              <label class="k">Trust mode</label>
+              <select id="trustMode">
+                <option value="full" selected>full (recommended)</option>
+                <option value="root_uri">root_uri</option>
+              </select>
+            </div>
+            <div>
+              <label class="k">max_stale_sec</label>
+              <input id="maxStale" type="number" min="1" value="180" />
+            </div>
+          </div>
+          <label class="k">Allowed hosts (optional, one per line)</label>
+          <textarea id="allowedHosts" spellcheck="false" placeholder="example.com&#10;*.example.com"></textarea>
+        </div>
 
-      <div class="card">
-        <h2>4) Write runtime config</h2>
-        <p>Writes:</p>
-        <pre><code>config.runtime.json</code></pre>
-        <div class="row">
-          <div>
-            <label class="k">InstanceController address</label>
-            <input id="instanceController" placeholder="0x..." autocomplete="off" />
-          </div>
-          <div>
-            <label class="k">RPC quorum</label>
-            <input id="rpcQuorum" type="number" min="1" value="2" />
-          </div>
+        <div class="panel">
+          <strong>Write</strong>
+          <button id="writeConfig">Write config</button>
+          <pre id="configOut" style="display:none"></pre>
         </div>
-        <label class="k">RPC endpoints (one per line, HTTPS)</label>
-        <textarea id="rpcEndpoints" spellcheck="false"></textarea>
-        <div class="row">
-          <div>
-            <label class="k">Trust mode</label>
-            <select id="trustMode">
-              <option value="full" selected>full (recommended)</option>
-              <option value="root_uri">root_uri</option>
-            </select>
-          </div>
-          <div>
-            <label class="k">max_stale_sec</label>
-            <input id="maxStale" type="number" min="1" value="180" />
-          </div>
+      </div>
+
+      <div class="card step step5" data-step="5" data-lane="chain">
+        <div class="cardBorder"></div>
+        <h2>Lock runtime-config attestation (on-chain)</h2>
+        <div class="panel">
+          <strong>Attestation lock</strong>
+          <p class="muted">After writing <code>config.runtime.json</code>, lock the runtime config attestation on-chain:</p>
+          <div class="small muted">Required signer: <span class="mono">rootAuthority</span></div>
+          <div class="small muted"><strong>Option A:</strong> broadcast via browser wallet. <strong>Option B:</strong> generate tx intent and sign elsewhere.</div>
+          <button id="lockAttestation">Broadcast lock tx (browser wallet)</button>
+          <button id="lockAttestationManual" style="margin-left:8px">Generate tx intent (manual)</button>
+          <pre id="attOut" style="display:none"></pre>
         </div>
-        <label class="k">Allowed hosts (optional, one per line)</label>
-        <textarea id="allowedHosts" spellcheck="false" placeholder="example.com&#10;*.example.com"></textarea>
-        <button id="writeConfig">Write config</button>
-        <pre id="configOut" style="display:none"></pre>
+      </div>
+
+      <div class="card step step6" data-step="6" data-lane="server">
+        <div class="cardBorder"></div>
+        <h2>Disable installer</h2>
+        <div class="panel">
+          <strong>Finalize</strong>
+          <p>When everything is working, permanently disable this setup UI (recommended for production).</p>
+          <button id="finish">Create installed.flag (disable setup)</button>
+          <pre id="finishOut" style="display:none"></pre>
+        </div>
       </div>
     </div>
-
-	    <div class="card">
-	      <h2>5) On-chain: lock runtime-config attestation</h2>
-	      <p class="muted">After writing <code>config.runtime.json</code>, lock the runtime config attestation on-chain:</p>
-	      <div class="small muted">Required signer: <span class="mono">rootAuthority</span></div>
-	      <div class="small muted"><strong>Option A:</strong> broadcast via browser wallet. <strong>Option B:</strong> generate tx intent and sign elsewhere.</div>
-	      <button id="lockAttestation">Broadcast lock tx (browser wallet)</button>
-	      <button id="lockAttestationManual" style="margin-left:8px">Generate tx intent (manual)</button>
-	      <pre id="attOut" style="display:none"></pre>
-	    </div>
-
-	    <div class="card">
-	      <h2>6) Disable installer</h2>
-	      <p>When everything is working, permanently disable this setup UI (recommended for production).</p>
-	      <button id="finish">Create installed.flag (disable setup)</button>
-	      <pre id="finishOut" style="display:none"></pre>
-	    </div>
 
       <script src="/_blackcat/ethers.umd.min.js" nonce="__BLACKCAT_CSP_NONCE__"></script>
       <script nonce="__BLACKCAT_CSP_NONCE__">
