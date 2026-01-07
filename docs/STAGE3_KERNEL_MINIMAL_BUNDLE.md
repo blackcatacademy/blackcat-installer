@@ -82,6 +82,11 @@ Open:
 
 `https://YOUR_DOMAIN/_blackcat/setup`
 
+Optional policy selector:
+- `https://YOUR_DOMAIN/_blackcat/setup?policy=strict` (default; production)
+- `https://YOUR_DOMAIN/_blackcat/setup?policy=less-strict` (fail-closed, but allows a limited set of probe-based waivers)
+- `https://YOUR_DOMAIN/_blackcat/setup?policy=warn` (compatibility/dev only; do not use for production)
+
 Flow:
 1) The server creates `.blackcat/install.token`.
 2) You open that token via FTP and paste it into the setup page.
@@ -90,7 +95,7 @@ Flow:
    - shows **trusted/untrusted**,
    - blocks instance creation if untrusted (fail-closed).
 5) Create the on-chain instance (two options):
-   - **Browser wallet** (MetaMask/Rabby): connect wallet, set authority addresses (root / upgrade / emergency), click **Compute policy hash**, then **Broadcast create tx**.
+   - **Browser wallet** (MetaMask/Rabby): connect wallet, set authority addresses (root / upgrade / emergency), select **enforcement** (strict/less-strict/warn), click **Compute policy hash**, then **Broadcast create tx**.
    - **Manual / offline**: click **Generate tx intent (manual)** and send it from another device / hardware wallet / CLI.
    - This broadcasts `InstanceFactory.createInstance(...)` (and reverts if the root is not trusted).
    - The factory is also an on-chain “installations registry” via `isInstance(...)` + `InstanceCreated` events.
