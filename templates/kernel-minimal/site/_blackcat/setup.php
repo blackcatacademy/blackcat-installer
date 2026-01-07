@@ -262,6 +262,7 @@ HTML;
         --bc-accent: 86, 116, 255;
         --bc-accent2: 118, 227, 157;
         --bc-amber: 255, 212, 107;
+        --bc-mask-cat-head: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20100%20100%27%3E%3Cpath%20d%3D%27M25%2010%20L10%2028%20L16%2062%20C18%2080%2034%2092%2050%2092%20C66%2092%2082%2080%2084%2062%20L90%2028%20L75%2010%20L63%2028%20L50%2016%20L37%2028%20Z%27%20fill%3D%27black%27/%3E%3C/svg%3E");
       }
 
       body {
@@ -450,6 +451,15 @@ HTML;
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
+
+        .step::before {
+          animation: bcBadgeFloat 6.2s ease-in-out infinite;
+          will-change: transform;
+        }
+        @keyframes bcBadgeFloat {
+          0%, 100% { transform: translate3d(0, 0, 0); }
+          50% { transform: translate3d(0, -2px, 0); }
+        }
       }
 
       h2 {
@@ -563,41 +573,46 @@ HTML;
       .steps { display: grid; grid-template-columns: 1fr; gap: 12px; }
       .steps .card { margin: 0; }
 
-      .step { isolation: isolate; }
+      .step { isolation: isolate; --bc-step-glow: var(--bc-accent); }
+      .step[data-lane="chain"] { --bc-step-glow: var(--bc-accent2); }
       .step::before {
-        content: attr(data-step);
+        content: "";
         position: absolute;
-        top: 14px;
-        right: 14px;
-        width: 38px;
-        height: 38px;
-        border-radius: 999px;
-        display: grid;
-        place-items: center;
-        font-weight: 900;
-        font-size: 13px;
-        letter-spacing: 0.02em;
-        color: #e7eefc;
+        top: 12px;
+        right: 12px;
+        width: 44px;
+        height: 44px;
         background:
-          radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.00) 48%),
-          linear-gradient(180deg, rgba(var(--bc-accent), 0.32), rgba(11, 15, 23, 0.72));
-        border: 1px solid rgba(var(--bc-accent), 0.38);
-        box-shadow:
-          0 0 0 1px rgba(0, 0, 0, 0.35),
-          0 0 18px rgba(var(--bc-accent), 0.18),
-          0 18px 70px rgba(0, 0, 0, 0.44);
+          radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.00) 48%),
+          linear-gradient(180deg, rgba(var(--bc-step-glow), 0.32), rgba(11, 15, 23, 0.72));
+        -webkit-mask: var(--bc-mask-cat-head) center / contain no-repeat;
+        mask: var(--bc-mask-cat-head) center / contain no-repeat;
+        filter:
+          drop-shadow(0 0 0 rgba(0, 0, 0, 0.35))
+          drop-shadow(0 0 18px rgba(var(--bc-step-glow), 0.18))
+          drop-shadow(0 18px 70px rgba(0, 0, 0, 0.44));
+        opacity: 0.96;
         z-index: 3;
         pointer-events: none;
       }
-      .step[data-lane="chain"]::before {
-        background:
-          radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.50), rgba(255, 255, 255, 0.00) 48%),
-          linear-gradient(180deg, rgba(var(--bc-accent2), 0.26), rgba(11, 15, 23, 0.72));
-        border-color: rgba(var(--bc-accent2), 0.34);
-        box-shadow:
-          0 0 0 1px rgba(0, 0, 0, 0.35),
-          0 0 18px rgba(var(--bc-accent2), 0.16),
-          0 18px 70px rgba(0, 0, 0, 0.44);
+      .step::after {
+        content: attr(data-step);
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 44px;
+        height: 44px;
+        display: grid;
+        place-items: center;
+        font-weight: 900;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        color: #e7eefc;
+        text-shadow:
+          0 1px 0 rgba(0, 0, 0, 0.80),
+          0 10px 30px rgba(0, 0, 0, 0.45);
+        z-index: 4;
+        pointer-events: none;
       }
 
       @media (min-width: 1100px) {
