@@ -10,7 +10,8 @@ declare(strict_types=1);
  *
  * SECURITY NOTE:
  * - This page reveals environment details (versions/extensions). Delete it after use.
- * - No user-controlled URLs are fetched (SSRF-safe by design).
+ * - No user-controlled URLs are fetched (SSRF-safe by design). The optional PathInfo probe
+ *   only performs same-origin requests derived from server-provided host/port (not query input).
  */
 
 header('Content-Type: text/html; charset=utf-8');
@@ -236,6 +237,310 @@ function blackcat_preflight_absolute_url(string $relative): ?string
     $dir = blackcat_preflight_request_dir_url_path();
     $rel = ltrim($relative, '/');
     return $origin . $dir . $rel;
+}
+
+/**
+ * Server-side same-origin origin builder for the PathInfo probe (best-effort).
+ *
+ * Important: Do NOT use HTTP_HOST here (attacker-controlled). Prefer SERVER_NAME + SERVER_PORT.
+ *
+ * @return string|null
+ */
+function blackcat_preflight_server_self_origin(): ?string
+{
+    $host = $_SERVER['SERVER_NAME'] ?? null;
+    if (!is_string($host) || $host === '' || str_contains($host, "\0")) {
+        return null;
+    }
+    if (!preg_match('/^[a-z0-9][a-z0-9.-]*$/i', $host)) {
+        return null;
+    }
+
+    $scheme = null;
+    $https = $_SERVER['HTTPS'] ?? null;
+    if (is_string($https) && $https !== '' && strtolower($https) !== 'off') {
+        $scheme = 'https';
+    }
+    $requestScheme = $_SERVER['REQUEST_SCHEME'] ?? null;
+    if ($scheme === null && is_string($requestScheme) && ($requestScheme === 'http' || $requestScheme === 'https')) {
+        $scheme = $requestScheme;
+    }
+    if ($scheme === null) {
+        $scheme = 'http';
+    }
+
+    $portRaw = $_SERVER['SERVER_PORT'] ?? null;
+    $port = null;
+    if (is_string($portRaw) && $portRaw !== '' && ctype_digit($portRaw)) {
+        $port = (int) $portRaw;
+    } elseif (is_int($portRaw)) {
+        $port = $portRaw;
+    }
+
+    $portSuffix = '';
+    if (is_int($port) && $port >= 1 && $port <= 65535) {
+        $isDefault = ($scheme === 'http' && $port === 80) || ($scheme === 'https' && $port === 443);
+        if (!$isDefault) {
+            $portSuffix = ':' . (string) $port;
+        }
+    }
+
+    return $scheme . '://' . $host . $portSuffix;
+}
+
+/**
+ * Fetch a URL as text (best-effort). Used only for same-origin PathInfo probe.
+ *
+ * @return array{fetched:bool,status:int,ok:bool,text:string,error?:string}
+ */
+function blackcat_preflight_fetch_text(string $url): array
+{
+    $timeoutSec = 4;
+
+    $isHttps = str_starts_with($url, 'https://');
+    if (function_exists('curl_init') && (!$isHttps || blackcat_preflight_curl_supports_ssl())) {
+        /** @var \CurlHandle|false $ch */
+        $ch = curl_init($url);
+        if ($ch !== false) {
+            curl_setopt_array($ch, [
+                CURLOPT_HTTPGET => true,
+                CURLOPT_HTTPHEADER => [
+                    'Accept: text/plain, */*',
+                ],
+                CURLOPT_CONNECTTIMEOUT => $timeoutSec,
+                CURLOPT_TIMEOUT => $timeoutSec,
+                CURLOPT_FOLLOWLOCATION => false,
+                CURLOPT_MAXREDIRS => 0,
+                CURLOPT_RETURNTRANSFER => true,
+                // Best-effort probe: disable TLS verification to avoid false negatives on self-signed certs.
+                // This probe does not transmit secrets.
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => 0,
+            ]);
+            $body = curl_exec($ch);
+            if ($body === false) {
+                // Fall through to stream wrapper if available (some environments have cURL but restrict it).
+                unset($ch);
+            } else {
+                $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                unset($ch);
+                return ['fetched' => true, 'status' => $status, 'ok' => $status >= 200 && $status < 300, 'text' => is_string($body) ? $body : ''];
+            }
+        }
+    }
+
+    if (blackcat_preflight_ini_flag('allow_url_fopen')) {
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'header' => "Accept: text/plain, */*\r\n",
+                'timeout' => $timeoutSec,
+                'follow_location' => 0,
+                'max_redirects' => 0,
+                // Ensure we can observe the response body for non-2xx status codes.
+                'ignore_errors' => true,
+            ],
+            'ssl' => [
+                // Best-effort probe: disable TLS verification to avoid false negatives on self-signed certs.
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+                'allow_self_signed' => true,
+                'SNI_enabled' => true,
+                'disable_compression' => true,
+            ],
+        ]);
+
+        /** @var array<int,string>|null $http_response_header */
+        $http_response_header = null;
+        $body = @file_get_contents($url, false, $context);
+        $status = 0;
+        $statusLine = is_array($http_response_header) ? ($http_response_header[0] ?? null) : null;
+        if (is_string($statusLine) && preg_match('/^HTTP\\/\\d+\\.\\d+\\s+(\\d{3})\\b/', $statusLine, $m)) {
+            $status = (int) $m[1];
+        }
+        if (!is_string($body)) {
+            return ['fetched' => false, 'status' => $status, 'ok' => false, 'text' => '', 'error' => 'stream request failed'];
+        }
+        return ['fetched' => true, 'status' => $status, 'ok' => $status >= 200 && $status < 300, 'text' => $body];
+    }
+
+    return ['fetched' => false, 'status' => 0, 'ok' => false, 'text' => '', 'error' => 'no HTTP client available (curl/allow_url_fopen disabled)'];
+}
+
+/**
+ * Server-side CGI PathInfo probe runner (best-effort).
+ *
+ * @return array{plan:array<string,mixed>,result:array<string,mixed>}
+ */
+function blackcat_preflight_run_pathinfo_probe_server(bool $deep): array
+{
+    $p = blackcat_preflight_prepare_pathinfo_probe();
+    $dir = blackcat_preflight_request_dir_url_path();
+    $origin = blackcat_preflight_server_self_origin();
+
+    $variantsRel = $deep ? [
+        $p['url_path'] . '/x.php',
+        $p['url_path'] . '/index.php',
+        $p['url_path'] . '/a.php',
+        $p['url_path'] . ';x.php',
+        $p['url_path'] . '%3bx.php',
+    ] : [
+        $p['url_path'] . '/x.php',
+    ];
+
+    $plan = [
+        'mode' => 'server_side',
+        'deep' => $deep,
+        'control' => [
+            'relative' => $p['url_path'],
+            'absolute' => $origin !== null ? ($origin . $dir . $p['url_path']) : null,
+            'expected_http_status' => 200,
+            'marker' => $p['marker'],
+            'expected_output_token' => $p['expected'],
+        ],
+        'variants' => array_map(static function (string $rel) use ($origin, $dir): array {
+            return [
+                'relative' => $rel,
+                'absolute' => $origin !== null ? ($origin . $dir . ltrim($rel, '/')) : null,
+            ];
+        }, $variantsRel),
+        'cleanup' => [
+            'required' => false,
+            'performed' => true,
+        ],
+        'notes' => [
+            'This probe is best-effort and cannot prove 100% safety.',
+            'It uses only same-origin requests derived from SERVER_NAME/SERVER_PORT.',
+        ],
+    ];
+
+    $result = [
+        'status' => 'warn',
+        'code' => 'inconclusive',
+        'summary' => 'Probe not executed.',
+        'control' => null,
+        'variants' => [],
+    ];
+
+    try {
+        if (!is_file($p['file_path'])) {
+            $result = [
+                'status' => 'warn',
+                'code' => 'probe_file_unavailable',
+                'summary' => 'Probe file could not be created (no write access or filesystem restrictions).',
+                'control' => null,
+                'variants' => [],
+            ];
+            return ['plan' => $plan, 'result' => $result];
+        }
+
+        if ($origin === null) {
+            $result = [
+                'status' => 'warn',
+                'code' => 'self_origin_unavailable',
+                'summary' => 'Probe could not run (unable to determine same-origin base URL). Open this page in a browser to run the client-side probe.',
+                'control' => null,
+                'variants' => [],
+            ];
+            return ['plan' => $plan, 'result' => $result];
+        }
+
+        $controlUrl = $origin . $dir . $p['url_path'];
+        $control = blackcat_preflight_fetch_text($controlUrl);
+        $controlIsReachable = $control['fetched'] && $control['status'] === 200 && str_contains($control['text'], $p['marker']);
+        $controlExec = $control['fetched'] && str_contains($control['text'], $p['expected']);
+
+        $variants = [];
+        $variantExec = false;
+        foreach ($variantsRel as $rel) {
+            $abs = $origin . $dir . ltrim($rel, '/');
+            $res = blackcat_preflight_fetch_text($abs);
+            $exec = $res['fetched'] && str_contains($res['text'], $p['expected']);
+            if ($exec) {
+                $variantExec = true;
+            }
+            $variants[] = [
+                'relative' => $rel,
+                'absolute' => $abs,
+                'fetched' => $res['fetched'],
+                'http_status' => $res['status'],
+                'executed_php' => $exec,
+            ];
+        }
+
+        if (!$control['fetched']) {
+            $result = [
+                'status' => 'warn',
+                'code' => 'control_fetch_failed',
+                'summary' => 'Probe could not run (server-side fetch failed). Open this page in a browser to run the client-side probe.',
+                'control' => [
+                    'absolute' => $controlUrl,
+                    'fetched' => false,
+                    'http_status' => 0,
+                    'error' => $control['error'] ?? 'unknown error',
+                ],
+                'variants' => $variants,
+            ];
+        } elseif (!$controlIsReachable) {
+            $result = [
+                'status' => 'warn',
+                'code' => 'control_unreachable',
+                'summary' => 'Probe inconclusive: control file was not reachable as expected (HTTP 200 with marker).',
+                'control' => [
+                    'absolute' => $controlUrl,
+                    'fetched' => $control['fetched'],
+                    'http_status' => $control['status'],
+                    'has_marker' => str_contains($control['text'], $p['marker']),
+                ],
+                'variants' => $variants,
+            ];
+        } elseif ($controlExec) {
+            $result = [
+                'status' => 'fail',
+                'code' => 'executed_txt_as_php',
+                'summary' => 'CRITICAL: The server executed a .txt file as PHP.',
+                'control' => [
+                    'absolute' => $controlUrl,
+                    'fetched' => true,
+                    'http_status' => $control['status'],
+                    'executed_php' => true,
+                ],
+                'variants' => $variants,
+            ];
+        } elseif ($variantExec) {
+            $result = [
+                'status' => 'fail',
+                'code' => 'pathinfo_exec_surface',
+                'summary' => 'VULNERABLE: A PathInfo-style request caused PHP execution (cgi.fix_pathinfo exploit surface).',
+                'control' => [
+                    'absolute' => $controlUrl,
+                    'fetched' => true,
+                    'http_status' => $control['status'],
+                    'executed_php' => false,
+                ],
+                'variants' => $variants,
+            ];
+        } else {
+            $result = [
+                'status' => 'pass',
+                'code' => 'no_exec_observed',
+                'summary' => 'No PHP execution observed for the tested PathInfo variants in this probe.',
+                'control' => [
+                    'absolute' => $controlUrl,
+                    'fetched' => true,
+                    'http_status' => $control['status'],
+                    'executed_php' => false,
+                ],
+                'variants' => $variants,
+            ];
+        }
+
+        return ['plan' => $plan, 'result' => $result];
+    } finally {
+        if (is_file($p['file_path'])) {
+            @unlink($p['file_path']);
+        }
+    }
 }
 
 /**
@@ -991,49 +1296,70 @@ if ($probeMode === 'pathinfo' && is_string($cleanup) && trim($cleanup) === '1') 
 
 if ($wantJson) {
     $policyInfo = blackcat_preflight_policy();
+    // Mirror HTML behavior: auto-run the best-effort probe in JSON mode too (when relevant).
+    if ($probeMode !== 'pathinfo' && $autoPathinfoProbe) {
+        $probeMode = 'pathinfo';
+    }
     $probe = null;
     if ($probeMode === 'pathinfo') {
-        $p = blackcat_preflight_prepare_pathinfo_probe();
         $deep = blackcat_preflight_probe_deep();
-        $variants = $deep ? [
-            $p['url_path'] . '/x.php',
-            $p['url_path'] . '/index.php',
-            $p['url_path'] . '/a.php',
-            $p['url_path'] . ';x.php',
-            $p['url_path'] . '%3bx.php',
-        ] : [
-            $p['url_path'] . '/x.php',
+        $probeRun = blackcat_preflight_run_pathinfo_probe_server($deep);
+        $probe = [
+            'pathinfo' => array_merge($probeRun['plan'], [
+                'auto' => $autoPathinfoProbe,
+                'result' => $probeRun['result'],
+            ]),
         ];
 
-        $probe = [
-            'pathinfo' => [
-                'mode' => 'browser_or_client',
-                'deep' => $deep,
-                'control' => [
-                    'relative' => $p['url_path'],
-                    'absolute' => blackcat_preflight_absolute_url($p['url_path']),
-                    'expected_http_status' => 200,
-                    'marker' => $p['marker'],
-                    'expected_output_token' => $p['expected'],
-                ],
-                'variants' => array_map(static function (string $u): array {
-                    return [
-                        'relative' => $u,
-                        'absolute' => blackcat_preflight_absolute_url($u),
-                    ];
-                }, $variants),
-                'cleanup' => [
-                    'required' => true,
-                    'relative' => '?probe=pathinfo&cleanup=1&token=' . rawurlencode($p['id']) . '&file=' . rawurlencode($p['filename']),
-                    'absolute' => blackcat_preflight_absolute_url('?probe=pathinfo&cleanup=1&token=' . rawurlencode($p['id']) . '&file=' . rawurlencode($p['filename'])),
-                ],
-                'notes' => [
-                    'This probe is best-effort and cannot prove 100% safety.',
-                    'Run it in any web-accessible directory where uploads can land.',
-                    'Always call cleanup after testing (it removes the probe file).',
-                ],
-            ],
-        ];
+        $probeStatus = $probeRun['result']['status'] ?? null;
+
+        // If the probe indicates an execution surface, fail regardless of policy.
+        if ($probeStatus === 'fail') {
+            foreach ($checks as $idx => $check) {
+                if (($check['id'] ?? null) !== 'php_ini') {
+                    continue;
+                }
+                $checks[$idx]['status'] = 'fail';
+                $checks[$idx]['details'] = 'PathInfo probe indicates a PHP execution surface. This hosting is unsafe for TrustKernel deployments.';
+                $checks[$idx]['hints'] = [
+                    'Disable cgi.fix_pathinfo (php.ini) and use correct webserver routing (try_files / SCRIPT_FILENAME).',
+                    'If you cannot harden this hosting, do not deploy TrustKernel here.',
+                ];
+                break;
+            }
+        }
+
+        // If this hosting fails ONLY due to cgi.fix_pathinfo, less-strict may be allowed when the probe is NO EXEC.
+        if ($probeStatus === 'pass' && $policyInfo['policy'] === 'less-strict') {
+            foreach ($checks as $idx => $check) {
+                if (($check['id'] ?? null) !== 'php_ini') {
+                    continue;
+                }
+                $meta = $check['meta'] ?? null;
+                if (!is_array($meta) || empty($meta['cgi_fix_pathinfo_only_fail'])) {
+                    break;
+                }
+                $checks[$idx]['status'] = 'pass';
+                $checks[$idx]['details'] = 'cgi.fix_pathinfo is enabled, but the PathInfo probe observed NO EXEC for tested variants. Note: less-strict still requires a locked on-chain probe attestation to satisfy TrustKernel.';
+                $checks[$idx]['hints'] = [
+                    'Proceed only with less-strict and lock the PathInfo probe waiver attestation on-chain (rootAuthority).',
+                    'If you can change php.ini, prefer cgi.fix_pathinfo=0 for strict production.',
+                ];
+                break;
+            }
+        }
+
+        // Recompute overall after the probe may have adjusted php_ini.
+        $overall = 'pass';
+        foreach ($checks as $check) {
+            if (($check['status'] ?? '') === 'fail') {
+                $overall = 'fail';
+                break;
+            }
+            if (($check['status'] ?? '') === 'warn') {
+                $overall = 'warn';
+            }
+        }
     }
 
     header('Content-Type: application/json; charset=utf-8');
@@ -1193,13 +1519,13 @@ if ($probeMode === 'pathinfo') {
         . '    addHint("Ensure this preflight file is served from a normal web-accessible directory (not rewritten), then re-run the probe.");'
         . '  } else if (controlExec) {'
         . '    set("fail", "VULNERABLE");'
-        . '    summary.textContent = "CRITICAL: The server executed a .txt file as PHP. This hosting is unsafe for strict deployments.";' 
-        . '    if (cfg.policy === "less-strict") { setCheck("fail", "cgi.fix_pathinfo probe indicates a critical execution surface; strict deployment is unsafe."); recomputeOverall(); }'
+        . '    summary.textContent = "CRITICAL: The server executed a .txt file as PHP. This hosting is unsafe for TrustKernel deployments.";' 
+        . '    setCheck("fail", "cgi.fix_pathinfo probe indicates a critical execution surface; this hosting is unsafe."); recomputeOverall();'
         . '  } else if (variantExec) {'
         . '    set("fail", "VULNERABLE");'
         . '    summary.textContent = "VULNERABLE: A PathInfo-style request caused PHP execution (cgi.fix_pathinfo-style exploit surface).";'
         . '    addHint("Fix: Set php.ini cgi.fix_pathinfo=0 and ensure webserver uses try_files / correct SCRIPT_FILENAME routing.");'
-        . '    if (cfg.policy === "less-strict") { setCheck("fail", "cgi.fix_pathinfo probe indicates a PathInfo execution surface; strict deployment is unsafe."); recomputeOverall(); }'
+        . '    setCheck("fail", "cgi.fix_pathinfo probe indicates a PathInfo execution surface; this hosting is unsafe."); recomputeOverall();'
         . '  } else {'
         . '    set("pass", "NO EXEC");'
         . '    summary.textContent = "No PHP execution observed for the tested PathInfo variants in this probe.";' 

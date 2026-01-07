@@ -111,14 +111,13 @@ prepare the bundle on a **trusted device** and only upload the final artifacts.
 
 High-level flow:
 1) Build the bundle on a trusted workstation/CI (including `site/vendor/`).
-2) Run the Stage 3 setup locally (Docker demo is fine) to:
-   - generate `.blackcat/integrity.manifest.json` (release root),
-   - create the on-chain instance (manual tx intent, signed on your wallet),
-   - generate `config.runtime.json`,
-   - lock attestations (manual tx intent).
+2) Generate the integrity manifest + trust request **offline** (recommended: `blackcat-cli`):
+   - build `.blackcat/integrity.manifest.json` for the `site/` directory
+   - generate the trust request bundle (policy version 1–5, enforcement strict/less-strict/warn)
+   - generate tx intents (manual) and sign from a separate device / hardware wallet
 3) Upload the prepared bundle to the hosting (FTP/SFTP), then lock it down:
-   - disable/remove `site/_blackcat/setup.php`,
-   - create `.blackcat/installed.flag`,
+   - create `.blackcat/installed.flag` (so `/_blackcat/setup` becomes unavailable),
+   - optionally remove `site/_blackcat/setup.php`,
    - disable FTP after upload.
 
 This avoids relying on the hosting to perform TLS trust verification during setup.
@@ -128,6 +127,109 @@ Important:
   - set `http.allowed_hosts` to your real domain (not `localhost`),
   - keep the integrity layout consistent (in this bundle, `trust.integrity.root_dir` points to `site/` and the manifest lives under `.blackcat/`).
 - Do not modify bundle files after computing the manifest root; otherwise the on-chain root will not match.
+
+### Offline ceremony (CLI-first, no web installer)
+
+This is the recommended flow for constrained hostings.
+
+Prereqs on your trusted machine:
+- `blackcat-cli` available as `blackcat`
+- PHP 8.3+
+
+1) Build the bundle locally:
+
+```bash
+bash blackcat-installer/scripts/build-kernel-minimal-bundle.sh
+```
+
+Assume:
+- `BUNDLE=blackcat-installer/dist/blackcat-kernel-minimal-bundle`
+- `SITE_DIR=$BUNDLE/site`
+- `STATE_DIR=$BUNDLE/.blackcat`
+
+2) Build the integrity manifest for the **site** directory (produces `root` + `uri_hash`):
+
+```bash
+php blackcat-core/scripts/trust-integrity-manifest-build.php \
+  --root="$SITE_DIR" \
+  --out="$STATE_DIR/integrity.manifest.json" \
+  --uri="https://example.com/blackcat/kernel-minimal/v1"
+```
+
+3) Create the trust request bundle (choose policy version + enforcement):
+
+```bash
+blackcat trust request:init \
+  --chain-id=4207 \
+  --rpc=https://rpc.layeredge.io \
+  --mode=full \
+  --policy-version=5 \
+  --enforcement=strict \
+  --root-authority=0x... \
+  --upgrade-authority=0x... \
+  --emergency-authority=0x... \
+  --genesis-root=0x... \
+  --genesis-uri-hash=0x... \
+  --out=trust-request.json
+```
+
+Notes:
+- `--genesis-root` and `--genesis-uri-hash` come from step (2).
+- Strict production should use **2+** independent RPC endpoints and `rpc_quorum >= 2`.
+
+4) Generate the tx intent for instance creation and broadcast it from your wallet / multisig:
+
+```bash
+blackcat trust tx:factory-create \
+  --factory=0xYOUR_INSTANCE_FACTORY \
+  --request=trust-request.json \
+  --out=tx.create-instance.json
+```
+
+Broadcast `tx.create-instance.json` from a separate device. After mining, you should have:
+- `instance_controller` address (from the receipt / explorer)
+
+5) Generate `config.runtime.json` for the **bundle root** (portable template recommended):
+
+```bash
+blackcat config runtime template trust-edgen-portable --json > "$BUNDLE/config.runtime.json"
+```
+
+Then edit `$BUNDLE/config.runtime.json` and set at least:
+- `http.allowed_hosts` (your real domain)
+- `trust.web3.contracts.instance_controller` (from step 4)
+- `trust.web3.rpc_endpoints` + `trust.web3.rpc_quorum` (strict: ≥2)
+- `trust.integrity.root_dir` and `trust.integrity.manifest` for the bundle layout (portable templates use relative paths)
+
+6) Lock the runtime-config attestation on-chain (policy v3+ hard requirement):
+
+```bash
+blackcat trust tx:controller-attest-runtime-config \
+  --config="$BUNDLE/config.runtime.json" \
+  --out=tx.attest-runtime-config.json
+```
+
+Broadcast `tx.attest-runtime-config.json` from the **rootAuthority** wallet.
+
+7) (Optional) If your hosting requires `policy=less-strict` due to `cgi.fix_pathinfo`:
+- Run `blackcat-preflight.php` in `less-strict` and ensure the PathInfo probe shows **NO EXEC**.
+- Lock the on-chain probe attestation (rootAuthority):
+
+```bash
+blackcat trust tx:controller-attest-pathinfo-noexec \
+  --config="$BUNDLE/config.runtime.json" \
+  --out=tx.attest-pathinfo-noexec.json
+```
+
+8) Lock down the server install:
+- ensure the bundle root contains:
+  - `config.runtime.json`
+  - `.blackcat/integrity.manifest.json`
+  - `.blackcat/installed.flag`
+- upload `site/` and `.blackcat/` via FTP/SFTP
+- disable FTP after upload
+
+At this point the application should boot **trusted** (strict) and fail-closed on any tampering.
 
 ## 4) Troubleshooting
 
