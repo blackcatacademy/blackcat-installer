@@ -518,12 +518,28 @@ HTML;
             <input id="emergencyAuthority" placeholder="0x..." autocomplete="off" />
           </div>
           <div>
-            <label class="k">Policy hash (v3 strict)</label>
-            <input id="policyHash" placeholder="0x... (computed)" autocomplete="off" readonly />
+            <label class="k">Enforcement</label>
+            <select id="enforcement">
+              <option value="strict" selected>strict (production)</option>
+              <option value="less-strict">less-strict (hosting waiver)</option>
+              <option value="warn">warn (dev/compat)</option>
+            </select>
+            <div class="small muted">Enforcement is committed on-chain via the policy hash.</div>
           </div>
         </div>
 
-	        <p class="small muted">This step will create a new InstanceController bound to: <span class="mono">manifest.root</span> + <span class="mono">manifest.uri_hash</span> + <span class="mono">policy_hash_v3_strict</span>.</p>
+        <div class="row">
+          <div>
+            <label class="k">Policy hash (v3)</label>
+            <input id="policyHash" placeholder="0x... (computed)" autocomplete="off" readonly />
+          </div>
+          <div>
+            <label class="k">Policy version</label>
+            <div class="small muted"><span class="mono">v3</span> (runtime-config attestation)</div>
+          </div>
+        </div>
+
+	        <p class="small muted">This step will create a new InstanceController bound to: <span class="mono">manifest.root</span> + <span class="mono">manifest.uri_hash</span> + <span class="mono">policy_hash_v3</span> (selected enforcement).</p>
 	        <button id="computePolicy">Compute policy hash</button>
 	        <button id="createInstance" style="margin-left:8px">Broadcast create tx (browser wallet)</button>
 	        <button id="createInstanceManual" style="margin-left:8px">Generate tx intent (manual)</button>
@@ -624,6 +640,7 @@ HTML;
       const DEFAULT_FACTORY = "0x92C80Cff5d75dcD3846EFb5DF35957D5Aed1c7C5";
       const DEFAULT_REGISTRY = "0x22681Ee2153B7B25bA6772B44c160BB60f4C333E";
       const EXPLORER_BASE = "https://edgenscan.io";
+      const DEFAULT_ENFORCEMENT = "__BLACKCAT_ENFORCEMENT__";
 
       const isHexAddress = (v) => typeof v === "string" && /^0x[a-fA-F0-9]{40}$/.test(v.trim());
       const isBytes32 = (v) => typeof v === "string" && /^0x[a-fA-F0-9]{64}$/.test(v.trim());
@@ -748,10 +765,10 @@ HTML;
         $("createInstance").disabled = true;
       };
 
-	      const verifyReleaseRoot = async () => {
-	        const { root } = await readManifestSummary();
-	        const registry = $("releaseRegistry").value.trim();
-	        if (!isHexAddress(registry)) throw new Error("Invalid ReleaseRegistry address.");
+      const verifyReleaseRoot = async () => {
+        const { root } = await readManifestSummary();
+        const registry = $("releaseRegistry").value.trim();
+        if (!isHexAddress(registry)) throw new Error("Invalid ReleaseRegistry address.");
 
 	        if (!wallet.provider) {
 	          throw new Error("Connect a browser wallet first to verify on-chain release trust (or verify in the block explorer).");
@@ -769,18 +786,39 @@ HTML;
         return Boolean(ok);
       };
 
+      const normalizeEnforcement = (raw) => {
+        const v = (typeof raw === "string" ? raw : "").trim();
+        if (v === "strict" || v === "less-strict" || v === "warn") return v;
+        return "strict";
+      };
+      const getEnforcement = () => normalizeEnforcement($("enforcement").value);
+      const loadEnforcement = () => {
+        const fromUrl = normalizeEnforcement(DEFAULT_ENFORCEMENT);
+        if (fromUrl !== "strict") return fromUrl;
+        try {
+          const raw = localStorage.getItem("bc_enforcement");
+          if (raw) return normalizeEnforcement(raw);
+        } catch (_) {}
+        return fromUrl;
+      };
+      const applyEnforcement = () => {
+        $("enforcement").value = loadEnforcement();
+      };
+
       const computePolicyHash = async () => {
         const mode = $("trustMode").value;
         const maxStale = parseInt($("maxStale").value || "180", 10);
+        const enforcement = getEnforcement();
         const res = await api("/_blackcat/setup/api/policy-v3", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mode, max_stale_sec: maxStale }),
+          body: JSON.stringify({ mode, max_stale_sec: maxStale, enforcement }),
         });
         if (!res || !res.ok) throw new Error(res && res.error ? res.error : "policy-v3 failed");
-        if (!res.policy_hash_v3_strict || !isBytes32(res.policy_hash_v3_strict)) throw new Error("Invalid policy hash.");
-        $("policyHash").value = res.policy_hash_v3_strict;
-        return res.policy_hash_v3_strict;
+        const policyHash = res.policy_hash_v3 || res.policy_hash_v3_strict;
+        if (!policyHash || !isBytes32(policyHash)) throw new Error("Invalid policy hash.");
+        $("policyHash").value = policyHash;
+        return policyHash;
       };
 
       const saveAuthorities = () => {
@@ -891,7 +929,8 @@ HTML;
         $("chainOut").textContent = "Working...";
         try {
           const policy = await computePolicyHash();
-          $("chainOut").textContent = JSON.stringify({ ok: true, policy_hash_v3_strict: policy }, null, 2);
+          const enforcement = getEnforcement();
+          $("chainOut").textContent = JSON.stringify({ ok: true, enforcement, policy_hash_v3: policy }, null, 2);
         } catch (e) {
           $("chainOut").textContent = JSON.stringify({ ok: false, error: String(e && e.message ? e.message : e) }, null, 2);
         }
@@ -977,7 +1016,8 @@ HTML;
               instance_link: `${EXPLORER_BASE}/address/${predicted}`,
               manifest_root: root,
               manifest_uri_hash: uriHash,
-              policy_hash_v3_strict: policyHash,
+              enforcement: getEnforcement(),
+              policy_hash_v3: policyHash,
             },
             null,
             2
@@ -1039,7 +1079,8 @@ HTML;
 	                emergency_authority: emergencyAuthority,
 	                manifest_root: root,
 	                manifest_uri_hash: uriHash,
-	                policy_hash_v3_strict: policyHash,
+	                enforcement: getEnforcement(),
+	                policy_hash_v3: policyHash,
 	              },
 	              notes: [
 	                "Send this transaction from a separate device / hardware wallet if desired.",
@@ -1068,6 +1109,7 @@ HTML;
           rpc_quorum: parseInt($("rpcQuorum").value || "1", 10),
           mode: $("trustMode").value,
           max_stale_sec: parseInt($("maxStale").value || "180", 10),
+          enforcement: getEnforcement(),
           allowed_hosts: hosts,
         };
         const res = await api("/_blackcat/setup/api/write-config", {
@@ -1185,6 +1227,12 @@ HTML;
       $("instanceFactory").value = DEFAULT_FACTORY;
       $("releaseRegistry").value = DEFAULT_REGISTRY;
       setReleaseRegistryLink();
+      applyEnforcement();
+      $("enforcement").addEventListener("change", () => {
+        const v = getEnforcement();
+        try { localStorage.setItem("bc_enforcement", v); } catch (_) {}
+        $("policyHash").value = "";
+      });
       const cachedIc = localStorage.getItem("bc_instance_controller");
       if (cachedIc && isHexAddress(cachedIc)) $("instanceController").value = cachedIc;
       loadAuthorities();
@@ -1198,8 +1246,8 @@ HTML;
 HTML;
 
     echo str_replace(
-        ['__BLACKCAT_TLS_BAR__', '__BLACKCAT_TRUST_ILLUSTRATION__', '__BLACKCAT_CSP_NONCE__'],
-        [$tlsBarHtml, $trustIllustrationHtml, $nonce],
+        ['__BLACKCAT_TLS_BAR__', '__BLACKCAT_TRUST_ILLUSTRATION__', '__BLACKCAT_CSP_NONCE__', '__BLACKCAT_ENFORCEMENT__'],
+        [$tlsBarHtml, $trustIllustrationHtml, $nonce, blackcat_setup_policy()],
         $page,
     );
 }
@@ -1445,6 +1493,33 @@ function blackcat_is_dev_host(string $host): bool
 }
 
 /**
+ * Installer UI policy selector (enforcement).
+ *
+ * - strict: production default (fail-closed)
+ * - less-strict: still fail-closed, but allows a limited set of probe-based waivers
+ * - warn: compatibility mode (do not use for production)
+ *
+ * @return 'strict'|'less-strict'|'warn'
+ */
+function blackcat_setup_policy(): string
+{
+    $raw = $_GET['policy'] ?? null;
+    if (is_string($raw)) {
+        $v = strtolower(trim($raw));
+        if ($v === 'warn' || $v === 'dev') {
+            return 'warn';
+        }
+        if ($v === 'less-strict' || $v === 'less_strict' || $v === 'lessstrict' || $v === 'ls') {
+            return 'less-strict';
+        }
+        if ($v === 'strict' || $v === 'prod') {
+            return 'strict';
+        }
+    }
+    return 'strict';
+}
+
+/**
  * @return array{0:bool,1:?string} (trusted, error_code)
  */
 function blackcat_tls_is_publicly_trusted(string $host, int $port): array
@@ -1665,8 +1740,9 @@ function blackcat_setup_preflight(array $paths): array
     $errors = [];
     $warnings = [];
 
-    $hostPort = blackcat_normalize_http_host($_SERVER['HTTP_HOST'] ?? null);
-    $isDevHost = blackcat_is_dev_host($hostPort['host']);
+    $policy = blackcat_setup_policy();
+    $isWarnPolicy = ($policy === 'warn');
+    $isLessStrictPolicy = ($policy === 'less-strict');
 
     $iniBool = static function (string $key): bool {
         $raw = @ini_get($key);
@@ -1710,7 +1786,7 @@ function blackcat_setup_preflight(array $paths): array
         $msg = 'php.ini hardening: display_errors/display_startup_errors is enabled. Disable them to prevent information disclosure (use log_errors instead).'
             . ($canOverride ? ' Note: it appears overrideable at runtime (ini_set), but you should still disable it in hosting settings.' : '');
 
-        if ($isDevHost || $canOverride) {
+        if ($isWarnPolicy || $canOverride) {
             $warnings[] = $msg;
         } else {
             $errors[] = $msg;
@@ -1725,7 +1801,7 @@ function blackcat_setup_preflight(array $paths): array
     $openBasedir = $iniStr('open_basedir');
     if ($openBasedir === null) {
         $msg = 'php.ini hardening: open_basedir is not set. Set it to restrict filesystem access (required for a strict trust-kernel deployment).';
-        if ($isDevHost) {
+        if ($isWarnPolicy) {
             $warnings[] = $msg;
         } else {
             $errors[] = $msg;
@@ -1762,7 +1838,7 @@ function blackcat_setup_preflight(array $paths): array
         foreach ($mustAllow as $label => $path) {
             if (!$allowedOk($path, $allowed)) {
                 $msg = 'php.ini hardening: open_basedir blocks access to ' . $label . '. Adjust open_basedir or deploy the bundle under an allowed path.';
-                if ($isDevHost) {
+                if ($isWarnPolicy) {
                     $warnings[] = $msg;
                 } else {
                     $errors[] = $msg;
@@ -1774,7 +1850,7 @@ function blackcat_setup_preflight(array $paths): array
     $pharReadonly = $iniStr('phar.readonly');
     if ($pharReadonly !== null && $pharReadonly !== '1') {
         $msg = 'php.ini hardening: phar.readonly is disabled. Set phar.readonly=1 to reduce PHAR deserialization risks.';
-        if ($isDevHost) {
+        if ($isWarnPolicy) {
             $warnings[] = $msg;
         } else {
             $errors[] = $msg;
@@ -1783,7 +1859,7 @@ function blackcat_setup_preflight(array $paths): array
 
     if ($iniBool('enable_dl')) {
         $msg = 'php.ini hardening: enable_dl is enabled. Disable it (runtime extension loading increases attack surface).';
-        if ($isDevHost) {
+        if ($isWarnPolicy) {
             $warnings[] = $msg;
         } else {
             $errors[] = $msg;
@@ -1793,7 +1869,7 @@ function blackcat_setup_preflight(array $paths): array
     $autoPrepend = $iniStr('auto_prepend_file');
     if ($autoPrepend !== null) {
         $msg = 'php.ini hardening: auto_prepend_file is set. Remove it (hidden code injection risk).';
-        if ($isDevHost) {
+        if ($isWarnPolicy) {
             $warnings[] = $msg;
         } else {
             $errors[] = $msg;
@@ -1803,7 +1879,7 @@ function blackcat_setup_preflight(array $paths): array
     $autoAppend = $iniStr('auto_append_file');
     if ($autoAppend !== null) {
         $msg = 'php.ini hardening: auto_append_file is set. Remove it (hidden code injection risk).';
-        if ($isDevHost) {
+        if ($isWarnPolicy) {
             $warnings[] = $msg;
         } else {
             $errors[] = $msg;
@@ -1812,11 +1888,12 @@ function blackcat_setup_preflight(array $paths): array
 
     $cgiFixPathinfo = $iniBool('cgi.fix_pathinfo');
     if ($cgiFixPathinfo && in_array(PHP_SAPI, ['fpm-fcgi', 'cgi', 'cgi-fcgi'], true)) {
-        $msg = 'php.ini hardening: cgi.fix_pathinfo is enabled. Set cgi.fix_pathinfo=0 for FPM/CGI.';
-        if ($isDevHost) {
-            $warnings[] = $msg;
+        if ($isWarnPolicy) {
+            $warnings[] = 'php.ini hardening: cgi.fix_pathinfo is enabled. This increases risk in some CGI/FPM configurations.';
+        } elseif ($isLessStrictPolicy) {
+            $warnings[] = 'php.ini hardening: cgi.fix_pathinfo is enabled. less-strict can proceed only with a best-effort NO EXEC probe + a locked on-chain waiver attestation; otherwise the kernel will fail-closed.';
         } else {
-            $errors[] = $msg;
+            $errors[] = 'php.ini hardening: cgi.fix_pathinfo is enabled. Set cgi.fix_pathinfo=0 for strict deployments on FPM/CGI.';
         }
     }
 
@@ -1847,12 +1924,12 @@ function blackcat_setup_preflight(array $paths): array
     }
     if ($callable !== []) {
         $msg = 'php.ini hardening: dangerous process-exec functions are callable: ' . implode(', ', $callable) . '. Disable them (recommended: disable_functions=' . implode(',', $dangerous) . ').';
-        if ($isDevHost) {
+        if ($isWarnPolicy) {
             $warnings[] = $msg;
         } else {
             $errors[] = $msg;
         }
-    } elseif ($disabled === [] && $isDevHost) {
+    } elseif ($disabled === [] && $isWarnPolicy) {
         // Informational: some hostings disable these at another layer; strict prod should still disable explicitly.
         $warnings[] = 'php.ini hardening: disable_functions is empty, but no dangerous process-exec functions appear callable in this runtime.';
     }
@@ -1882,7 +1959,7 @@ function blackcat_setup_preflight(array $paths): array
     $web3TransportOk = $hasCurlSsl || ($allowUrlFopen && $hasOpenSsl);
     if (!$web3TransportOk) {
         $msg = 'Web3 transport is unavailable: no HTTPS-capable client detected (need cURL with SSL or OpenSSL + allow_url_fopen). TrustKernel cannot read on-chain state on this hosting.';
-        if ($isDevHost) {
+        if ($isWarnPolicy) {
             $warnings[] = $msg;
         } else {
             $errors[] = $msg;
@@ -1890,6 +1967,7 @@ function blackcat_setup_preflight(array $paths): array
     }
 
     $docroot = $paths['docroot'];
+    $bundleRoot = $paths['bundle_root'];
     $stateDir = $paths['state_dir'];
     $configPath = $paths['config_path'];
 
@@ -2134,13 +2212,31 @@ function blackcat_setup_api_policy_v3(): void
         return;
     }
 
+    $enforcement = $decoded['enforcement'] ?? 'strict';
+    if (!is_string($enforcement)) {
+        blackcat_json(['ok' => false, 'error' => 'enforcement must be a string.'], 400);
+        return;
+    }
+    $enforcement = strtolower(trim($enforcement));
+    if (!in_array($enforcement, ['strict', 'less-strict', 'warn'], true)) {
+        blackcat_json(['ok' => false, 'error' => 'enforcement must be "strict", "less-strict", or "warn".'], 400);
+        return;
+    }
+
     $attKey = Bytes32::normalizeHex(KernelAttestations::runtimeConfigAttestationKeyV1());
-    $policy = new TrustPolicyV3($mode, $maxStale, 'strict', $attKey);
+    $policy = new TrustPolicyV3($mode, $maxStale, $enforcement, $attKey);
+    $policyStrict = new TrustPolicyV3($mode, $maxStale, 'strict', $attKey);
+    $policyLessStrict = new TrustPolicyV3($mode, $maxStale, 'less-strict', $attKey);
+    $policyWarn = new TrustPolicyV3($mode, $maxStale, 'warn', $attKey);
 
     blackcat_json([
         'ok' => true,
         'attestation_key_v1' => $attKey,
-        'policy_hash_v3_strict' => $policy->hashBytes32(),
+        'enforcement' => $enforcement,
+        'policy_hash_v3' => $policy->hashBytes32(),
+        'policy_hash_v3_strict' => $policyStrict->hashBytes32(),
+        'policy_hash_v3_less_strict' => $policyLessStrict->hashBytes32(),
+        'policy_hash_v3_warn' => $policyWarn->hashBytes32(),
         'note' => 'Policy hash does not depend on runtime config contents (only mode/max_stale/enforcement + attestation key).',
     ]);
 }
@@ -2314,15 +2410,27 @@ function blackcat_setup_api_write_config(array $paths): void
         return;
     }
 
-    // This Stage 3 installer generates a strict, fail-closed kernel config.
-    // Strict mode requires at least 2 independent RPC endpoints and quorum >= 2.
-    if (count($endpoints) < 2) {
-        blackcat_json(['ok' => false, 'error' => 'At least 2 rpc_endpoints are required (quorum trust needs redundancy).'], 400);
+    $enforcement = $decoded['enforcement'] ?? 'strict';
+    if (!is_string($enforcement)) {
+        blackcat_json(['ok' => false, 'error' => 'enforcement must be a string.'], 400);
         return;
     }
-    if ($quorum < 2) {
-        blackcat_json(['ok' => false, 'error' => 'rpc_quorum must be >= 2 for a strict trust kernel deployment.'], 400);
+    $enforcement = strtolower(trim($enforcement));
+    if (!in_array($enforcement, ['strict', 'less-strict', 'warn'], true)) {
+        blackcat_json(['ok' => false, 'error' => 'enforcement must be "strict", "less-strict", or "warn".'], 400);
         return;
+    }
+
+    // Strict + less-strict require redundant RPC quorum (avoid single-endpoint trust).
+    if ($enforcement !== 'warn') {
+        if (count($endpoints) < 2) {
+            blackcat_json(['ok' => false, 'error' => 'At least 2 rpc_endpoints are required (quorum trust needs redundancy).'], 400);
+            return;
+        }
+        if ($quorum < 2) {
+            blackcat_json(['ok' => false, 'error' => 'rpc_quorum must be >= 2 for a strict/less-strict trust kernel deployment.'], 400);
+            return;
+        }
     }
 
     $mode = $decoded['mode'] ?? 'full';
@@ -2409,7 +2517,10 @@ function blackcat_setup_api_write_config(array $paths): void
         $attKey = Bytes32::normalizeHex(KernelAttestations::runtimeConfigAttestationKeyV1());
         $attValue = Bytes32::normalizeHex(KernelAttestations::runtimeConfigAttestationValueV1($runtimeConfig));
 
-        $policy = new TrustPolicyV3($mode, $maxStale, 'strict', $attKey);
+        $policy = new TrustPolicyV3($mode, $maxStale, $enforcement, $attKey);
+        $policyStrict = new TrustPolicyV3($mode, $maxStale, 'strict', $attKey);
+        $policyLessStrict = new TrustPolicyV3($mode, $maxStale, 'less-strict', $attKey);
+        $policyWarn = new TrustPolicyV3($mode, $maxStale, 'warn', $attKey);
         $policyHash = $policy->hashBytes32();
 
         blackcat_json([
@@ -2418,7 +2529,11 @@ function blackcat_setup_api_write_config(array $paths): void
             'runtime_config_attestation' => [
                 'key' => $attKey,
                 'value' => $attValue,
-                'policy_hash_v3_strict' => $policyHash,
+                'enforcement' => $enforcement,
+                'policy_hash_v3' => $policyHash,
+                'policy_hash_v3_strict' => $policyStrict->hashBytes32(),
+                'policy_hash_v3_less_strict' => $policyLessStrict->hashBytes32(),
+                'policy_hash_v3_warn' => $policyWarn->hashBytes32(),
             ],
             'note' => 'Commit the manifest root + policy hash on-chain, then set+lock the runtime config attestation key/value on the InstanceController.',
         ]);
