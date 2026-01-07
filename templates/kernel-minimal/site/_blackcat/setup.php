@@ -336,13 +336,34 @@ HTML;
       }
 
       .card {
-        background: rgba(15, 21, 36, 0.72);
+        position: relative;
         border: 1px solid rgba(31, 42, 68, 0.95);
         border-radius: 16px;
         padding: 16px;
         margin: 12px 0;
-        box-shadow: 0 10px 32px rgba(0, 0, 0, 0.25);
+        background:
+          radial-gradient(900px 420px at 18% 0%, rgba(255, 255, 255, 0.07), transparent 62%),
+          radial-gradient(900px 420px at 82% 0%, rgba(86, 116, 255, 0.10), transparent 66%),
+          linear-gradient(180deg, rgba(15, 21, 36, 0.74), rgba(15, 21, 36, 0.40));
+        backdrop-filter: blur(18px) saturate(1.25);
+        -webkit-backdrop-filter: blur(18px) saturate(1.25);
+        box-shadow:
+          0 20px 70px rgba(0, 0, 0, 0.35),
+          0 0 0 1px rgba(86, 116, 255, 0.10);
+        overflow: hidden;
       }
+      .card::before {
+        content: "";
+        position: absolute;
+        inset: -1px;
+        background:
+          radial-gradient(420px 180px at 18% 0%, rgba(86, 116, 255, 0.10), transparent 70%),
+          radial-gradient(420px 180px at 82% 0%, rgba(118, 227, 157, 0.09), transparent 70%),
+          linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 42%);
+        opacity: 0.62;
+        pointer-events: none;
+      }
+      .card > * { position: relative; z-index: 1; }
 
       .row { display: flex; gap: 12px; flex-wrap: wrap; }
       .row > * { flex: 1 1 320px; }
