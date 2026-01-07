@@ -273,11 +273,19 @@ HTML;
         position: fixed;
         inset: 0;
         background: url("/_blackcat/assets/bg-grid.png") repeat;
+        background-size: 512px 512px;
         opacity: 0.22;
         mix-blend-mode: screen;
         filter: brightness(1.7) contrast(1.2);
         pointer-events: none;
         z-index: 0;
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        body::before { animation: bcGridDrift 52s linear infinite; }
+        @keyframes bcGridDrift {
+          from { background-position: 0 0; }
+          to { background-position: 240px 120px; }
+        }
       }
 
       a { color: #8ab4ff; }
