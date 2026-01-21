@@ -374,37 +374,22 @@ HTML;
           0 -1px 0 rgba(255, 255, 255, 0.10),
           0 18px 70px rgba(0, 0, 0, 0.48);
       }
-      .heroKicker {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        margin: 0 0 8px;
-        font-size: 11px;
-        font-weight: 760;
-        text-transform: uppercase;
-        letter-spacing: 0.18em;
-        color: rgba(var(--bc-accent2), 0.92);
-        text-shadow:
-          0 1px 0 rgba(0, 0, 0, 0.80),
-          0 14px 60px rgba(0, 0, 0, 0.42);
-      }
-      .heroKicker::before {
-        content: "";
-        width: 10px;
-        height: 10px;
-        border-radius: 999px;
-        background:
-          radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.00) 48%),
-          linear-gradient(180deg, rgba(var(--bc-accent2), 0.95), rgba(var(--bc-accent), 0.55));
-        box-shadow:
-          0 0 18px rgba(var(--bc-accent2), 0.18),
-          0 0 34px rgba(var(--bc-accent), 0.12);
-      }
       .heroBrand {
         font-weight: 860;
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        margin-right: 6px;
+        display: block;
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.82);
+        text-shadow:
+          0 1px 0 rgba(0, 0, 0, 0.78),
+          0 18px 70px rgba(0, 0, 0, 0.42);
+      }
+      .heroTitleLine2 {
+        display: block;
+        font-size: 30px;
+        line-height: 1.1;
+        margin-top: 2px;
       }
       .heroTitleAccent {
         font-weight: 900;
@@ -418,7 +403,111 @@ HTML;
       @supports not (-webkit-background-clip: text) {
         .heroTitleAccent { color: #d7e3ff; }
       }
+      .pill.pillKernel {
+        position: relative;
+        padding-left: 30px;
+        border-color: rgba(var(--bc-accent2), 0.48);
+        background:
+          radial-gradient(220px 90px at 25% 0%, rgba(var(--bc-accent), 0.22), transparent 62%),
+          radial-gradient(220px 90px at 75% 0%, rgba(var(--bc-accent2), 0.18), transparent 62%),
+          linear-gradient(180deg, rgba(11, 15, 23, 0.30), rgba(11, 15, 23, 0.14));
+        color: rgba(255, 255, 255, 0.94);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.16),
+          inset 0 -14px 20px rgba(0, 0, 0, 0.32),
+          0 0 0 1px rgba(var(--bc-accent2), 0.10),
+          0 18px 60px rgba(0, 0, 0, 0.38);
+      }
+      .pill.pillKernel::before {
+        content: "";
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        width: 14px;
+        height: 14px;
+        transform: translateY(-50%);
+        background:
+          radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.70), rgba(255, 255, 255, 0.00) 48%),
+          linear-gradient(180deg, rgba(var(--bc-accent2), 0.92), rgba(var(--bc-accent), 0.55));
+        -webkit-mask: var(--bc-mask-cat-head) center / contain no-repeat;
+        mask: var(--bc-mask-cat-head) center / contain no-repeat;
+        filter:
+          drop-shadow(0 0 16px rgba(var(--bc-accent2), 0.16))
+          drop-shadow(0 10px 36px rgba(0, 0, 0, 0.34));
+        opacity: 0.95;
+      }
+      .pill.pillKernel::after {
+        content: "";
+        position: absolute;
+        inset: -40%;
+        background: linear-gradient(
+          120deg,
+          rgba(255, 255, 255, 0.00) 35%,
+          rgba(255, 255, 255, 0.12) 50%,
+          rgba(255, 255, 255, 0.00) 65%
+        );
+        transform: translateX(-42%) rotate(12deg);
+        opacity: 0;
+        pointer-events: none;
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .pill.pillKernel::after { animation: bcPillSheen 16s ease-in-out infinite; }
+        @keyframes bcPillSheen {
+          0%, 76% { opacity: 0; transform: translateX(-42%) rotate(12deg); }
+          84% { opacity: 0.22; }
+          100% { opacity: 0; transform: translateX(44%) rotate(12deg); }
+        }
+      }
       .heroSub { margin: 6px 0 0; }
+      .panel strong.overviewTitle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0 0 10px;
+        font-size: 12px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #e7eefc;
+        text-shadow:
+          0 1px 0 rgba(0, 0, 0, 0.76),
+          0 18px 70px rgba(0, 0, 0, 0.42);
+      }
+      .panel strong.overviewTitle::before {
+        content: "";
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background:
+          radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.00) 48%),
+          linear-gradient(180deg, rgba(var(--bc-accent2), 0.95), rgba(var(--bc-accent), 0.55));
+        box-shadow:
+          0 0 18px rgba(var(--bc-accent2), 0.18),
+          0 0 34px rgba(var(--bc-accent), 0.12);
+        flex: 0 0 10px;
+      }
+      .panel strong.overviewTitle::after {
+        content: "";
+        height: 1px;
+        flex: 1 1 auto;
+        background: linear-gradient(
+          90deg,
+          rgba(var(--bc-accent2), 0.34),
+          rgba(var(--bc-accent), 0.24),
+          rgba(var(--bc-accent), 0.00)
+        );
+        opacity: 0.75;
+      }
+      .overviewMeta {
+        margin-left: auto;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: none;
+        color: #9fb0d0;
+        white-space: nowrap;
+      }
+      @media (max-width: 980px) {
+        .overviewMeta { display: none; }
+      }
       .overviewGrid {
         display: grid;
         grid-template-columns: 1fr 260px;
@@ -992,11 +1081,10 @@ HTML;
 	        <div class="heroBanner" aria-hidden="true"></div>
 	        <div class="heroGrid">
 	          <div class="panel">
-	            <strong>Setup overview</strong>
+	            <strong class="overviewTitle">Setup overview <span class="overviewMeta">wallet-signed • on-chain integrity</span></strong>
 	            <div class="overviewGrid">
 	              <div>
-	                <div class="heroKicker">Web3-backed security kernel</div>
-	                <h1 class="heroTitle"><span class="heroBrand">BlackCat</span> <span class="heroTitleAccent">Kernel Bootstrap</span> <span class="pill mono">Kernel Minimal</span></h1>
+	                <h1 class="heroTitle"><span class="heroBrand">BlackCat</span><span class="heroTitleLine2"><span class="heroTitleAccent">Kernel Bootstrap</span> <span class="pill mono pillKernel">Kernel Minimal</span></span></h1>
 	                <p class="heroSub muted">Upload via FTP, verify integrity, approve with a wallet — then the installer locks itself.</p>
 	              </div>
 	              __BLACKCAT_OVERVIEW_ILLUSTRATION__
