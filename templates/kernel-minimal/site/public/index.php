@@ -33,6 +33,7 @@ $assetMap = [
     '/android-chrome-512x512.png' => ['file' => 'android-chrome-512x512.png', 'type' => 'image/png'],
     // Setup UI images (optional, but recommended).
     '/_blackcat/assets/hero-banner.png' => ['file' => 'hero-banner.png', 'type' => 'image/png'],
+    '/_blackcat/assets/setup-overview.png' => ['file' => 'setup-overview.png', 'type' => 'image/png'],
     '/_blackcat/assets/fatal-error-cat.png' => ['file' => 'fatal-error-cat.png', 'type' => 'image/png'],
     '/_blackcat/assets/trusted-vs-untrusted.png' => ['file' => 'trusted-vs-untrusted.png', 'type' => 'image/png'],
     '/_blackcat/assets/tls-not-trusted-cat.png' => ['file' => 'tls-not-trusted-cat.png', 'type' => 'image/png'],

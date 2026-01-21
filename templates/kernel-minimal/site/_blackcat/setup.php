@@ -230,6 +230,13 @@ HTML;
         . "frame-ancestors 'none'"
     );
     $assetDir = rtrim($paths['site_dir'], "/\\") . DIRECTORY_SEPARATOR . '_blackcat' . DIRECTORY_SEPARATOR . 'asset';
+
+    $overviewIllustrationPath = $assetDir . DIRECTORY_SEPARATOR . 'setup-overview.png';
+    $overviewIllustrationUrl = is_file($overviewIllustrationPath) ? '/_blackcat/assets/setup-overview.png' : '/_blackcat/assets/hero-banner.png';
+    $overviewIllustrationHtml = '<div class="overviewArt" aria-hidden="true">'
+        . '<img src="' . $overviewIllustrationUrl . '" alt="" loading="lazy" decoding="async" />'
+        . '</div>';
+
     $trustIllustrationPath = $assetDir . DIRECTORY_SEPARATOR . 'trusted-vs-untrusted.png';
     $trustIllustrationHtml = '';
     if (is_file($trustIllustrationPath)) {
@@ -368,6 +375,70 @@ HTML;
           0 18px 70px rgba(0, 0, 0, 0.48);
       }
       .heroSub { margin: 6px 0 0; }
+      .overviewGrid {
+        display: grid;
+        grid-template-columns: 1fr 260px;
+        gap: 12px;
+        align-items: start;
+      }
+      @media (max-width: 860px) {
+        .overviewGrid { grid-template-columns: 1fr; }
+      }
+      .overviewArt {
+        border-radius: 16px;
+        border: 1px solid rgba(31, 42, 68, 0.86);
+        background:
+          radial-gradient(520px 260px at 18% 0%, rgba(255, 255, 255, 0.06), transparent 66%),
+          radial-gradient(520px 260px at 82% 0%, rgba(var(--bc-accent2), 0.10), transparent 66%),
+          linear-gradient(180deg, rgba(15, 21, 36, 0.62), rgba(15, 21, 36, 0.32));
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.08),
+          0 26px 90px rgba(0, 0, 0, 0.42);
+        overflow: hidden;
+        position: relative;
+        aspect-ratio: 4 / 3;
+      }
+      .overviewArt img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        opacity: 0.88;
+        filter: saturate(1.08) contrast(1.06) brightness(1.06);
+      }
+      .overviewArt::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(420px 220px at 14% 12%, rgba(var(--bc-accent), 0.18), transparent 62%),
+          radial-gradient(520px 260px at 86% 18%, rgba(var(--bc-accent2), 0.14), transparent 66%),
+          linear-gradient(180deg, rgba(11, 15, 23, 0.05), rgba(11, 15, 23, 0.55));
+        opacity: 0.9;
+        pointer-events: none;
+      }
+      .overviewArt::after {
+        content: "";
+        position: absolute;
+        inset: -40%;
+        background: linear-gradient(
+          120deg,
+          rgba(255, 255, 255, 0.00) 35%,
+          rgba(255, 255, 255, 0.10) 50%,
+          rgba(255, 255, 255, 0.00) 65%
+        );
+        transform: translateX(-38%) rotate(12deg);
+        opacity: 0;
+        pointer-events: none;
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .overviewArt::after { animation: bcOverviewSheen 14.5s ease-in-out infinite; }
+        @keyframes bcOverviewSheen {
+          0%, 70% { opacity: 0; transform: translateX(-38%) rotate(12deg); }
+          78% { opacity: 0.22; }
+          100% { opacity: 0; transform: translateX(42%) rotate(12deg); }
+        }
+      }
       .panel strong.traitsTitle {
         display: flex;
         align-items: center;
@@ -865,8 +936,13 @@ HTML;
 	        <div class="heroGrid">
 	          <div class="panel">
 	            <strong>Overview</strong>
-	            <h1 class="heroTitle">BlackCat Setup <span class="pill mono">Kernel Minimal</span></h1>
-	            <p class="heroSub muted">FTP-friendly installer for hosting environments where you can’t run Composer on the server. It bootstraps TrustKernel (Web3-backed integrity) and writes strict runtime config.</p>
+	            <div class="overviewGrid">
+	              <div>
+	                <h1 class="heroTitle">BlackCat Setup <span class="pill mono">Kernel Minimal</span></h1>
+	                <p class="heroSub muted">FTP-friendly installer for hosting environments where you can’t run Composer on the server. It bootstraps TrustKernel (Web3-backed integrity) and writes strict runtime config.</p>
+	              </div>
+	              __BLACKCAT_OVERVIEW_ILLUSTRATION__
+	            </div>
 	            <details class="heroDetails">
 	              <summary class="muted">What is “Stage 3”?</summary>
 	              <div class="small muted">
@@ -1790,8 +1866,8 @@ HTML;
 HTML;
 
     echo str_replace(
-        ['__BLACKCAT_TLS_BAR__', '__BLACKCAT_TRUST_ILLUSTRATION__', '__BLACKCAT_CSP_NONCE__', '__BLACKCAT_ENFORCEMENT__'],
-        [$tlsBarHtml, $trustIllustrationHtml, $nonce, blackcat_setup_policy()],
+        ['__BLACKCAT_TLS_BAR__', '__BLACKCAT_TRUST_ILLUSTRATION__', '__BLACKCAT_OVERVIEW_ILLUSTRATION__', '__BLACKCAT_CSP_NONCE__', '__BLACKCAT_ENFORCEMENT__'],
+        [$tlsBarHtml, $trustIllustrationHtml, $overviewIllustrationHtml, $nonce, blackcat_setup_policy()],
         $page,
     );
 }
