@@ -368,6 +368,44 @@ HTML;
           0 18px 70px rgba(0, 0, 0, 0.48);
       }
       .heroSub { margin: 6px 0 0; }
+      .panel strong.traitsTitle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0 0 10px;
+        font-size: 12px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #e7eefc;
+        text-shadow:
+          0 1px 0 rgba(0, 0, 0, 0.76),
+          0 18px 70px rgba(0, 0, 0, 0.42);
+      }
+      .panel strong.traitsTitle::before {
+        content: "";
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background:
+          radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.00) 48%),
+          linear-gradient(180deg, rgba(var(--bc-accent), 0.95), rgba(var(--bc-accent2), 0.55));
+        box-shadow:
+          0 0 18px rgba(var(--bc-accent), 0.18),
+          0 0 34px rgba(var(--bc-accent2), 0.12);
+        flex: 0 0 10px;
+      }
+      .panel strong.traitsTitle::after {
+        content: "";
+        height: 1px;
+        flex: 1 1 auto;
+        background: linear-gradient(
+          90deg,
+          rgba(var(--bc-accent), 0.36),
+          rgba(var(--bc-accent2), 0.22),
+          rgba(var(--bc-accent2), 0.00)
+        );
+        opacity: 0.75;
+      }
       .traitsGrid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -388,8 +426,11 @@ HTML;
         border: 1px solid rgba(31, 42, 68, 0.62);
         background: linear-gradient(180deg, rgba(11, 15, 23, 0.28), rgba(11, 15, 23, 0.14));
         box-shadow:
+          inset 2px 0 0 rgba(var(--bc-trait-glow), 0.12),
           inset 0 1px 0 rgba(255, 255, 255, 0.07),
           0 16px 52px rgba(0, 0, 0, 0.22);
+        backdrop-filter: blur(10px) saturate(1.18);
+        -webkit-backdrop-filter: blur(10px) saturate(1.18);
         position: relative;
         overflow: hidden;
       }
@@ -402,6 +443,20 @@ HTML;
           radial-gradient(420px 180px at 82% 0%, rgba(var(--bc-trait-glow), 0.10), transparent 74%),
           linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 44%);
         opacity: 0.55;
+        pointer-events: none;
+      }
+      .traitChip::after {
+        content: "";
+        position: absolute;
+        inset: -40%;
+        background: linear-gradient(
+          120deg,
+          rgba(255, 255, 255, 0.00) 35%,
+          rgba(255, 255, 255, 0.10) 50%,
+          rgba(255, 255, 255, 0.00) 65%
+        );
+        transform: translateX(-38%) rotate(12deg);
+        opacity: 0;
         pointer-events: none;
       }
       .traitChip > * { position: relative; z-index: 1; }
@@ -472,9 +527,15 @@ HTML;
 
       @media (prefers-reduced-motion: no-preference) {
         .traitIcon::before { animation: bcTraitPulse 3.6s ease-in-out infinite; }
+        .traitChip::after { animation: bcTraitSheen 10.5s ease-in-out infinite; }
         @keyframes bcTraitPulse {
           0%, 100% { filter: drop-shadow(0 0 16px rgba(var(--bc-trait-glow), 0.16)) drop-shadow(0 18px 70px rgba(0, 0, 0, 0.38)); }
           50% { filter: drop-shadow(0 0 22px rgba(var(--bc-trait-glow), 0.24)) drop-shadow(0 18px 70px rgba(0, 0, 0, 0.38)); }
+        }
+        @keyframes bcTraitSheen {
+          0%, 72% { opacity: 0; transform: translateX(-38%) rotate(12deg); }
+          80% { opacity: 0.26; }
+          100% { opacity: 0; transform: translateX(42%) rotate(12deg); }
         }
       }
       .heroDetails { margin-top: 10px; }
@@ -820,7 +881,7 @@ HTML;
 	          </div>
 
 	          <div class="panel">
-	            <strong>Container traits</strong>
+	            <strong class="traitsTitle">Kernel capabilities</strong>
 	            <div class="traitsGrid" role="list">
 	              <div class="traitChip" data-trait="https" role="listitem">
 	                <div class="traitIcon" aria-hidden="true"></div>
