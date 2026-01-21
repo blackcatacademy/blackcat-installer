@@ -405,36 +405,41 @@ HTML;
       }
       .pill.pillKernel {
         position: relative;
-        padding-left: 30px;
-        border-color: rgba(var(--bc-accent2), 0.48);
+        font-size: 12px;
+        line-height: 1;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        padding: 6px 12px 6px 26px;
+        border-color: rgba(var(--bc-accent2), 0.38);
         background:
-          radial-gradient(220px 90px at 25% 0%, rgba(var(--bc-accent), 0.22), transparent 62%),
-          radial-gradient(220px 90px at 75% 0%, rgba(var(--bc-accent2), 0.18), transparent 62%),
-          linear-gradient(180deg, rgba(11, 15, 23, 0.30), rgba(11, 15, 23, 0.14));
+          radial-gradient(220px 90px at 25% 0%, rgba(var(--bc-accent), 0.18), transparent 62%),
+          radial-gradient(220px 90px at 75% 0%, rgba(var(--bc-accent2), 0.16), transparent 62%),
+          linear-gradient(180deg, rgba(11, 15, 23, 0.22), rgba(11, 15, 23, 0.10));
         color: rgba(255, 255, 255, 0.94);
         box-shadow:
-          inset 0 1px 0 rgba(255, 255, 255, 0.16),
-          inset 0 -14px 20px rgba(0, 0, 0, 0.32),
-          0 0 0 1px rgba(var(--bc-accent2), 0.10),
-          0 18px 60px rgba(0, 0, 0, 0.38);
+          inset 0 1px 0 rgba(255, 255, 255, 0.14),
+          inset 0 -18px 26px rgba(0, 0, 0, 0.22),
+          0 0 0 1px rgba(var(--bc-accent2), 0.08),
+          0 18px 60px rgba(0, 0, 0, 0.36);
+        backdrop-filter: blur(10px) saturate(1.18);
+        -webkit-backdrop-filter: blur(10px) saturate(1.18);
       }
       .pill.pillKernel::before {
         content: "";
         position: absolute;
         left: 10px;
         top: 50%;
-        width: 14px;
-        height: 14px;
+        width: 10px;
+        height: 10px;
         transform: translateY(-50%);
         background:
-          radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.70), rgba(255, 255, 255, 0.00) 48%),
-          linear-gradient(180deg, rgba(var(--bc-accent2), 0.92), rgba(var(--bc-accent), 0.55));
-        -webkit-mask: var(--bc-mask-cat-head) center / contain no-repeat;
-        mask: var(--bc-mask-cat-head) center / contain no-repeat;
-        filter:
-          drop-shadow(0 0 16px rgba(var(--bc-accent2), 0.16))
-          drop-shadow(0 10px 36px rgba(0, 0, 0, 0.34));
-        opacity: 0.95;
+          radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.70), rgba(255, 255, 255, 0.00) 52%),
+          linear-gradient(180deg, rgba(var(--bc-accent2), 0.92), rgba(var(--bc-accent), 0.60));
+        border-radius: 999px;
+        box-shadow:
+          0 0 18px rgba(var(--bc-accent2), 0.18),
+          0 0 34px rgba(var(--bc-accent), 0.12);
+        opacity: 0.98;
       }
       .pill.pillKernel::after {
         content: "";
@@ -458,7 +463,16 @@ HTML;
           100% { opacity: 0; transform: translateX(44%) rotate(12deg); }
         }
       }
-      .heroSub { margin: 6px 0 0; }
+      .heroSub {
+        margin: 10px 0 0;
+        font-size: 14px;
+        font-weight: 560;
+        letter-spacing: 0.01em;
+        color: rgba(231, 238, 252, 0.86);
+        text-shadow:
+          0 1px 0 rgba(0, 0, 0, 0.72),
+          0 18px 70px rgba(0, 0, 0, 0.38);
+      }
       .panel strong.overviewTitle {
         display: flex;
         align-items: center;
@@ -1085,7 +1099,7 @@ HTML;
 	            <div class="overviewGrid">
 	              <div>
 	                <h1 class="heroTitle"><span class="heroBrand">BlackCat</span><span class="heroTitleLine2"><span class="heroTitleAccent">Kernel Bootstrap</span> <span class="pill mono pillKernel">Kernel Minimal</span></span></h1>
-	                <p class="heroSub muted">Upload via FTP, verify integrity, approve with a wallet — then the installer locks itself.</p>
+	                <p class="heroSub">FTP upload → integrity manifest → wallet-signed approvals → installer locks itself.</p>
 	              </div>
 	              __BLACKCAT_OVERVIEW_ILLUSTRATION__
 	            </div>
