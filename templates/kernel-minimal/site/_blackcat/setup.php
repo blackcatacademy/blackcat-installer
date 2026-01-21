@@ -374,6 +374,50 @@ HTML;
           0 -1px 0 rgba(255, 255, 255, 0.10),
           0 18px 70px rgba(0, 0, 0, 0.48);
       }
+      .heroKicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0 0 8px;
+        font-size: 11px;
+        font-weight: 760;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: rgba(var(--bc-accent2), 0.92);
+        text-shadow:
+          0 1px 0 rgba(0, 0, 0, 0.80),
+          0 14px 60px rgba(0, 0, 0, 0.42);
+      }
+      .heroKicker::before {
+        content: "";
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background:
+          radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.00) 48%),
+          linear-gradient(180deg, rgba(var(--bc-accent2), 0.95), rgba(var(--bc-accent), 0.55));
+        box-shadow:
+          0 0 18px rgba(var(--bc-accent2), 0.18),
+          0 0 34px rgba(var(--bc-accent), 0.12);
+      }
+      .heroBrand {
+        font-weight: 860;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-right: 6px;
+      }
+      .heroTitleAccent {
+        font-weight: 900;
+        letter-spacing: 0.01em;
+        background: linear-gradient(90deg, rgba(var(--bc-accent), 0.92), rgba(var(--bc-accent2), 0.92));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow: none;
+      }
+      @supports not (-webkit-background-clip: text) {
+        .heroTitleAccent { color: #d7e3ff; }
+      }
       .heroSub { margin: 6px 0 0; }
       .overviewGrid {
         display: grid;
@@ -610,12 +654,25 @@ HTML;
         }
       }
       .heroDetails { margin-top: 10px; }
-      .heroDetails summary { cursor: pointer; user-select: none; }
+      .heroDetails summary {
+        cursor: pointer;
+        user-select: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 14px;
+        border: 1px solid rgba(31, 42, 68, 0.62);
+        background: linear-gradient(180deg, rgba(11, 15, 23, 0.22), rgba(11, 15, 23, 0.12));
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.06),
+          0 14px 50px rgba(0, 0, 0, 0.22);
+      }
       .heroDetails summary::-webkit-details-marker { display: none; }
       .heroDetails summary::before { content: "▸"; display: inline-block; margin-right: 8px; color: #9fb0d0; }
       .heroDetails[open] summary::before { content: "▾"; }
-      .heroDetails ul { margin: 8px 0 0 18px; padding: 0; }
-      .heroDetails li { margin: 3px 0; }
+      .heroDetails ul { margin: 10px 0 0 18px; padding: 0; }
+      .heroDetails li { margin: 5px 0; }
 
       .illustration {
         margin-top: 12px;
@@ -935,23 +992,25 @@ HTML;
 	        <div class="heroBanner" aria-hidden="true"></div>
 	        <div class="heroGrid">
 	          <div class="panel">
-	            <strong>Overview</strong>
+	            <strong>Setup overview</strong>
 	            <div class="overviewGrid">
 	              <div>
-	                <h1 class="heroTitle">BlackCat Setup <span class="pill mono">Kernel Minimal</span></h1>
-	                <p class="heroSub muted">FTP-friendly installer for hosting environments where you can’t run Composer on the server. It bootstraps TrustKernel (Web3-backed integrity) and writes strict runtime config.</p>
+	                <div class="heroKicker">Web3-backed security kernel</div>
+	                <h1 class="heroTitle"><span class="heroBrand">BlackCat</span> <span class="heroTitleAccent">Kernel Bootstrap</span> <span class="pill mono">Kernel Minimal</span></h1>
+	                <p class="heroSub muted">Upload via FTP, verify integrity, approve with a wallet — then the installer locks itself.</p>
 	              </div>
 	              __BLACKCAT_OVERVIEW_ILLUSTRATION__
 	            </div>
 	            <details class="heroDetails">
-	              <summary class="muted">What is “Stage 3”?</summary>
+	              <summary class="muted">What is Stage 3?</summary>
 	              <div class="small muted">
-	                Stage 3 is the <strong>kernel-minimal</strong> bootstrap: upload a prebuilt bundle, verify integrity, register it on-chain, then permanently disable the installer.
+	                Stage 3 bootstraps the <strong>kernel-minimal</strong> bundle for constrained hosting: generate an integrity manifest, anchor trust on-chain, write runtime config, then permanently disable setup.
 	              </div>
 	              <ul class="small muted">
-	                <li><span class="mono">No</span> server-side private keys.</li>
+	                <li><span class="mono">HTTPS-only</span> setup (MITM-resistant).</li>
+	                <li><span class="mono">Wallet-signed</span> approvals (<span class="mono">no</span> server private keys).</li>
 	                <li><span class="mono">No</span> Composer required on the server.</li>
-	                <li>Production is <strong>fail-closed</strong> on untrusted TLS + integrity mismatches.</li>
+	                <li>Fail-closed when trust cannot be established.</li>
 	              </ul>
 	            </details>
 	          </div>
