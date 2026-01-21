@@ -263,6 +263,12 @@ HTML;
         --bc-accent2: 118, 227, 157;
         --bc-amber: 255, 212, 107;
         --bc-mask-cat-head: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20100%20100%27%3E%3Cpath%20d%3D%27M25%2010%20L10%2028%20L16%2062%20C18%2080%2034%2092%2050%2092%20C66%2092%2082%2080%2084%2062%20L90%2028%20L75%2010%20L63%2028%20L50%2016%20L37%2028%20Z%27%20fill%3D%27black%27/%3E%3C/svg%3E");
+        --bc-mask-glyph-lock: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M8%2010V8a4%204%200%201%201%208%200v2h2v12H6V10h2zm2%200h4V8a2%202%200%201%200-4%200v2z%22%20fill%3D%22black%22%2F%3E%3C%2Fsvg%3E");
+        --bc-mask-glyph-chain: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M7%206h3v2H7a2%202%200%200%200%200%204h3v2H7a4%204%200%200%201%200-8zm7%200h3a4%204%200%200%201%200%208h-3v-2h3a2%202%200%200%200%200-4h-3V6zm-5%205h6v2H9v-2z%22%20fill%3D%22black%22%2F%3E%3C%2Fsvg%3E");
+        --bc-mask-glyph-key: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M7%2014a5%205%200%201%201%204.9-6H22v4h-2v2h-2v2h-4v-4h-2.1A5%205%200%200%201%207%2014zm0-2a3%203%200%201%200%200-6%203%203%200%200%200%200%206z%22%20fill%3D%22black%22%2F%3E%3C%2Fsvg%3E");
+        --bc-mask-glyph-shield: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M12%202l8%204v6c0%205-3.4%209.2-8%2010-4.6-.8-8-5-8-10V6l8-4z%22%20fill%3D%22black%22%2F%3E%3C%2Fsvg%3E");
+        --bc-mask-glyph-wallet: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M3%207h18v12H3V7zm2%202v8h14V9H5zm12%203h2v2h-2v-2z%22%20fill%3D%22black%22%2F%3E%3C%2Fsvg%3E");
+        --bc-mask-glyph-layers: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M12%203l9%205-9%205-9-5%209-5zm0%208l9%205-9%205-9-5%209-5z%22%20fill%3D%22black%22%2F%3E%3C%2Fsvg%3E");
       }
 
       body {
@@ -362,7 +368,115 @@ HTML;
           0 18px 70px rgba(0, 0, 0, 0.48);
       }
       .heroSub { margin: 6px 0 0; }
-      .heroBadges { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+      .traitsGrid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+      }
+      @media (max-width: 520px) {
+        .traitsGrid { grid-template-columns: 1fr; }
+      }
+      .traitChip {
+        --bc-trait-glow: var(--bc-accent);
+        --bc-glyph-mask: var(--bc-mask-glyph-lock);
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding: 10px 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(31, 42, 68, 0.62);
+        background: linear-gradient(180deg, rgba(11, 15, 23, 0.28), rgba(11, 15, 23, 0.14));
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.07),
+          0 16px 52px rgba(0, 0, 0, 0.22);
+        position: relative;
+        overflow: hidden;
+      }
+      .traitChip::before {
+        content: "";
+        position: absolute;
+        inset: -1px;
+        background:
+          radial-gradient(420px 180px at 18% 0%, rgba(var(--bc-trait-glow), 0.14), transparent 72%),
+          radial-gradient(420px 180px at 82% 0%, rgba(var(--bc-trait-glow), 0.10), transparent 74%),
+          linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 44%);
+        opacity: 0.55;
+        pointer-events: none;
+      }
+      .traitChip > * { position: relative; z-index: 1; }
+      .traitIcon {
+        width: 34px;
+        height: 34px;
+        position: relative;
+        flex: 0 0 34px;
+      }
+      .traitIcon::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.00) 48%),
+          linear-gradient(180deg, rgba(var(--bc-trait-glow), 0.92), rgba(var(--bc-trait-glow), 0.52));
+        -webkit-mask: var(--bc-mask-cat-head) center / contain no-repeat;
+        mask: var(--bc-mask-cat-head) center / contain no-repeat;
+        filter:
+          drop-shadow(0 0 18px rgba(var(--bc-trait-glow), 0.18))
+          drop-shadow(0 18px 70px rgba(0, 0, 0, 0.38));
+        opacity: 0.96;
+      }
+      .traitIcon::after {
+        content: "";
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        right: -3px;
+        bottom: -3px;
+        background:
+          radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.00) 48%),
+          linear-gradient(180deg, rgba(var(--bc-trait-glow), 0.92), rgba(var(--bc-trait-glow), 0.40));
+        -webkit-mask: var(--bc-glyph-mask) center / contain no-repeat;
+        mask: var(--bc-glyph-mask) center / contain no-repeat;
+        filter:
+          drop-shadow(0 0 14px rgba(var(--bc-trait-glow), 0.16))
+          drop-shadow(0 10px 40px rgba(0, 0, 0, 0.34));
+        opacity: 0.92;
+      }
+      .traitText { min-width: 0; }
+      .traitMain {
+        font-weight: 820;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        line-height: 1.15;
+        color: #e7eefc;
+        text-shadow: 0 1px 0 rgba(0, 0, 0, 0.70);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .traitSub {
+        margin-top: 2px;
+        font-size: 11px;
+        color: #9fb0d0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .traitChip[data-trait="https"] { --bc-trait-glow: var(--bc-amber); --bc-glyph-mask: var(--bc-mask-glyph-lock); }
+      .traitChip[data-trait="stage"] { --bc-trait-glow: var(--bc-accent); --bc-glyph-mask: var(--bc-mask-glyph-layers); }
+      .traitChip[data-trait="keyless"] { --bc-trait-glow: var(--bc-accent2); --bc-glyph-mask: var(--bc-mask-glyph-key); }
+      .traitChip[data-trait="registry"] { --bc-trait-glow: var(--bc-accent); --bc-glyph-mask: var(--bc-mask-glyph-shield); }
+      .traitChip[data-trait="signed"] { --bc-trait-glow: var(--bc-accent2); --bc-glyph-mask: var(--bc-mask-glyph-wallet); }
+      .traitChip[data-trait="chain"] { --bc-trait-glow: var(--bc-accent); --bc-glyph-mask: var(--bc-mask-glyph-chain); }
+
+      @media (prefers-reduced-motion: no-preference) {
+        .traitIcon::before { animation: bcTraitPulse 3.6s ease-in-out infinite; }
+        @keyframes bcTraitPulse {
+          0%, 100% { filter: drop-shadow(0 0 16px rgba(var(--bc-trait-glow), 0.16)) drop-shadow(0 18px 70px rgba(0, 0, 0, 0.38)); }
+          50% { filter: drop-shadow(0 0 22px rgba(var(--bc-trait-glow), 0.24)) drop-shadow(0 18px 70px rgba(0, 0, 0, 0.38)); }
+        }
+      }
       .heroDetails { margin-top: 10px; }
       .heroDetails summary { cursor: pointer; user-select: none; }
       .heroDetails summary::-webkit-details-marker { display: none; }
@@ -706,14 +820,50 @@ HTML;
 	          </div>
 
 	          <div class="panel">
-	            <strong>Traits</strong>
-	            <div class="heroBadges">
-	              <span class="pill mono">HTTPS required</span>
-	              <span class="pill mono">Stage 3</span>
-	              <span class="pill mono">No server keys</span>
-	              <span class="pill mono">ReleaseRegistry</span>
-	              <span class="pill mono">Wallet-signed</span>
-	              <span class="pill mono">Edgen 4207</span>
+	            <strong>Container traits</strong>
+	            <div class="traitsGrid" role="list">
+	              <div class="traitChip" data-trait="https" role="listitem">
+	                <div class="traitIcon" aria-hidden="true"></div>
+	                <div class="traitText">
+	                  <div class="traitMain">HTTPS required</div>
+	                  <div class="traitSub">setup is TLS-only</div>
+	                </div>
+	              </div>
+	              <div class="traitChip" data-trait="stage" role="listitem">
+	                <div class="traitIcon" aria-hidden="true"></div>
+	                <div class="traitText">
+	                  <div class="traitMain">Stage 3</div>
+	                  <div class="traitSub">kernel-minimal bootstrap</div>
+	                </div>
+	              </div>
+	              <div class="traitChip" data-trait="keyless" role="listitem">
+	                <div class="traitIcon" aria-hidden="true"></div>
+	                <div class="traitText">
+	                  <div class="traitMain">Keyless boundary</div>
+	                  <div class="traitSub">no raw key export</div>
+	                </div>
+	              </div>
+	              <div class="traitChip" data-trait="registry" role="listitem">
+	                <div class="traitIcon" aria-hidden="true"></div>
+	                <div class="traitText">
+	                  <div class="traitMain">Release registry</div>
+	                  <div class="traitSub">root trust on-chain</div>
+	                </div>
+	              </div>
+	              <div class="traitChip" data-trait="signed" role="listitem">
+	                <div class="traitIcon" aria-hidden="true"></div>
+	                <div class="traitText">
+	                  <div class="traitMain">Wallet-signed</div>
+	                  <div class="traitSub">no server private keys</div>
+	                </div>
+	              </div>
+	              <div class="traitChip" data-trait="chain" role="listitem">
+	                <div class="traitIcon" aria-hidden="true"></div>
+	                <div class="traitText">
+	                  <div class="traitMain">Edgen (4207)</div>
+	                  <div class="traitSub">EVM-compatible</div>
+	                </div>
+	              </div>
 	            </div>
 	          </div>
 	        </div>
